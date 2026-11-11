@@ -1,0 +1,296 @@
+id,zona,valor,nombre,edad,ocupacion,lugar_origen,estado_animo,mensaje,fecha
+ZONA08-PERSONA-20261010-R001-C8,zona_08,0.494,Dolores Peralta,30,tractorista,Dina Huapi,pensativo,Me acorde de algo que tenia guardado,2026-10-10
+ZONA10-PERSONA-20261005-R002-6S,zona_10,0.722,Pilar Sosa,49,bibliotecario/a,Esquel,esperanzado,Creo que esta vez si se puede,2026-10-05
+ZONA10-PERSONA-20260918-R003-LF,zona_10,0.914,Ramiro Escobar,77,enfermero/a,Cosquin,radiante,Que no se acabe este dia,2026-09-18
+ZONA11-PERSONA-20261014-R004-P8,zona_11,0.333,Bautista Gimenez,39,viverista,Tandil,nostalgico,Me acuerdo de la casa de mi abuela,2026-10-14
+ZONA04-PERSONA-20260917-R005-T0,zona_04,0.066,Emilio Mansilla,38,tecnico/a en riego,Coronel Suarez,triste,"Ya va a pasar, siempre pasa",2026-09-17
+ZONA10-PERSONA-20261007-R006-G2,zona_10,0.455,Mercedes Sosa,41,jubilado/a,San Rafael,pensativo,Le estoy dando vueltas a una decision,2026-10-07
+ZONA02-PERSONA-20261011-R007-10,zona_02,0.96,Olivia Bustos,30,almacenero/a,Cosquin,radiante,Hoy todo florecio al mismo tiempo,2026-10-11
+ZONA07-PERSONA-20261003-R008-QL,zona_07,0.182,Sofia Moyano,25,modista,Cosquin,inquieto,Demasiadas cosas al mismo tiempo,2026-10-03
+ZONA07-PERSONA-20261011-R009-CU,zona_07,0.911,Camila Villalba,64,carpintero/a,Tandil,radiante,La cosecha salio mejor de lo que esperaba,2026-10-11
+ZONA10-PERSONA-20260928-R010-4G,zona_10,0.522,Dolores Mansilla,54,radialista,Salsipuedes,tranquilo,Prefiero el silencio de la manana,2026-09-28
+ZONA08-PERSONA-20260926-R011-OR,zona_08,0.602,Antonia Ocampo,70,contador/a,Puerto Tirol,tranquilo,"Sin apuro, paso a paso",2026-09-26
+ZONA01-PERSONA-20260927-R012-JI,zona_01,0.71,Martina Vera,75,tractorista,Villa Elisa,esperanzado,Voy a volver a intentarlo,2026-09-27
+ZONA11-PERSONA-20260929-R013-ZM,zona_11,0.855,Valentina Bustos,46,modista,Monte Caseros,contento,Hoy el trabajo rindio,2026-09-29
+ZONA07-PERSONA-20260924-R014-85,zona_07,0.202,Celeste Rolon,77,arriero/a,Coronel Suarez,inquieto,No me puedo quedar quieto,2026-09-24
+ZONA10-PERSONA-20260919-R015-ZN,zona_10,0.543,Mirta Solis,39,contador/a,Dina Huapi,tranquilo,Me senti a mirar el agua un rato,2026-09-19
+ZONA07-PERSONA-20260923-R016-L9,zona_07,0.868,Tomas Maidana,34,veterinario/a,Obera,contento,"Gracias por preguntar, estoy bien",2026-09-23
+ZONA04-PERSONA-20261010-R017-BA,zona_04,0.684,Mirta Ocampo,27,jubilado/a,Esquel,esperanzado,Creo que esta vez si se puede,2026-10-10
+ZONA05-PERSONA-20260924-R018-UY,zona_05,0.816,Tomas Solis,77,panadero/a,Villa Elisa,contento,Comi rico y dormi suficiente,2026-09-24
+ZONA06-PERSONA-20260922-R019-20,zona_06,0.238,Ana Sosa,66,veterinario/a,Coronel Suarez,cansado,Hice lo que pude y alcanzo,2026-09-22
+ZONA07-PERSONA-20260926-R020-1Q,zona_07,0.047,Dolores Solis,48,tractorista,Salsipuedes,triste,Hoy preferiria no hablar mucho,2026-09-26
+ZONA05-PERSONA-20261014-R021-PW,zona_05,0.043,Delfina Solis,69,modista,Chivilcoy,triste,Se me hizo cuesta arriba el dia,2026-10-14
+ZONA11-PERSONA-20260920-R022-YU,zona_11,0.158,Catalina Pereyra,77,contador/a,Coronel Suarez,inquieto,Estoy esperando una respuesta,2026-09-20
+ZONA11-PERSONA-20260921-R023-O7,zona_11,0.478,Ana Cabrera,36,tecnico/a en riego,Chivilcoy,pensativo,Me acorde de algo que tenia guardado,2026-09-21
+ZONA11-PERSONA-20261010-R024-Z3,zona_11,0.214,Lucia Pereyra,24,guia de campo,Laborde,inquieto,Algo me tiene con el pecho apretado,2026-10-10
+ZONA11-PERSONA-20260917-R025-TB,zona_11,0.248,Antonia Carrizo,66,agricultor/a,Gualeguay,cansado,Fue una semana larga,2026-09-17
+ZONA08-PERSONA-20260917-R026-6X,zona_08,0.557,Rocio Ferreyra,51,tecnico/a en riego,Villa Elisa,tranquilo,Prefiero el silencio de la manana,2026-09-17
+ZONA02-PERSONA-20260925-R027-WO,zona_02,0.721,Lautaro Nunes,76,tractorista,Tandil,esperanzado,Voy a volver a intentarlo,2026-09-25
+ZONA10-PERSONA-20261010-R028-WL,zona_10,0.226,Pilar Benitez,80,tecnico/a en riego,Loberia,cansado,El cuerpo me esta pidiendo pausa,2026-10-10
+ZONA11-PERSONA-20260918-R029-MV,zona_11,0.371,Lucia Peralta,48,tambero/a,Rafaela,nostalgico,Antes el rio llegaba mas arriba,2026-09-18
+ZONA08-PERSONA-20261012-R030-AF,zona_08,0.164,Camila Barrios,50,carpintero/a,Loberia,inquieto,No me puedo quedar quieto,2026-10-12
+ZONA03-PERSONA-20260916-R031-6U,zona_03,0.041,Pilar Bustos,39,enfermero/a,Chivilcoy,triste,Se me hizo cuesta arriba el dia,2026-09-16
+ZONA03-PERSONA-20261006-R032-AG,zona_03,0.302,Olivia Sosa,24,panadero/a,Las Flores,nostalgico,Me acuerdo de la casa de mi abuela,2026-10-06
+ZONA05-PERSONA-20261004-R033-PC,zona_05,0.209,Elias Villalba,68,cocinero/a,Obera,inquieto,Demasiadas cosas al mismo tiempo,2026-10-04
+ZONA09-PERSONA-20260918-R034-51,zona_09,0.035,Teo Vera,32,guia de campo,Chivilcoy,triste,Me hace falta alguien,2026-09-18
+ZONA07-PERSONA-20261015-R035-B9,zona_07,0.165,Rocio Vera,85,agricultor/a,San Javier,inquieto,Algo me tiene con el pecho apretado,2026-10-15
+ZONA01-PERSONA-20260930-R036-9D,zona_01,0.056,Camila Sosa,30,tractorista,Dina Huapi,triste,Se me hizo cuesta arriba el dia,2026-09-30
+ZONA09-PERSONA-20260921-R037-8A,zona_09,0.405,Mirta Benitez,31,viverista,Coronel Suarez,pensativo,Me acorde de algo que tenia guardado,2026-09-21
+ZONA04-PERSONA-20260924-R038-7X,zona_04,0.867,Valentina Sosa,34,veterinario/a,Alta Gracia,contento,Comi rico y dormi suficiente,2026-09-24
+ZONA04-PERSONA-20260920-R039-SO,zona_04,0.848,Juana Ibarra,41,modista,Monte Caseros,contento,Me gusta como quedo el patio,2026-09-20
+ZONA11-PERSONA-20260922-R040-KD,zona_11,0.085,Sofia Cardozo,23,tractorista,Dina Huapi,triste,Se me hizo cuesta arriba el dia,2026-09-22
+ZONA11-PERSONA-20261003-R041-IW,zona_11,0.483,Ana Ibarra,17,radialista,Esquel,pensativo,Hay cosas que todavia no entiendo,2026-10-03
+ZONA05-PERSONA-20261011-R042-ZB,zona_05,0.678,Tomas Pereyra,25,apicultor/a,Coronel Suarez,esperanzado,Sembre algo que todavia no se ve,2026-10-11
+ZONA10-PERSONA-20261013-R043-G2,zona_10,0.196,Amalia Pereyra,37,tractorista,Puerto Tirol,inquieto,Demasiadas cosas al mismo tiempo,2026-10-13
+ZONA06-PERSONA-20261013-R044-UT,zona_06,0.981,Catalina Barrios,83,constructor/a,Dina Huapi,radiante,La cosecha salio mejor de lo que esperaba,2026-10-13
+ZONA01-PERSONA-20260918-R045-90,zona_01,0.717,Ignacio Ferreyra,43,bibliotecario/a,Chascomus,esperanzado,Creo que esta vez si se puede,2026-09-18
+ZONA09-PERSONA-20260921-R046-GE,zona_09,0.548,Celeste Arce,33,tecnico/a en riego,Las Flores,tranquilo,Prefiero el silencio de la manana,2026-09-21
+ZONA06-PERSONA-20261003-R047-4H,zona_06,0.117,Agustin Vera,79,agricultor/a,Cosquin,triste,Se me hizo cuesta arriba el dia,2026-10-03
+ZONA07-PERSONA-20261010-R048-6T,zona_07,0.535,Lucia Rolon,79,fotografo/a,Pergamino,tranquilo,Prefiero el silencio de la manana,2026-10-10
+ZONA01-PERSONA-20260918-R049-XB,zona_01,0.749,Gaspar Bustos,54,constructor/a,Rafaela,esperanzado,Algo bueno se esta armando,2026-09-18
+ZONA02-PERSONA-20260922-R050-XF,zona_02,0.127,Catalina Cardozo,46,tecnico/a en riego,Tilcara,triste,Me hace falta alguien,2026-09-22
+ZONA07-PERSONA-20260927-R051-WZ,zona_07,0.308,Teo Gimenez,54,agronomo/a,Laborde,nostalgico,Antes el rio llegaba mas arriba,2026-09-27
+ZONA10-PERSONA-20260922-R052-SY,zona_10,0.318,Juana Sosa,62,fotografo/a,Esquel,nostalgico,Me gustaria volver aunque sea un dia,2026-09-22
+ZONA05-PERSONA-20261013-R053-JI,zona_05,0.74,Antonia Vera,19,camionero/a,Salsipuedes,esperanzado,Algo bueno se esta armando,2026-10-13
+ZONA03-PERSONA-20260919-R054-8H,zona_03,0.289,Mirta Quiroga,30,herrero/a,Dina Huapi,cansado,Hice lo que pude y alcanzo,2026-09-19
+ZONA10-PERSONA-20260930-R055-KQ,zona_10,0.75,Catalina Ibarra,54,contador/a,Pergamino,esperanzado,Sembre algo que todavia no se ve,2026-09-30
+ZONA07-PERSONA-20260922-R056-8E,zona_07,0.577,Sofia Ocampo,64,camionero/a,Cafayate,tranquilo,Nada que reclamar hoy,2026-09-22
+ZONA10-PERSONA-20260918-R057-8E,zona_10,0.92,Antonia Pereyra,85,radialista,Cafayate,radiante,La cosecha salio mejor de lo que esperaba,2026-09-18
+ZONA07-PERSONA-20261002-R058-AO,zona_07,0.136,Mateo Carrizo,79,constructor/a,Villa Elisa,inquieto,Algo me tiene con el pecho apretado,2026-10-02
+ZONA03-PERSONA-20261006-R059-HZ,zona_03,0.584,Juana Maidana,69,viverista,Villa Elisa,tranquilo,"Sin apuro, paso a paso",2026-10-06
+ZONA01-PERSONA-20261008-R060-LG,zona_01,0.676,Catalina Solis,55,fotografo/a,Alta Gracia,esperanzado,Algo bueno se esta armando,2026-10-08
+ZONA11-PERSONA-20260930-R061-WM,zona_11,0.581,Emilio Aguirre,46,tecnico/a en riego,Rafaela,tranquilo,Prefiero el silencio de la manana,2026-09-30
+ZONA11-PERSONA-20260928-R062-UG,zona_11,0.321,Elias Ocampo,19,radialista,Pergamino,nostalgico,Guardo una foto de cuando eramos todos,2026-09-28
+ZONA07-PERSONA-20260928-R063-IX,zona_07,0.47,Bautista Pereyra,70,contador/a,Cafayate,pensativo,No se si quedarme o irme,2026-09-28
+ZONA10-PERSONA-20260917-R064-D0,zona_10,0.665,Ignacio Arce,23,arriero/a,Gualeguay,esperanzado,Sembre algo que todavia no se ve,2026-09-17
+ZONA08-PERSONA-20261015-R065-NP,zona_08,0.857,Isidora Luna,82,agronomo/a,Alta Gracia,contento,"Gracias por preguntar, estoy bien",2026-10-15
+ZONA05-PERSONA-20261012-R066-EM,zona_05,0.744,Elias Cardozo,52,jubilado/a,San Rafael,esperanzado,Sembre algo que todavia no se ve,2026-10-12
+ZONA04-PERSONA-20260919-R067-F6,zona_04,0.475,Gaspar Peralta,60,fotografo/a,Cosquin,pensativo,Hay cosas que todavia no entiendo,2026-09-19
+ZONA10-PERSONA-20261005-R068-IB,zona_10,0.933,Facundo Bustos,57,agricultor/a,Tandil,radiante,La cosecha salio mejor de lo que esperaba,2026-10-05
+ZONA04-PERSONA-20261011-R069-BL,zona_04,0.194,Isidora Luna,18,pescador/a,San Javier,inquieto,No me puedo quedar quieto,2026-10-11
+ZONA09-PERSONA-20260930-R070-NS,zona_09,0.85,Mercedes Carrizo,72,tractorista,Dina Huapi,contento,Comi rico y dormi suficiente,2026-09-30
+ZONA10-PERSONA-20260920-R071-9X,zona_10,0.742,Lucia Peralta,41,tambero/a,Esquel,esperanzado,Algo bueno se esta armando,2026-09-20
+ZONA10-PERSONA-20260920-R072-CU,zona_10,0.095,Valentina Cardozo,19,arriero/a,Trenque Lauquen,triste,Hoy preferiria no hablar mucho,2026-09-20
+ZONA09-PERSONA-20261003-R073-EH,zona_09,0.72,Camila Barrios,37,constructor/a,Cafayate,esperanzado,Sembre algo que todavia no se ve,2026-10-03
+ZONA11-PERSONA-20261007-R074-AD,zona_11,0.677,Pilar Cabrera,41,tambero/a,Rafaela,esperanzado,Voy a volver a intentarlo,2026-10-07
+ZONA08-PERSONA-20260918-R075-PC,zona_08,0.52,Catalina Pereyra,57,enfermero/a,Tandil,tranquilo,"Sin apuro, paso a paso",2026-09-18
+ZONA08-PERSONA-20261014-R076-62,zona_08,0.81,Renata Bustos,34,docente rural,Salsipuedes,contento,Me gusta como quedo el patio,2026-10-14
+ZONA10-PERSONA-20260929-R077-EP,zona_10,0.47,Ignacio Quiroga,70,panadero/a,Chivilcoy,pensativo,Me acorde de algo que tenia guardado,2026-09-29
+ZONA06-PERSONA-20261011-R078-ZJ,zona_06,0.572,Lautaro Zabala,19,constructor/a,Trenque Lauquen,tranquilo,Prefiero el silencio de la manana,2026-10-11
+ZONA07-PERSONA-20261007-R079-2C,zona_07,0.174,Agustin Quiroga,21,contador/a,Rafaela,inquieto,Algo me tiene con el pecho apretado,2026-10-07
+ZONA01-PERSONA-20260922-R080-5O,zona_01,0.05,Ignacio Ferreyra,33,constructor/a,San Javier,triste,"Ya va a pasar, siempre pasa",2026-09-22
+ZONA05-PERSONA-20260926-R081-AK,zona_05,0.981,Renata Rolon,29,camionero/a,Trenque Lauquen,radiante,Hoy todo florecio al mismo tiempo,2026-09-26
+ZONA09-PERSONA-20260926-R082-FX,zona_09,0.146,Teo Carrizo,51,pescador/a,Salsipuedes,inquieto,Algo me tiene con el pecho apretado,2026-09-26
+ZONA03-PERSONA-20260920-R083-KT,zona_03,0.315,Lucia Barrios,36,docente rural,Tandil,nostalgico,Antes el rio llegaba mas arriba,2026-09-20
+ZONA08-PERSONA-20260930-R084-FN,zona_08,0.692,Joaquin Benitez,44,apicultor/a,Loberia,esperanzado,Sembre algo que todavia no se ve,2026-09-30
+ZONA01-PERSONA-20261014-R085-ZN,zona_01,0.098,Dolores Sosa,77,carpintero/a,Esquel,triste,Me hace falta alguien,2026-10-14
+ZONA10-PERSONA-20261015-R086-9H,zona_10,0.18,Mirta Moyano,68,herrero/a,Salsipuedes,inquieto,Algo me tiene con el pecho apretado,2026-10-15
+ZONA02-PERSONA-20260930-R087-WR,zona_02,0.796,Catalina Alvarez,21,guia de campo,Dina Huapi,contento,Hoy el trabajo rindio,2026-09-30
+ZONA10-PERSONA-20260919-R088-90,zona_10,0.345,Martina Sosa,20,cocinero/a,Chivilcoy,nostalgico,Me acuerdo de la casa de mi abuela,2026-09-19
+ZONA09-PERSONA-20260924-R089-WG,zona_09,0.733,Teo Arce,30,fotografo/a,Chivilcoy,esperanzado,Voy a volver a intentarlo,2026-09-24
+ZONA09-PERSONA-20260925-R090-RC,zona_09,0.774,Olivia Cardozo,39,fotografo/a,Alta Gracia,contento,Comi rico y dormi suficiente,2026-09-25
+ZONA02-PERSONA-20261001-R091-DF,zona_02,0.266,Martina Carrizo,54,viverista,Cafayate,cansado,Hice lo que pude y alcanzo,2026-10-01
+ZONA07-PERSONA-20261012-R092-3L,zona_07,0.577,Sofia Carrizo,65,mecanico/a,San Rafael,tranquilo,Prefiero el silencio de la manana,2026-10-12
+ZONA11-PERSONA-20261008-R093-UY,zona_11,0.514,Antonia Aguirre,69,docente rural,San Rafael,tranquilo,Me senti a mirar el agua un rato,2026-10-08
+ZONA02-PERSONA-20260917-R094-LR,zona_02,0.794,Pilar Luna,17,agricultor/a,Puerto Tirol,contento,"Gracias por preguntar, estoy bien",2026-09-17
+ZONA07-PERSONA-20261013-R095-NR,zona_07,0.127,Ruben Mansilla,56,veterinario/a,Gualeguay,inquieto,No me puedo quedar quieto,2026-10-13
+ZONA11-PERSONA-20261006-R096-BI,zona_11,0.936,Olivia Barrios,38,constructor/a,Esquel,radiante,Hoy todo florecio al mismo tiempo,2026-10-06
+ZONA08-PERSONA-20261001-R097-1L,zona_08,0.588,Lucia Gimenez,27,contador/a,Tilcara,tranquilo,Prefiero el silencio de la manana,2026-10-01
+ZONA12-PERSONA-20260927-R098-LW,zona_12,0.554,Mateo Escobar,36,apicultor/a,Rafaela,tranquilo,Me senti a mirar el agua un rato,2026-09-27
+ZONA06-PERSONA-20260917-R099-A9,zona_06,0.488,Gaspar Arce,48,bibliotecario/a,Chivilcoy,pensativo,Me acorde de algo que tenia guardado,2026-09-17
+ZONA10-PERSONA-20261005-R100-VJ,zona_10,0.212,Ruben Escobar,17,camionero/a,Laborde,cansado,Hice lo que pude y alcanzo,2026-10-05
+ZONA11-PERSONA-20261001-R101-ZM,zona_11,0.738,Juana Carrizo,50,almacenero/a,San Rafael,esperanzado,Sembre algo que todavia no se ve,2026-10-01
+ZONA03-PERSONA-20260930-R102-74,zona_03,0.572,Isidora Peralta,64,carpintero/a,Chascomus,tranquilo,Nada que reclamar hoy,2026-09-30
+ZONA11-PERSONA-20260922-R103-MH,zona_11,0.559,Lautaro Rolon,66,estudiante,San Rafael,tranquilo,Prefiero el silencio de la manana,2026-09-22
+ZONA12-PERSONA-20260930-R104-R4,zona_12,0.314,Emilio Benitez,25,herrero/a,Chascomus,nostalgico,Antes el rio llegaba mas arriba,2026-09-30
+ZONA02-PERSONA-20261009-R105-VV,zona_02,0.375,Ana Solis,82,modista,Rafaela,nostalgico,Me acuerdo de la casa de mi abuela,2026-10-09
+ZONA06-PERSONA-20261001-R106-IW,zona_06,0.867,Facundo Peralta,40,tractorista,Tilcara,contento,"Gracias por preguntar, estoy bien",2026-10-01
+ZONA11-PERSONA-20260930-R107-Z0,zona_11,0.142,Gaspar Pereyra,83,veterinario/a,Tilcara,inquieto,Demasiadas cosas al mismo tiempo,2026-09-30
+ZONA11-PERSONA-20260918-R108-OP,zona_11,0.265,Isidora Escobar,84,viverista,Esquel,cansado,Fue una semana larga,2026-09-18
+ZONA11-PERSONA-20261014-R109-97,zona_11,0.578,Facundo Sosa,16,tecnico/a en riego,Gualeguay,tranquilo,Prefiero el silencio de la manana,2026-10-14
+ZONA05-PERSONA-20261006-R110-RJ,zona_05,0.948,Pilar Mansilla,36,carpintero/a,Monte Caseros,radiante,Hoy todo florecio al mismo tiempo,2026-10-06
+ZONA06-PERSONA-20261004-R111-ZE,zona_06,0.187,Delfina Solis,20,tecnico/a en riego,Villa Elisa,inquieto,Algo me tiene con el pecho apretado,2026-10-04
+ZONA08-PERSONA-20261002-R112-YG,zona_08,0.937,Amalia Bustos,23,almacenero/a,Las Flores,radiante,Vengo cantando desde temprano,2026-10-02
+ZONA02-PERSONA-20260922-R113-7Q,zona_02,0.962,Sofia Aguirre,42,tractorista,Coronel Suarez,radiante,La cosecha salio mejor de lo que esperaba,2026-09-22
+ZONA09-PERSONA-20261002-R114-3O,zona_09,0.386,Teo Quiroga,43,modista,San Rafael,nostalgico,Me gustaria volver aunque sea un dia,2026-10-02
+ZONA04-PERSONA-20261003-R115-U8,zona_04,0.072,Emilio Nunes,63,viverista,Las Flores,triste,Se me hizo cuesta arriba el dia,2026-10-03
+ZONA05-PERSONA-20260926-R116-P7,zona_05,0.326,Benicio Ibarra,30,modista,Cosquin,nostalgico,Antes el rio llegaba mas arriba,2026-09-26
+ZONA11-PERSONA-20261006-R117-J3,zona_11,0.6,Isidora Villalba,57,camionero/a,Alta Gracia,tranquilo,Me senti a mirar el agua un rato,2026-10-06
+ZONA04-PERSONA-20261006-R118-OP,zona_04,0.219,Catalina Moyano,23,panadero/a,San Rafael,inquieto,Algo me tiene con el pecho apretado,2026-10-06
+ZONA10-PERSONA-20260926-R119-UM,zona_10,0.091,Facundo Luna,81,fotografo/a,Rafaela,triste,Hoy preferiria no hablar mucho,2026-09-26
+ZONA01-PERSONA-20261001-R120-V8,zona_01,0.184,Agustin Moyano,41,panadero/a,Villa Elisa,inquieto,Demasiadas cosas al mismo tiempo,2026-10-01
+ZONA08-PERSONA-20260918-R121-RM,zona_08,0.256,Mirta Pereyra,81,modista,Villa Dolores,cansado,Necesito dormir tres dias seguidos,2026-09-18
+ZONA08-PERSONA-20260927-R122-GI,zona_08,0.312,Catalina Barrios,16,modista,Villa Dolores,nostalgico,Me gustaria volver aunque sea un dia,2026-09-27
+ZONA08-PERSONA-20260928-R123-CJ,zona_08,0.93,Ruben Nunes,83,almacenero/a,Tilcara,radiante,Vengo cantando desde temprano,2026-09-28
+ZONA06-PERSONA-20260924-R124-BC,zona_06,0.726,Tomas Villalba,46,almacenero/a,Tandil,esperanzado,Creo que esta vez si se puede,2026-09-24
+ZONA11-PERSONA-20260928-R125-SM,zona_11,0.706,Teo Pereyra,57,guia de campo,Rafaela,esperanzado,Creo que esta vez si se puede,2026-09-28
+ZONA08-PERSONA-20260928-R126-70,zona_08,0.671,Martina Luna,37,arriero/a,Trenque Lauquen,esperanzado,Algo bueno se esta armando,2026-09-28
+ZONA09-PERSONA-20260922-R127-1F,zona_09,0.198,Amalia Luna,35,bibliotecario/a,San Rafael,cansado,Necesito dormir tres dias seguidos,2026-09-22
+ZONA03-PERSONA-20260922-R128-2Y,zona_03,0.786,Benicio Moyano,53,veterinario/a,Tandil,contento,"Gracias por preguntar, estoy bien",2026-09-22
+ZONA11-PERSONA-20261013-R129-OL,zona_11,0.522,Elias Pereyra,51,contador/a,Las Flores,tranquilo,"Sin apuro, paso a paso",2026-10-13
+ZONA08-PERSONA-20260917-R130-QH,zona_08,0.738,Isidora Escobar,74,carpintero/a,Esquel,esperanzado,Creo que esta vez si se puede,2026-09-17
+ZONA02-PERSONA-20260927-R131-IB,zona_02,0.352,Rocio Peralta,67,carpintero/a,Pergamino,nostalgico,Me gustaria volver aunque sea un dia,2026-09-27
+ZONA10-PERSONA-20260925-R132-U6,zona_10,0.917,Juana Nunes,78,docente rural,Rafaela,radiante,La cosecha salio mejor de lo que esperaba,2026-09-25
+ZONA02-PERSONA-20260917-R133-L8,zona_02,0.73,Juana Pereyra,74,jubilado/a,San Javier,esperanzado,Sembre algo que todavia no se ve,2026-09-17
+ZONA12-PERSONA-20261015-R134-PR,zona_12,0.371,Lautaro Luna,70,guia de campo,Las Flores,nostalgico,Antes el rio llegaba mas arriba,2026-10-15
+ZONA05-PERSONA-20260929-R135-L0,zona_05,0.958,Delfina Rolon,76,docente rural,Monte Caseros,radiante,Hoy todo florecio al mismo tiempo,2026-09-29
+ZONA11-PERSONA-20260919-R136-8W,zona_11,0.276,Catalina Peralta,33,cocinero/a,San Javier,cansado,Necesito dormir tres dias seguidos,2026-09-19
+ZONA10-PERSONA-20261012-R137-TD,zona_10,0.44,Elias Cabrera,38,carpintero/a,Alta Gracia,pensativo,Me acorde de algo que tenia guardado,2026-10-12
+ZONA07-PERSONA-20260918-R138-OO,zona_07,0.177,Amalia Arce,54,agronomo/a,Trenque Lauquen,inquieto,No me puedo quedar quieto,2026-09-18
+ZONA08-PERSONA-20261011-R139-P3,zona_08,0.065,Facundo Benitez,62,constructor/a,Obera,triste,Hoy preferiria no hablar mucho,2026-10-11
+ZONA09-PERSONA-20261013-R140-8C,zona_09,0.168,Mercedes Barrios,84,jubilado/a,Monte Caseros,inquieto,No me puedo quedar quieto,2026-10-13
+ZONA07-PERSONA-20260926-R141-3T,zona_07,0.246,Bautista Maidana,51,cocinero/a,Chascomus,cansado,Hice lo que pude y alcanzo,2026-09-26
+ZONA10-PERSONA-20261004-R142-GZ,zona_10,0.342,Sofia Sosa,65,almacenero/a,Dina Huapi,nostalgico,Me acuerdo de la casa de mi abuela,2026-10-04
+ZONA09-PERSONA-20261011-R143-3Q,zona_09,0.977,Ignacio Bustos,39,agricultor/a,Villa Dolores,radiante,Vengo cantando desde temprano,2026-10-11
+ZONA07-PERSONA-20261011-R144-CC,zona_07,0.975,Martina Mansilla,22,apicultor/a,Alta Gracia,radiante,Que no se acabe este dia,2026-10-11
+ZONA12-PERSONA-20261015-R145-1D,zona_12,0.932,Mercedes Quiroga,74,radialista,Chivilcoy,radiante,Que no se acabe este dia,2026-10-15
+ZONA02-PERSONA-20261012-R146-MX,zona_02,0.569,Nicolas Peralta,30,cocinero/a,Dina Huapi,tranquilo,Me senti a mirar el agua un rato,2026-10-12
+ZONA07-PERSONA-20261002-R147-HH,zona_07,0.984,Antonia Barrios,79,pescador/a,Pergamino,radiante,Vengo cantando desde temprano,2026-10-02
+ZONA04-PERSONA-20261014-R148-KX,zona_04,0.199,Renata Nunes,47,herrero/a,Cafayate,cansado,El cuerpo me esta pidiendo pausa,2026-10-14
+ZONA08-PERSONA-20261004-R149-G0,zona_08,0.034,Camila Alvarez,61,tractorista,Esquel,triste,"Ya va a pasar, siempre pasa",2026-10-04
+ZONA08-PERSONA-20261011-R150-03,zona_08,0.363,Sofia Bustos,26,almacenero/a,Villa Dolores,nostalgico,Me acuerdo de la casa de mi abuela,2026-10-11
+ZONA11-PERSONA-20260916-R151-SJ,zona_11,0.414,Emilio Aguirre,65,panadero/a,Villa Dolores,pensativo,No se si quedarme o irme,2026-09-16
+ZONA05-PERSONA-20260925-R152-ML,zona_05,0.719,Catalina Cabrera,29,tractorista,Rafaela,esperanzado,Voy a volver a intentarlo,2026-09-25
+ZONA08-PERSONA-20261006-R153-P9,zona_08,0.971,Simon Escobar,84,panadero/a,Las Flores,radiante,Hoy todo florecio al mismo tiempo,2026-10-06
+ZONA05-PERSONA-20260929-R154-GR,zona_05,0.281,Mateo Benitez,20,veterinario/a,Trenque Lauquen,cansado,El cuerpo me esta pidiendo pausa,2026-09-29
+ZONA11-PERSONA-20260929-R155-6X,zona_11,0.442,Elias Solis,76,viverista,Rafaela,pensativo,Le estoy dando vueltas a una decision,2026-09-29
+ZONA07-PERSONA-20261006-R156-RO,zona_07,0.243,Horacio Moyano,63,carpintero/a,Esquel,cansado,El cuerpo me esta pidiendo pausa,2026-10-06
+ZONA11-PERSONA-20260926-R157-BV,zona_11,0.558,Amalia Peralta,54,constructor/a,Obera,tranquilo,Nada que reclamar hoy,2026-09-26
+ZONA07-PERSONA-20260916-R158-40,zona_07,1,Lucia Quiroga,20,tractorista,Salsipuedes,radiante,La cosecha salio mejor de lo que esperaba,2026-09-16
+ZONA07-PERSONA-20261015-R159-AA,zona_07,0.136,Bautista Ocampo,64,modista,Pergamino,inquieto,Demasiadas cosas al mismo tiempo,2026-10-15
+ZONA02-PERSONA-20261009-R160-QU,zona_02,0.131,Facundo Moyano,22,docente rural,Obera,inquieto,Demasiadas cosas al mismo tiempo,2026-10-09
+ZONA07-PERSONA-20260924-R161-VZ,zona_07,0.937,Emilio Aguirre,34,herrero/a,Chepes,radiante,La cosecha salio mejor de lo que esperaba,2026-09-24
+ZONA09-PERSONA-20260920-R162-8Z,zona_09,0.792,Teo Quiroga,17,camionero/a,Trenque Lauquen,contento,Me gusta como quedo el patio,2026-09-20
+ZONA09-PERSONA-20261009-R163-EG,zona_09,0.249,Elias Rolon,82,camionero/a,Las Flores,cansado,Hice lo que pude y alcanzo,2026-10-09
+ZONA08-PERSONA-20261010-R164-AV,zona_08,0.054,Ignacio Luna,36,jubilado/a,Esquel,triste,Se me hizo cuesta arriba el dia,2026-10-10
+ZONA08-PERSONA-20261012-R165-N1,zona_08,0.695,Bautista Gimenez,16,fotografo/a,Tandil,esperanzado,Algo bueno se esta armando,2026-10-12
+ZONA12-PERSONA-20260920-R166-GF,zona_12,0.249,Facundo Arce,52,agronomo/a,Obera,cansado,Fue una semana larga,2026-09-20
+ZONA07-PERSONA-20260917-R167-RQ,zona_07,0.689,Elias Quiroga,52,herrero/a,San Javier,esperanzado,Sembre algo que todavia no se ve,2026-09-17
+ZONA11-PERSONA-20260918-R168-MH,zona_11,0.99,Mercedes Zabala,21,agronomo/a,Rafaela,radiante,Vengo cantando desde temprano,2026-09-18
+ZONA11-PERSONA-20261007-R169-N4,zona_11,0.589,Elias Cardozo,18,estudiante,Salsipuedes,tranquilo,"Sin apuro, paso a paso",2026-10-07
+ZONA03-PERSONA-20261009-R170-CU,zona_03,0.774,Facundo Zabala,24,mecanico/a,Villa Dolores,contento,Comi rico y dormi suficiente,2026-10-09
+ZONA12-PERSONA-20261013-R171-SK,zona_12,0.382,Gaspar Vera,36,tambero/a,Chepes,nostalgico,Me acuerdo de la casa de mi abuela,2026-10-13
+ZONA11-PERSONA-20260920-R172-W2,zona_11,0.475,Elias Maidana,42,mecanico/a,San Rafael,pensativo,Le estoy dando vueltas a una decision,2026-09-20
+ZONA11-PERSONA-20260927-R173-OG,zona_11,0.158,Mirta Arce,38,radialista,Rafaela,inquieto,No me puedo quedar quieto,2026-09-27
+ZONA11-PERSONA-20261006-R174-G7,zona_11,0.216,Amalia Alvarez,21,constructor/a,San Javier,cansado,Necesito dormir tres dias seguidos,2026-10-06
+ZONA01-PERSONA-20260930-R175-75,zona_01,0.738,Pilar Peralta,28,arriero/a,San Rafael,esperanzado,Algo bueno se esta armando,2026-09-30
+ZONA11-PERSONA-20261004-R176-GF,zona_11,0.514,Ramiro Villalba,33,estudiante,Loberia,tranquilo,Nada que reclamar hoy,2026-10-04
+ZONA09-PERSONA-20260924-R177-M6,zona_09,0.188,Emilio Mansilla,44,guia de campo,Gualeguay,inquieto,Estoy esperando una respuesta,2026-09-24
+ZONA05-PERSONA-20261015-R178-P1,zona_05,0.125,Ruben Villalba,70,viverista,San Javier,inquieto,No me puedo quedar quieto,2026-10-15
+ZONA05-PERSONA-20260926-R179-A8,zona_05,0.717,Catalina Gimenez,80,constructor/a,Rafaela,esperanzado,Sembre algo que todavia no se ve,2026-09-26
+ZONA08-PERSONA-20261009-R180-YT,zona_08,0.306,Pilar Gimenez,39,fotografo/a,Villa Dolores,nostalgico,Me acuerdo de la casa de mi abuela,2026-10-09
+ZONA02-PERSONA-20260929-R181-VB,zona_02,0.359,Mateo Ocampo,36,radialista,Coronel Suarez,nostalgico,Me acuerdo de la casa de mi abuela,2026-09-29
+ZONA11-PERSONA-20261011-R182-16,zona_11,0.742,Olivia Alvarez,63,viverista,Villa Elisa,esperanzado,Sembre algo que todavia no se ve,2026-10-11
+ZONA08-PERSONA-20260925-R183-JR,zona_08,0.071,Agustin Barrios,78,estudiante,Tilcara,triste,Hoy preferiria no hablar mucho,2026-09-25
+ZONA06-PERSONA-20261008-R184-XG,zona_06,0.095,Juana Carrizo,59,carpintero/a,Tilcara,triste,Me hace falta alguien,2026-10-08
+ZONA04-PERSONA-20260922-R185-MN,zona_04,0.945,Mirta Maidana,77,contador/a,Esquel,radiante,La cosecha salio mejor de lo que esperaba,2026-09-22
+ZONA11-PERSONA-20261002-R186-5S,zona_11,0.826,Facundo Moyano,44,contador/a,Rafaela,contento,Comi rico y dormi suficiente,2026-10-02
+ZONA08-PERSONA-20260924-R187-UW,zona_08,0.362,Emilio Ocampo,78,panadero/a,Coronel Suarez,nostalgico,Antes el rio llegaba mas arriba,2026-09-24
+ZONA02-PERSONA-20260919-R188-93,zona_02,0.197,Lautaro Luna,18,tambero/a,Salsipuedes,cansado,Hice lo que pude y alcanzo,2026-09-19
+ZONA08-PERSONA-20260919-R189-K8,zona_08,0.385,Rocio Cabrera,34,agricultor/a,Tilcara,nostalgico,Me acuerdo de la casa de mi abuela,2026-09-19
+ZONA03-PERSONA-20260929-R190-IA,zona_03,0.737,Lautaro Villalba,55,arriero/a,Coronel Suarez,esperanzado,Algo bueno se esta armando,2026-09-29
+ZONA11-PERSONA-20260929-R191-UV,zona_11,0.103,Ana Solis,35,enfermero/a,Cafayate,triste,Hoy preferiria no hablar mucho,2026-09-29
+ZONA10-PERSONA-20261005-R192-87,zona_10,0.58,Facundo Sosa,26,herrero/a,Cosquin,tranquilo,Prefiero el silencio de la manana,2026-10-05
+ZONA08-PERSONA-20260928-R193-ZV,zona_08,0.802,Ignacio Benitez,62,radialista,Chivilcoy,contento,Hoy el trabajo rindio,2026-09-28
+ZONA07-PERSONA-20260928-R194-N4,zona_07,0.193,Gaspar Gimenez,16,viverista,Villa Dolores,cansado,Hice lo que pude y alcanzo,2026-09-28
+ZONA10-PERSONA-20261015-R195-YO,zona_10,0.496,Amalia Ocampo,85,agricultor/a,Cosquin,pensativo,Le estoy dando vueltas a una decision,2026-10-15
+ZONA01-PERSONA-20261003-R196-KB,zona_01,0.134,Isidora Quiroga,64,enfermero/a,Salsipuedes,inquieto,Demasiadas cosas al mismo tiempo,2026-10-03
+ZONA07-PERSONA-20260920-R197-AQ,zona_07,0.584,Facundo Peralta,67,agricultor/a,Esquel,tranquilo,Nada que reclamar hoy,2026-09-20
+ZONA10-PERSONA-20260918-R198-YA,zona_10,0.062,Martina Sosa,24,veterinario/a,Gualeguay,triste,Me hace falta alguien,2026-09-18
+ZONA09-PERSONA-20261001-R199-RP,zona_09,0.562,Rocio Vera,70,cocinero/a,Cosquin,tranquilo,Me senti a mirar el agua un rato,2026-10-01
+ZONA09-PERSONA-20260922-R200-NI,zona_09,0.71,Facundo Zabala,48,modista,Las Flores,esperanzado,Sembre algo que todavia no se ve,2026-09-22
+ZONA09-PERSONA-20261011-R201-KI,zona_09,0.705,Ana Aguirre,23,camionero/a,Rafaela,esperanzado,Sembre algo que todavia no se ve,2026-10-11
+ZONA01-PERSONA-20261007-R202-SO,zona_01,0.193,Mateo Pereyra,22,guia de campo,Puerto Tirol,inquieto,Algo me tiene con el pecho apretado,2026-10-07
+ZONA11-PERSONA-20260929-R203-CU,zona_11,0.585,Facundo Aguirre,54,tecnico/a en riego,Puerto Tirol,tranquilo,Me senti a mirar el agua un rato,2026-09-29
+ZONA10-PERSONA-20260921-R204-6M,zona_10,0.106,Elias Gimenez,59,fotografo/a,Chepes,triste,Hoy preferiria no hablar mucho,2026-09-21
+ZONA06-PERSONA-20260930-R205-KN,zona_06,0.21,Isidora Carrizo,56,modista,Laborde,inquieto,Estoy esperando una respuesta,2026-09-30
+ZONA09-PERSONA-20260928-R206-3G,zona_09,0.228,Lucia Arce,59,camionero/a,Esquel,cansado,El cuerpo me esta pidiendo pausa,2026-09-28
+ZONA07-PERSONA-20261010-R207-L8,zona_07,0.149,Rocio Moyano,85,agricultor/a,Alta Gracia,inquieto,Estoy esperando una respuesta,2026-10-10
+ZONA11-PERSONA-20261011-R208-AT,zona_11,0.206,Pilar Solis,19,tecnico/a en riego,Laborde,cansado,Hice lo que pude y alcanzo,2026-10-11
+ZONA07-PERSONA-20260921-R209-LM,zona_07,0.38,Celeste Pereyra,84,tambero/a,Dina Huapi,nostalgico,Antes el rio llegaba mas arriba,2026-09-21
+ZONA01-PERSONA-20260917-R210-EP,zona_01,0.75,Ruben Bustos,44,arriero/a,Laborde,esperanzado,Voy a volver a intentarlo,2026-09-17
+ZONA11-PERSONA-20260925-R211-NL,zona_11,0.193,Antonia Maidana,21,panadero/a,Cafayate,inquieto,Algo me tiene con el pecho apretado,2026-09-25
+ZONA03-PERSONA-20260918-R212-HS,zona_03,0.379,Amalia Aguirre,61,constructor/a,Coronel Suarez,nostalgico,Guardo una foto de cuando eramos todos,2026-09-18
+ZONA11-PERSONA-20261008-R213-8D,zona_11,0.772,Celeste Barrios,27,viverista,Chascomus,contento,Comi rico y dormi suficiente,2026-10-08
+ZONA03-PERSONA-20260923-R214-DV,zona_03,0.662,Antonia Bustos,71,fotografo/a,Pergamino,esperanzado,Sembre algo que todavia no se ve,2026-09-23
+ZONA11-PERSONA-20260920-R215-EL,zona_11,0.778,Camila Escobar,83,viverista,Alta Gracia,contento,Hoy el trabajo rindio,2026-09-20
+ZONA06-PERSONA-20260920-R216-BZ,zona_06,0.257,Amalia Villalba,76,pescador/a,Coronel Suarez,cansado,El cuerpo me esta pidiendo pausa,2026-09-20
+ZONA05-PERSONA-20260930-R217-QY,zona_05,0.126,Lautaro Nunes,31,bibliotecario/a,Chivilcoy,triste,Me hace falta alguien,2026-09-30
+ZONA02-PERSONA-20260930-R218-YI,zona_02,0.149,Catalina Rolon,43,contador/a,Gualeguay,inquieto,Demasiadas cosas al mismo tiempo,2026-09-30
+ZONA06-PERSONA-20261007-R219-T3,zona_06,0.121,Rocio Alvarez,42,apicultor/a,Puerto Tirol,triste,Se me hizo cuesta arriba el dia,2026-10-07
+ZONA06-PERSONA-20260919-R220-UV,zona_06,0.196,Olivia Ibarra,51,mecanico/a,Cafayate,cansado,Necesito dormir tres dias seguidos,2026-09-19
+ZONA02-PERSONA-20260920-R221-1U,zona_02,0.582,Horacio Arce,16,pescador/a,Monte Caseros,tranquilo,Nada que reclamar hoy,2026-09-20
+ZONA01-PERSONA-20260923-R222-E2,zona_01,0.126,Mirta Ocampo,25,agricultor/a,Laborde,inquieto,No me puedo quedar quieto,2026-09-23
+ZONA11-PERSONA-20260929-R223-2K,zona_11,0.514,Tomas Peralta,75,herrero/a,Cafayate,tranquilo,Me senti a mirar el agua un rato,2026-09-29
+ZONA12-PERSONA-20261005-R224-20,zona_12,0.815,Renata Solis,70,jubilado/a,Gualeguay,contento,Me gusta como quedo el patio,2026-10-05
+ZONA12-PERSONA-20261007-R225-FR,zona_12,0.552,Mercedes Nunes,72,agricultor/a,Esquel,tranquilo,"Sin apuro, paso a paso",2026-10-07
+ZONA08-PERSONA-20260923-R226-HB,zona_08,0.197,Camila Benitez,77,herrero/a,Cafayate,cansado,Necesito dormir tres dias seguidos,2026-09-23
+ZONA10-PERSONA-20261012-R227-9D,zona_10,0.727,Mateo Nunes,49,apicultor/a,Laborde,esperanzado,Voy a volver a intentarlo,2026-10-12
+ZONA08-PERSONA-20260930-R228-JF,zona_08,0.13,Catalina Villalba,72,herrero/a,Chivilcoy,triste,Me hace falta alguien,2026-09-30
+ZONA02-PERSONA-20261001-R229-O7,zona_02,0.092,Lautaro Sosa,19,cocinero/a,Dina Huapi,triste,"Ya va a pasar, siempre pasa",2026-10-01
+ZONA03-PERSONA-20260921-R230-LK,zona_03,0.665,Elias Ocampo,20,almacenero/a,Pergamino,esperanzado,Creo que esta vez si se puede,2026-09-21
+ZONA08-PERSONA-20261002-R231-GB,zona_08,0.28,Renata Villalba,77,modista,Alta Gracia,cansado,El cuerpo me esta pidiendo pausa,2026-10-02
+ZONA01-PERSONA-20260922-R232-QU,zona_01,0.219,Gaspar Solis,53,fotografo/a,Rafaela,cansado,Necesito dormir tres dias seguidos,2026-09-22
+ZONA05-PERSONA-20260920-R233-3F,zona_05,0.167,Facundo Luna,19,tractorista,Chascomus,inquieto,Estoy esperando una respuesta,2026-09-20
+ZONA12-PERSONA-20260918-R234-3M,zona_12,0.952,Lucia Moyano,37,modista,Tilcara,radiante,La cosecha salio mejor de lo que esperaba,2026-09-18
+ZONA11-PERSONA-20261010-R235-7Y,zona_11,0.441,Renata Cardozo,67,contador/a,Las Flores,pensativo,Hay cosas que todavia no entiendo,2026-10-10
+ZONA02-PERSONA-20261013-R236-9R,zona_02,0.056,Bautista Villalba,69,modista,Loberia,triste,"Ya va a pasar, siempre pasa",2026-10-13
+ZONA09-PERSONA-20261015-R237-L4,zona_09,0.307,Ruben Zabala,34,tractorista,Alta Gracia,nostalgico,Antes el rio llegaba mas arriba,2026-10-15
+ZONA08-PERSONA-20261005-R238-CK,zona_08,0.929,Tomas Aguirre,51,radialista,Cosquin,radiante,Que no se acabe este dia,2026-10-05
+ZONA06-PERSONA-20261001-R239-H9,zona_06,0.535,Dolores Moyano,46,fotografo/a,Alta Gracia,tranquilo,"Sin apuro, paso a paso",2026-10-01
+ZONA06-PERSONA-20261004-R240-G5,zona_06,0.41,Delfina Cardozo,79,radialista,Trenque Lauquen,pensativo,No se si quedarme o irme,2026-10-04
+ZONA11-PERSONA-20261002-R241-54,zona_11,1,Horacio Villalba,57,guia de campo,Chivilcoy,radiante,Que no se acabe este dia,2026-10-02
+ZONA01-PERSONA-20260920-R242-N1,zona_01,0.922,Sofia Nunes,36,veterinario/a,Obera,radiante,Que no se acabe este dia,2026-09-20
+ZONA11-PERSONA-20261014-R243-YB,zona_11,0.936,Catalina Bustos,59,panadero/a,Gualeguay,radiante,Que no se acabe este dia,2026-10-14
+ZONA10-PERSONA-20261013-R244-ZD,zona_10,0.408,Isidora Vera,55,enfermero/a,Chascomus,pensativo,No se si quedarme o irme,2026-10-13
+ZONA04-PERSONA-20260923-R245-U3,zona_04,0.355,Juana Mansilla,82,tecnico/a en riego,Trenque Lauquen,nostalgico,Guardo una foto de cuando eramos todos,2026-09-23
+ZONA10-PERSONA-20260924-R246-16,zona_10,0.686,Renata Ferreyra,75,carpintero/a,Loberia,esperanzado,Voy a volver a intentarlo,2026-09-24
+ZONA01-PERSONA-20260916-R247-J8,zona_01,0.042,Catalina Ocampo,32,arriero/a,Dina Huapi,triste,"Ya va a pasar, siempre pasa",2026-09-16
+ZONA07-PERSONA-20260922-R248-5T,zona_07,0.105,Lucia Luna,82,camionero/a,Obera,triste,"Ya va a pasar, siempre pasa",2026-09-22
+ZONA08-PERSONA-20260917-R249-3Q,zona_08,0.942,Mirta Nunes,67,arriero/a,Coronel Suarez,radiante,Vengo cantando desde temprano,2026-09-17
+ZONA11-PERSONA-20261001-R250-01,zona_11,0.214,Gaspar Gimenez,28,modista,Chepes,cansado,Fue una semana larga,2026-10-01
+ZONA10-PERSONA-20261015-R251-VM,zona_10,0.18,Ramiro Solis,73,mecanico/a,Las Flores,inquieto,Algo me tiene con el pecho apretado,2026-10-15
+ZONA11-PERSONA-20261004-R252-BD,zona_11,0.797,Mercedes Ocampo,34,constructor/a,Salsipuedes,contento,Comi rico y dormi suficiente,2026-10-04
+ZONA07-PERSONA-20261004-R253-NL,zona_07,0.851,Ramiro Ferreyra,20,bibliotecario/a,Villa Elisa,contento,Me gusta como quedo el patio,2026-10-04
+ZONA10-PERSONA-20260919-R254-6H,zona_10,0.069,Catalina Rolon,77,fotografo/a,Villa Elisa,triste,Me hace falta alguien,2026-09-19
+ZONA11-PERSONA-20261006-R255-4H,zona_11,0.557,Ana Rolon,41,carpintero/a,Trenque Lauquen,tranquilo,"Sin apuro, paso a paso",2026-10-06
+ZONA06-PERSONA-20260919-R256-RA,zona_06,0.093,Lucia Luna,81,radialista,Coronel Suarez,triste,"Ya va a pasar, siempre pasa",2026-09-19
+ZONA04-PERSONA-20261014-R257-P9,zona_04,0.561,Benicio Gimenez,52,enfermero/a,Alta Gracia,tranquilo,Prefiero el silencio de la manana,2026-10-14
+ZONA04-PERSONA-20261013-R258-3Q,zona_04,0.335,Celeste Villalba,48,viverista,Loberia,nostalgico,Me gustaria volver aunque sea un dia,2026-10-13
+ZONA07-PERSONA-20261001-R259-GH,zona_07,0.206,Ramiro Escobar,29,veterinario/a,Tandil,cansado,Necesito dormir tres dias seguidos,2026-10-01
+ZONA03-PERSONA-20260920-R260-XD,zona_03,0.171,Delfina Carrizo,50,jubilado/a,Chivilcoy,inquieto,Estoy esperando una respuesta,2026-09-20
+ZONA06-PERSONA-20261005-R261-CT,zona_06,0.409,Amalia Ocampo,26,mecanico/a,Rafaela,pensativo,Hay cosas que todavia no entiendo,2026-10-05
+ZONA03-PERSONA-20260927-R262-47,zona_03,0.265,Gaspar Arce,17,bibliotecario/a,Chepes,cansado,Necesito dormir tres dias seguidos,2026-09-27
+ZONA10-PERSONA-20260924-R263-8J,zona_10,0.47,Lautaro Luna,81,contador/a,Las Flores,pensativo,Le estoy dando vueltas a una decision,2026-09-24
+ZONA09-PERSONA-20261004-R264-NC,zona_09,0.483,Dolores Mansilla,29,modista,Alta Gracia,pensativo,Me acorde de algo que tenia guardado,2026-10-04
+ZONA07-PERSONA-20261004-R265-Y5,zona_07,0.736,Horacio Pereyra,78,almacenero/a,Cosquin,esperanzado,Creo que esta vez si se puede,2026-10-04
+ZONA01-PERSONA-20261009-R266-43,zona_01,0.991,Ana Zabala,55,guia de campo,Villa Elisa,radiante,La cosecha salio mejor de lo que esperaba,2026-10-09
+ZONA10-PERSONA-20261008-R267-8V,zona_10,0.045,Isidora Barrios,33,viverista,Rafaela,triste,"Ya va a pasar, siempre pasa",2026-10-08
+ZONA09-PERSONA-20261002-R268-97,zona_09,0.107,Delfina Ibarra,74,agricultor/a,Tandil,triste,Hoy preferiria no hablar mucho,2026-10-02
+ZONA11-PERSONA-20260925-R269-8P,zona_11,0.122,Joaquin Bustos,76,mecanico/a,San Rafael,inquieto,Demasiadas cosas al mismo tiempo,2026-09-25
+ZONA03-PERSONA-20260930-R270-3C,zona_03,0.863,Elias Moyano,37,herrero/a,Esquel,contento,Comi rico y dormi suficiente,2026-09-30
+ZONA04-PERSONA-20261006-R271-KV,zona_04,0.363,Joaquin Gimenez,54,carpintero/a,Esquel,nostalgico,Me gustaria volver aunque sea un dia,2026-10-06
+ZONA06-PERSONA-20261008-R272-9Y,zona_06,0.138,Elias Mansilla,81,bibliotecario/a,Trenque Lauquen,inquieto,Algo me tiene con el pecho apretado,2026-10-08
+ZONA04-PERSONA-20261005-R273-L0,zona_04,0.439,Simon Quiroga,66,tractorista,Rafaela,pensativo,Me acorde de algo que tenia guardado,2026-10-05
+ZONA06-PERSONA-20260923-R274-4I,zona_06,0.088,Joaquin Rolon,54,agricultor/a,Tilcara,triste,"Ya va a pasar, siempre pasa",2026-09-23
+ZONA02-PERSONA-20261007-R275-ZQ,zona_02,0.776,Dolores Maidana,63,bibliotecario/a,Monte Caseros,contento,Comi rico y dormi suficiente,2026-10-07
+ZONA05-PERSONA-20260927-R276-BQ,zona_05,0.298,Mirta Carrizo,50,modista,Gualeguay,nostalgico,Me acuerdo de la casa de mi abuela,2026-09-27
+ZONA04-PERSONA-20260928-R277-8E,zona_04,0.248,Olivia Cabrera,61,constructor/a,Cafayate,cansado,Necesito dormir tres dias seguidos,2026-09-28
+ZONA11-PERSONA-20260921-R278-AM,zona_11,0.582,Lucia Mansilla,55,docente rural,Trenque Lauquen,tranquilo,Me senti a mirar el agua un rato,2026-09-21
+ZONA10-PERSONA-20260922-R279-HN,zona_10,0.71,Catalina Arce,27,viverista,Monte Caseros,esperanzado,Algo bueno se esta armando,2026-09-22
+ZONA04-PERSONA-20261004-R280-UQ,zona_04,0.04,Emilio Carrizo,41,veterinario/a,Gualeguay,triste,Hoy preferiria no hablar mucho,2026-10-04
+ZONA01-PERSONA-20260924-R281-25,zona_01,0.854,Lucia Cardozo,22,almacenero/a,Monte Caseros,contento,Me gusta como quedo el patio,2026-09-24
+ZONA08-PERSONA-20260929-R282-H4,zona_08,0.31,Juana Quiroga,57,cocinero/a,Dina Huapi,nostalgico,Me gustaria volver aunque sea un dia,2026-09-29
+ZONA08-PERSONA-20260925-R283-2E,zona_08,0.459,Nicolas Solis,34,camionero/a,Laborde,pensativo,Me acorde de algo que tenia guardado,2026-09-25
+ZONA08-PERSONA-20260926-R284-CC,zona_08,0.21,Mateo Arce,38,cocinero/a,Loberia,cansado,Fue una semana larga,2026-09-26
+ZONA05-PERSONA-20261005-R285-3A,zona_05,0.723,Camila Peralta,56,arriero/a,Cosquin,esperanzado,Voy a volver a intentarlo,2026-10-05
+ZONA06-PERSONA-20260930-R286-LF,zona_06,0.388,Juana Bustos,22,apicultor/a,Salsipuedes,nostalgico,Me gustaria volver aunque sea un dia,2026-09-30
+ZONA07-PERSONA-20260923-R287-LE,zona_07,0.921,Agustin Peralta,83,camionero/a,Tilcara,radiante,Vengo cantando desde temprano,2026-09-23
+ZONA08-PERSONA-20261011-R288-SX,zona_08,0.86,Simon Carrizo,39,modista,Loberia,contento,Comi rico y dormi suficiente,2026-10-11
+ZONA09-PERSONA-20260919-R289-EB,zona_09,0.473,Mirta Moyano,36,enfermero/a,Alta Gracia,pensativo,Me acorde de algo que tenia guardado,2026-09-19
+ZONA06-PERSONA-20261004-R290-T1,zona_06,0.262,Tomas Sosa,39,modista,Esquel,cansado,Fue una semana larga,2026-10-04
+ZONA01-PERSONA-20260921-R291-AH,zona_01,0.407,Emilio Sosa,16,carpintero/a,Chascomus,pensativo,Me acorde de algo que tenia guardado,2026-09-21
+ZONA12-PERSONA-20260922-R292-WV,zona_12,0.535,Martina Cabrera,81,almacenero/a,Rafaela,tranquilo,Me senti a mirar el agua un rato,2026-09-22
+ZONA02-PERSONA-20260924-R293-8E,zona_02,0.303,Simon Nunes,69,agronomo/a,Chascomus,nostalgico,Me gustaria volver aunque sea un dia,2026-09-24
+ZONA09-PERSONA-20260925-R294-DF,zona_09,0.801,Antonia Ibarra,70,tecnico/a en riego,Cosquin,contento,Comi rico y dormi suficiente,2026-09-25
+ZONA07-PERSONA-20260924-R295-PG,zona_07,0.856,Sofia Arce,78,estudiante,San Rafael,contento,Hoy el trabajo rindio,2026-09-24

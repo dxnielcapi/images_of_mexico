@@ -1,0 +1,109 @@
+/** Carga y rasterizacion del dibujo de lineas (PNG, JPG o SVG). */
+
+export interface LoadedDrawing {
+  name: string;
+  /** Canvas de trabajo (lado mayor <= maxSide, proporcion conservada). */
+  canvas: HTMLCanvasElement;
+  imageData: ImageData;
+  width: number;
+  height: number;
+  /** Fuente original, para re-rasterizar al exportar en alta resolucion. */
+  source: HTMLImageElement;
+  /** Texto del SVG si el archivo lo era, para ofrecer usar sus paths. */
+  svgText: string | null;
+}
+
+export const MAX_SIDE = 2000;
+
+export async function loadDrawingFile(file: File, maxSide = MAX_SIDE): Promise<LoadedDrawing> {
+  const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name);
+  const text = isSvg ? await file.text() : null;
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImage(url);
+    return rasterize(img, file.name, text, maxSide);
+  } finally {
+    // La imagen ya esta decodificada; el blob puede liberarse.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+}
+
+export async function loadDrawingUrl(url: string, maxSide = MAX_SIDE): Promise<LoadedDrawing> {
+  const isSvg = /\.svg(\?|$)/i.test(url);
+  const text = isSvg ? await fetch(url).then((r) => r.text()) : null;
+  const img = await loadImage(url);
+  const name = url.split('/').pop() || 'dibujo';
+  return rasterize(img, name, text, maxSide);
+}
+
+export function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`No se pudo cargar la imagen: ${src}`));
+    img.src = src;
+  });
+}
+
+function rasterize(
+  img: HTMLImageElement,
+  name: string,
+  svgText: string | null,
+  maxSide: number
+): LoadedDrawing {
+  const natW = img.naturalWidth || 1000;
+  const natH = img.naturalHeight || 1000;
+  const scale = Math.min(1, maxSide / Math.max(natW, natH));
+  const width = Math.max(1, Math.round(natW * scale));
+  const height = Math.max(1, Math.round(natH * scale));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  ctx.drawImage(img, 0, 0, width, height);
+
+  return {
+    name,
+    canvas,
+    imageData: ctx.getImageData(0, 0, width, height),
+    width,
+    height,
+    source: img,
+    svgText,
+  };
+}
+
+/** Capa de lineas: el dibujo sobre fondo blanco, listo para componer en multiply. */
+export function linesLayer(drawing: LoadedDrawing, width: number, height: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = width;
+  c.height = height;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(drawing.source, 0, 0, width, height);
+  return c;
+}
+
+/** Extrae los `d` de los <path> de un SVG, con su transformacion a pixeles. */
+export interface SvgPathInfo { d: string; index: number }
+
+export function extractSvgPaths(svgText: string): { paths: SvgPathInfo[]; viewBox: [number, number, number, number] | null } {
+  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+  const svg = doc.querySelector('svg');
+  const nodes = Array.from(doc.querySelectorAll('path'));
+  const paths: SvgPathInfo[] = nodes
+    .map((n, index) => ({ d: n.getAttribute('d') || '', index }))
+    .filter((p) => p.d.length > 0);
+  let viewBox: [number, number, number, number] | null = null;
+  const vb = svg?.getAttribute('viewBox');
+  if (vb) {
+    const parts = vb.trim().split(/[\s,]+/).map(Number);
+    if (parts.length === 4 && parts.every((n) => isFinite(n))) {
+      viewBox = [parts[0], parts[1], parts[2], parts[3]];
+    }
+  }
+  return { paths, viewBox };
+}

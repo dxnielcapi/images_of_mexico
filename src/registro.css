@@ -1,0 +1,287 @@
+/**
+ * Pantalla de registro: la ilustracion, y dos iconos al pie que abren su
+ * recuadro.
+ *
+ * Lo importa `style.css`, no `registro.ts`: asi entra en la misma compilacion
+ * de Tailwind (puede usar `@apply` y los tokens del tema) y queda en la capa
+ * `components`, antes de las utilidades. Lo estructural de esta pantalla vive
+ * como utilidades en `registro.ts` y `ui/registroForm.ts`; aca estan los
+ * componentes con estado y los que tocan pseudo-elementos del navegador.
+ */
+
+@layer components {
+  .kiosk {
+    position: relative;
+    /* 100dvh evita que la barra del navegador movil tape la fila de iconos. */
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+
+    --tool: 44px;          /* lado del boton redondo */
+    --edge: 18px;          /* margen al borde de la pantalla */
+    --safe: env(safe-area-inset-bottom, 0px);
+    /* Alto que la fila de iconos le roba al mural. */
+    --bar: calc(var(--tool) + var(--edge) + var(--safe));
+
+    /* Carmin sobre papel crema. El acento se redefine en este scope y no en
+       el tema para no tenir tambien la app de autor (`index.html`): todas las
+       utilidades `bg-accent` / `text-accent` / `border-accent` de aca adentro
+       salen carmin sin tocar una sola clase. */
+    --color-accent: #9e2b2b;
+  }
+
+  /* ---------------------------------------------------- iconos (al pie) */
+
+  .tool {
+    width: var(--tool);
+    height: var(--tool);
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--color-line);
+    border-radius: 50%;
+    background: var(--color-panel);
+    color: var(--color-ink);
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgb(60 48 30 / 0.16);
+    transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.12s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @media (hover: hover) {
+    .tool:hover { background: var(--color-accent-soft); transform: translateY(-1px); }
+  }
+  .tool:active { transform: translateY(1px); }
+  .tool.active {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
+  }
+  .tool svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* ------------------------------------------------------- recuadros */
+
+  /* Lleva nombre porque `registroForm.ts` lo busca con `closest('.panel')`
+     para scrollearlo al cambiar de paso, y porque viste de nuevo al buscador
+     y a la lista de resultados, que son compartidos con la app de autor. */
+  .panel {
+    width: 330px;
+    max-width: calc(100vw - 36px);
+    overflow-y: auto;
+    padding: 16px 18px 18px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xl);
+    background: var(--color-panel);
+    box-shadow: 0 12px 34px rgb(60 48 30 / 0.22);
+  }
+
+  .panel h2 {
+    margin: 0 0 5px;
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-mid);
+  }
+
+  /* El recuadro ya esta dentro del panel: sin marco ni separador propios. */
+  .panel .search {
+    margin: 0;
+    border-top: none;
+    padding-top: 0;
+  }
+  .panel .results { max-height: 40vh; }
+
+  /* El buscador comparte el tamano de letra: tampoco debe disparar el zoom. */
+  .panel .txt { font-size: var(--text-xl); padding: 7px 9px; }
+  .panel .txt:focus { border-color: var(--color-accent); outline: none; }
+  .panel .ritem:hover { background: var(--color-accent-soft); outline-color: var(--color-accent); }
+
+  /* ================================================ alta en tres pasos
+
+     Un formulario largo no entra en un telefono sin scrollear, y pedir diez
+     datos de golpe espanta. Se parte en tres preguntas, y la del medio se
+     contesta tocando una mancha: el animo se elige por color, no por lista.
+     ------------------------------------------------------------------ */
+
+  /* Una de las tres gotas que se van llenando. */
+  .punto {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-line);
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  }
+  .punto.done { background: #d9ada6; border-color: #d9ada6; }
+  .punto.on { background: var(--color-accent); border-color: var(--color-accent); transform: scale(1.25); }
+
+  /* El paso entra desde abajo, como pasar la hoja. */
+  .paso:not(.hidden) { animation: entra 0.22s ease-out both; }
+
+  /* ------------------------------------------------------------ campos */
+
+  /* Renglones, no cajitas: se parece mas a llenar algo a mano. */
+  .campo-input {
+    width: 100%;
+    font: inherit;
+    /* Menos de 16px hace que iOS haga zoom al enfocar y descoloque el panel. */
+    font-size: var(--text-xl);
+    color: var(--color-ink);
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--color-accent-line);
+    border-radius: 0;
+    padding: 5px 2px 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: border-color 0.15s;
+  }
+  .campo-input:focus { outline: none; border-bottom-color: var(--color-accent); }
+
+  /* Sin flechitas en la edad: ocupan lugar y en el telefono no se usan. */
+  .campo-input[type="number"] { -moz-appearance: textfield; }
+  .campo-input[type="number"]::-webkit-outer-spin-button,
+  .campo-input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  .campo-area {
+    border: 1.5px solid var(--color-accent-line);
+    border-radius: 9px;
+    background: var(--color-paper);
+    padding: 9px 11px;
+    line-height: 1.5;
+    resize: none;
+  }
+  .campo-area:focus { border-color: var(--color-accent); }
+
+  /* ------------------------------------------------- animo = color */
+
+  .animo {
+    display: grid;
+    justify-items: center;
+    gap: 1px;
+    padding: 7px 2px 6px;
+    border: none;
+    border-radius: 11px;
+    background: none;
+    font: inherit;
+    font-size: 11.5px;
+    color: var(--color-muted);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  /* Las no elegidas quedan aguadas; la elegida sube el pigmento. */
+  .animo .blob { display: block; opacity: 0.5; transition: opacity 0.18s, transform 0.18s; }
+  @media (hover: hover) {
+    .animo:hover .blob { opacity: 0.8; }
+    .animo:hover { color: var(--color-ink); }
+  }
+  .animo.sel { background: var(--color-accent-soft); color: var(--color-ink); font-weight: var(--font-weight-mid); }
+  .animo.sel .blob { opacity: 1; transform: scale(1.08); }
+
+  /* --------------------------------------------- avisos y botonera */
+
+  /* `.bad` se conmuta con `classList`, por eso el aviso lleva clase. */
+  .aviso { min-height: 16px; margin: 12px 0 0; font-size: var(--text-sm); color: var(--color-muted); }
+  .aviso.bad { color: var(--color-danger); font-weight: 600; }
+
+  /* Los dos botones se reparten el ancho, salvo el fantasma de "Volver",
+     que se encoge a su texto. Van por descendencia porque `.btn` es
+     compartido con la app de autor. */
+  .alta-nav { display: flex; gap: 8px; margin-top: 6px; }
+  .alta-nav .btn {
+    flex: 1 1 auto;
+    padding: 11px 14px;
+    border-radius: 9px;
+    font-size: var(--text-md);
+  }
+  .alta-nav .ghost {
+    flex: 0 0 auto;
+    background: none;
+    border-color: transparent;
+    color: var(--color-muted);
+  }
+  .alta-nav .ghost:hover { background: var(--color-accent-soft); border-color: transparent; }
+
+  .alta-acciones { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+  .alta-acciones .btn { padding: 11px; border-radius: 9px; font-size: var(--text-md); }
+
+  /* La muestra grande de la tarjeta final: `blob.ts` le asigna `className`
+     directo, asi que el centrado tiene que estar en CSS. */
+  .blob-grande { display: block; margin: 0 auto 2px; }
+
+  /* ------------------------------------------ respaldo, plegado aparte */
+
+  .mas {
+    margin-top: 20px;
+    border-top: 1px solid var(--color-line);
+  }
+  .mas > summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 9px 0 3px;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    user-select: none;
+  }
+  .mas > summary::-webkit-details-marker { display: none; }
+  .mas > summary::before { content: "▸ "; }
+  .mas[open] > summary::before { content: "▾ "; }
+
+  /* ------------------------------------------ copia local de registros */
+
+  /* Siempre se arma dentro de `.mas`, asi que el separador ya lo pone el
+     <details>: al bloque solo le falta un poco de aire y apretar lo que
+     lleva dentro. Lleva nombre por esas dos reglas descendientes. */
+  .backup { padding-top: 4px; }
+  .backup .hint { margin: 0 0 8px; }
+  .backup .row { margin-bottom: 6px; }
+
+  /* ----------------------------------------------------------- telefono */
+
+  @media (width < 560px) {
+    .kiosk { --tool: 52px; --edge: 14px; }
+
+    .tool svg { width: 24px; height: 24px; }
+
+    /* El recuadro sube como hoja desde la barra, sin tapar todo el mural. */
+    .panel {
+      width: 100%;
+      max-width: none;
+      max-height: 74dvh;
+      border-radius: 14px;
+      padding: 14px 15px 16px;
+      /* La sombra cae hacia arriba: el recuadro flota sobre la barra. */
+      box-shadow: 0 -8px 28px rgb(60 48 30 / 0.22);
+      -webkit-overflow-scrolling: touch;
+    }
+    .panel .results { max-height: 34dvh; }
+  }
+
+  /* Apaisado en telefono: queda poco alto, el recuadro no puede ocupar 74dvh. */
+  @media (max-height: 460px) {
+    .panel { max-height: calc(100dvh - var(--bar) - 24px); }
+    .panel .results { max-height: 26dvh; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .paso:not(.hidden) { animation: none; }
+    .punto, .animo .blob { transition: none; }
+  }
+}
+
+/* Los keyframes no entran en ninguna capa: no participan de la cascada. */
+@keyframes entra {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}

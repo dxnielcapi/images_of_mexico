@@ -1,0 +1,23 @@
+{
+  "drawing": "flor.png",
+  "width": 740,
+  "height": 740,
+  "threshold": 150,
+  "dilate": 1,
+  "minArea": 180,
+  "margin": 3,
+  "zones": [
+    {"name": "zona_01", "seedPoints": [[470, 364]]},
+    {"name": "zona_02", "seedPoints": [[373, 267]]},
+    {"name": "zona_03", "seedPoints": [[257, 349]]},
+    {"name": "zona_04", "seedPoints": [[397, 481]]},
+    {"name": "zona_05", "seedPoints": [[321, 478]]},
+    {"name": "zona_06", "seedPoints": [[268, 424]]},
+    {"name": "zona_07", "seedPoints": [[458, 437]]},
+    {"name": "zona_08", "seedPoints": [[300, 286]]},
+    {"name": "zona_09", "seedPoints": [[442, 296]]},
+    {"name": "zona_10", "seedPoints": [[261, 544]]},
+    {"name": "zona_11", "seedPoints": [[182, 302]]},
+    {"name": "zona_12", "seedPoints": [[448, 556]]}
+  ]
+}
