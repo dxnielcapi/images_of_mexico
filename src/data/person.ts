@@ -6,9 +6,9 @@
  * Todo lo demas son campos descriptivos que se muestran en el tooltip y en la
  * busqueda, en el orden declarado aqui.
  */
-import { mulberry32, hashString, type Rng } from '../sampling/prng';
-import { generateId, parseId, todayCompact } from '../ids/idCodec';
-import type { DataRecord } from '../types';
+import { mulberry32, hashString, type Rng } from '@core/sampling/prng';
+import { generateId, parseId, todayCompact } from '@core/ids/idCodec';
+import type { DataRecord } from '@core/types';
 
 export const PERSON_FIELDS = [
   { key: 'nombre', label: 'Nombre' },

@@ -1,4 +1,5 @@
 import { mulberry32 } from '../sampling/prng';
+import { createSurfaceCtx } from '../platform/surface';
 
 export const PAPER_COLOR = '#FAF6EE';
 
@@ -6,9 +7,7 @@ let grainTile: HTMLCanvasElement | null = null;
 
 /** Baldosa de grano reutilizable: ruido monocromo muy sutil. */
 function makeGrainTile(size = 256): HTMLCanvasElement {
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const ctx = c.getContext('2d')!;
+  const { canvas: c, ctx } = createSurfaceCtx(size, size);
   const img = ctx.createImageData(size, size);
   const rng = mulberry32(0x9e3779b9);
   for (let i = 0; i < size * size; i++) {

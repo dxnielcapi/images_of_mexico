@@ -1,27 +1,28 @@
-import './style.css';
-import { loadDrawingFile, loadDrawingUrl, linesLayer, extractSvgPaths, type LoadedDrawing } from './io/loadDrawing';
-import { parseCsvFile, parseCsvText, pointsToCsv, type CsvResult } from './io/loadCsv';
-import { buildConfig, parseConfig, downloadText, downloadCanvas } from './io/zonesConfig';
-import { type LabelResult } from './zones/connectedComponents';
-import { buildZone, pastelFor, type Zone } from './zones/zoneMask';
+import { loadDrawingFile, loadDrawingUrl, linesLayer, extractSvgPaths, type LoadedDrawing } from '@io/readers/drawing';
+import { parseCsvFile, parseCsvText, type CsvResult } from '@io/readers/csv';
+import { pointsToCsv } from '@io/writers/csv';
+import { buildConfig, parseConfig } from '@io/zonesConfig';
+import { downloadText, downloadCanvas } from '@io/writers/download';
+import { type LabelResult } from '@core/zones/connectedComponents';
+import { buildZone, pastelFor, type Zone } from '@core/zones/zoneMask';
 import {
   analyzeDrawing, hueFor, placeRecords, zoneFromSeeds, zonesFromConfig, type Analysis,
-} from './scene';
-import { SpatialGrid } from './sampling/grid';
-import { ColorRamp, PALETTES } from './render/palette';
-import { DEFAULT_WATERCOLOR } from './render/watercolor';
-import { renderScene } from './render/compose';
-import { drawLegend } from './render/legend';
-import { el, section, slider, button, row, checkbox, selectBox, fileButton, numberInput } from './ui/controls';
-import { renderZoneList } from './ui/zonePanel';
-import { Tooltip } from './ui/tooltip';
-import { emptyFilters, applyFilters, renderFilters, type FilterState } from './ui/filters';
-import { personForm, personSearch, type PersonForm, type PersonSearch } from './ui/personPanel';
+} from '@core/scene';
+import { SpatialGrid } from '@core/sampling/grid';
+import { ColorRamp, PALETTES } from '@core/render/palette';
+import { DEFAULT_WATERCOLOR } from '@core/render/watercolor';
+import { renderScene } from '@core/render/compose';
+import { drawLegend } from '@core/render/legend';
+import { el, section, slider, button, row, checkbox, selectBox, fileButton, numberInput } from '@ui/controls';
+import { renderZoneList } from '@ui/zonePanel';
+import { Tooltip } from '@ui/tooltip';
+import { emptyFilters, applyFilters, renderFilters, type FilterState } from '@ui/filters';
+import { personForm, personSearch, type PersonForm, type PersonSearch } from '@ui/personPanel';
 import {
   NAME_KEY, PERSON_FIELD_KEYS, PersonIds, personToRecord, randomPerson, searchByName, type Person,
-} from './data/person';
-import { mulberry32 } from './sampling/prng';
-import type { DataRecord, PlacedPoint, PlacementMode, RenderOptions, Warning, ZonesConfig } from './types';
+} from '@data/person';
+import { mulberry32 } from '@core/sampling/prng';
+import type { DataRecord, PlacedPoint, PlacementMode, RenderOptions, Warning, ZonesConfig } from '@core/types';
 
 // ---------------------------------------------------------------- estado
 
@@ -820,7 +821,7 @@ function buildSidebar(): void {
   });
   const kiosk = el('a', {
     class: 'inline-block mt-2 mb-0.5 text-xs text-accent no-underline hover:underline',
-    href: `${import.meta.env.BASE_URL}registro.html`,
+    href: import.meta.env.BASE_URL,
     target: '_blank',
     rel: 'noopener',
     text: 'Abrir pantalla de registro ↗',

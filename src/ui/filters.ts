@@ -1,4 +1,4 @@
-import type { DataRecord } from '../types';
+import type { DataRecord } from '@core/types';
 import { el, checkbox } from './controls';
 
 export interface FilterState {

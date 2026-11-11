@@ -1,5 +1,6 @@
 import type { LabelResult } from './connectedComponents';
 import { dilate } from './morphology';
+import { createSurfaceCtx } from '../platform/surface';
 
 /** Una zona nombrada: una o varias regiones conexas agrupadas. */
 export interface Zone {
@@ -98,9 +99,7 @@ export function zoneClipCanvas(zone: Zone, bleed: number, scale: number): {
   }
   const grown = b > 0 ? dilate(padded, w, h, b) : padded;
 
-  const base = document.createElement('canvas');
-  base.width = w; base.height = h;
-  const bctx = base.getContext('2d')!;
+  const { canvas: base, ctx: bctx } = createSurfaceCtx(w, h);
   const img = bctx.createImageData(w, h);
   for (let i = 0; i < grown.length; i++) {
     if (grown[i]) {
@@ -113,10 +112,10 @@ export function zoneClipCanvas(zone: Zone, bleed: number, scale: number): {
   if (scale === 1) {
     return { canvas: base, offsetX: zone.minX - b, offsetY: zone.minY - b };
   }
-  const up = document.createElement('canvas');
-  up.width = Math.round(w * scale);
-  up.height = Math.round(h * scale);
-  const uctx = up.getContext('2d')!;
+  const { canvas: up, ctx: uctx } = createSurfaceCtx(
+    Math.round(w * scale),
+    Math.round(h * scale)
+  );
   uctx.imageSmoothingEnabled = true;
   uctx.drawImage(base, 0, 0, up.width, up.height);
   return { canvas: up, offsetX: (zone.minX - b) * scale, offsetY: (zone.minY - b) * scale };

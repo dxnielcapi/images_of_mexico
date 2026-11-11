@@ -1,7 +1,7 @@
-import type { PlacedPoint } from '../types';
-import { parseId, formatIdDate } from '../ids/idCodec';
-import { PERSON_FIELD_KEYS, fieldLabel, isPersonField, NAME_KEY } from '../data/person';
-import { hashString, mulberry32 } from '../sampling/prng';
+import type { PlacedPoint } from '@core/types';
+import { parseId, formatIdDate } from '@core/ids/idCodec';
+import { PERSON_FIELD_KEYS, fieldLabel, isPersonField, NAME_KEY } from '@data/person';
+import { hashString, mulberry32 } from '@core/sampling/prng';
 import { el } from './controls';
 
 const MARKS = ['mark mark-azul', 'mark mark-amarillo'] as const;

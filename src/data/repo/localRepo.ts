@@ -6,8 +6,8 @@
  * localStorage y, para que no dependan de que el navegador conserve sus datos,
  * se pueden bajar como CSV y volver a cargar desde ahi.
  */
-import { parseCsvText } from './loadCsv';
-import type { DataRecord } from '../types';
+import { parseCsvText } from '@io/readers/csv';
+import type { DataRecord } from '@core/types';
 
 const KEY = 'mural.personas.v1';
 

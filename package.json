@@ -1,22 +1,24 @@
 {
-  "name": "heatmap-acuarela",
+  "name": "mural-acuarela",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "check": "tsc --noEmit"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
   },
   "dependencies": {
+    "astro": "^7.4.10",
     "papaparse": "^5.4.1"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.12",
     "@tailwindcss/vite": "^4.3.5",
     "@types/papaparse": "^5.3.14",
     "tailwindcss": "^4.3.5",
     "typescript": "^5.6.3",
-    "vite": "^5.4.10"
+    "vite": "^8.3.8"
   }
 }

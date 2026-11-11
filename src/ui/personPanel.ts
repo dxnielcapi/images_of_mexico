@@ -2,12 +2,12 @@
  * Recuadro de registro ("una persona nueva") y buscador por nombre.
  * El panel no toca el estado global: todo pasa por los callbacks de `hooks`.
  */
-import type { DataRecord } from '../types';
+import type { DataRecord } from '@core/types';
 import {
   MOOD_NAMES, NAME_KEY, PERSON_FIELDS, emptyPerson, randomPerson, todayIso,
   type Person, type PersonFieldKey,
-} from '../data/person';
-import { mulberry32 } from '../sampling/prng';
+} from '@data/person';
+import { mulberry32 } from '@core/sampling/prng';
 import { el, button, row } from './controls';
 
 export interface PersonPanelHooks {

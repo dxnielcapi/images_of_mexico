@@ -4,6 +4,7 @@ import { ColorRamp } from './palette';
 import { drawWatercolorBlob } from './watercolor';
 import { zoneClipCanvas } from '../zones/zoneMask';
 import { mulberry32, seedFor } from '../sampling/prng';
+import { createSurfaceCtx } from '../platform/surface';
 
 export interface SceneInput {
   zones: ZoneMap;
@@ -47,10 +48,10 @@ export function renderScene(
     if (!zone || zonePoints.length === 0) continue;
 
     const clip = zoneClipCanvas(zone, options.bleed, scale);
-    const layer = document.createElement('canvas');
-    layer.width = clip.canvas.width;
-    layer.height = clip.canvas.height;
-    const lctx = layer.getContext('2d')!;
+    const { canvas: layer, ctx: lctx } = createSurfaceCtx(
+      clip.canvas.width,
+      clip.canvas.height
+    );
     lctx.globalCompositeOperation = 'multiply';
 
     for (const p of zonePoints) {

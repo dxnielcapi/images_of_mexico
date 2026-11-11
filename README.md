@@ -5,18 +5,22 @@ detecta sus zonas cerradas, cargas un CSV y cada registro —una persona— se p
 como una mancha de acuarela dentro de su zona. Al superponerse en `multiply`, las manchas
 se oscurecen como pigmento real y aparece el mapa de calor.
 
-Son dos pantallas: la app completa (`/`), con todos los parámetros, y la
-pantalla de registro (`/registro.html`), que muestra solo la ilustración y el
-recuadro para sumar personas.
+Son dos pantallas con ciclos de vida distintos. **El mural** (`/`) es la
+página pública: la ilustración y el recuadro para sumar personas. **El studio**
+(`/studio`) es el laboratorio interno, con todos los parámetros, donde se
+afina cómo se mapean los datos a la acuarela.
 
-Sin backend: todo corre en el navegador.
+Astro, sitio estático: el HTML se prerenderiza y el motor de acuarela corre
+entero en el navegador. El backend (Supabase) todavía no está conectado; hoy
+los registros viven en `localStorage`.
 
 ## Arrancar
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173  (y /registro.html)
-npm run build    # tsc --noEmit + vite build -> dist/
+npm run dev      # http://localhost:4321  (/ el mural, /studio el laboratorio)
+npm run build    # astro build -> dist/
+npm run check    # astro check (typecheck de .astro y .ts)
 ```
 
 Botón **Ejemplo (flor)**: carga el mandala de `public/samples/`, crea 12 zonas
@@ -52,7 +56,7 @@ datos de ejemplo son ficticios y están generados al azar.
 9. **9 · Exportar** — PNG 1x/2x/4x (re-renderizado real, no escalado) y CSV con
    las coordenadas finales (`id, zona, valor, x, y`).
 
-## Pantalla de registro (`/registro.html`)
+## El mural (`/`)
 
 La pantalla para mostrar o dejar en un puesto: la ilustración a pantalla
 completa y, arriba a la derecha, dos iconos —lupa y persona+— que abren su
@@ -76,7 +80,7 @@ aparece la ficha de esa persona.
 
 No hay backend ni base: `public/samples/datos_ejemplo.csv` es de **solo
 lectura** y nunca se modifica. Lo que se registra en esta pantalla se guarda en
-el `localStorage` del navegador (`mural.personas.v1`, ver `src/io/localStore.ts`)
+el `localStorage` del navegador (`mural.personas.v1`, ver `src/data/repo/localRepo.ts`)
 y se pinta junto a las personas del CSV de ejemplo. Es por navegador y por
 dispositivo: no se comparte ni se sube a ningún lado.
 
@@ -150,31 +154,54 @@ trae `id`, se genera uno y se reporta en advertencias.
 | Export PNG 4x | 2960×2960 en 406 ms |
 | Tooltip con ID decodificado y checksum | validado |
 | Registrar una persona y encontrarla por nombre | 301 registros, 301 IDs únicos |
-| Refactor a `scene.ts` no mueve nada | mismas posiciones antes y después |
-| Alta en `/registro.html` sobrevive a recargar | 2 altas, 2 IDs únicos, 297 manchas |
+| Refactor a `core/scene.ts` no mueve nada | mismas posiciones antes y después |
+| Alta en el mural sobrevive a recargar | 2 altas, 2 IDs únicos, 297 manchas |
 | Descargar copia e importarla de vuelta | CSV con las 10 columnas del dataset; 1 de 3 sumado, repetidos omitidos |
 | Borrar mis registros (dos toques) | 297 → 295 manchas, `localStorage` en `[]` |
 | Iconos: uno abierto por vez, `Esc` cierra | verificado |
 
 ## Estructura
 
+Tres capas con dependencias en un solo sentido: `core` no conoce a nadie,
+`io`/`data` conocen a `core`, y las pantallas conocen a todos. Lo que importa
+para el futuro es que **solo `src/mural/` migra** si cambia el framework.
+
 ```
-index.html           app completa
-registro.html        pantalla de registro
+astro.config.mjs     sitio estático, sin adapter
 src/
-  main.ts            estado y orquestación de la app completa
-  registro.ts        pantalla de registro (ilustración + recuadro)
-  scene.ts           pipeline compartido: detectar, reconstruir y colocar
-  types.ts
-  io/                loadDrawing, loadCsv, zonesConfig, localStore
-  zones/             binarize, morphology, connectedComponents, zoneMask
-  sampling/          prng, grid, randomInMask, poissonInMask
-  render/            watercolor, paper, palette, compose, legend
-  ids/               idCodec
-  data/              person (campos, ánimos y generador aleatorio)
-  ui/                controls, zonePanel, tooltip, filters, personPanel
-public/samples/      flor.png, datos_ejemplo.csv, flor.zones.json
+  pages/             index.astro (el mural) · studio.astro (el laboratorio)
+  layouts/Base.astro la cáscara HTML compartida
+
+  core/              EL MOTOR · cero DOM · cero framework · cero fetch
+    types/           dataset · zone · placement · render · warning
+    platform/        surface  ← el único punto del núcleo que crea un lienzo
+    zones/           binarize · morphology · connectedComponents · zoneMask
+    sampling/        prng · grid · randomInMask · poissonInMask
+    render/          watercolor · paper · palette · compose · legend
+    ids/             idCodec
+    scene.ts         detectar, reconstruir zonas y colocar registros
+
+  io/                navegador, no framework
+    readers/         drawing (PNG/JPG/SVG) · csv
+    writers/         csv (salida) · download
+    zonesConfig.ts   construir y leer el `.zones.json`
+
+  data/              el dominio de la encuesta
+    person.ts        campos, ánimos y generador aleatorio
+    repo/localRepo   las altas de este dispositivo (localStorage)
+
+  ui/                widgets vanilla: controls · zonePanel · tooltip ·
+                     filters · personPanel · registroForm · blob
+  mural/             LA PÁGINA PÚBLICA — lo único que migraría
+  studio/            EL LABORATORIO — se queda en TypeScript vanilla
+  styles/app.css     tokens del tema y clases de componente
+
+public/samples/      flor.png · datos_ejemplo.csv · flor.zones.json
 ```
+
+Los imports entre capas van por alias (`@core/*`, `@io/*`, `@data/*`,
+`@ui/*`); dentro de `core/` son relativos. Así, mover el núcleo a su propio
+paquete más adelante es cambiar el mapeo en `tsconfig.json` y nada más.
 
 En desarrollo, `window.__heatmap` expone el estado y las funciones principales
 para inspeccionar o automatizar desde la consola.

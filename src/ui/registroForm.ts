@@ -8,8 +8,8 @@
  *
  * No toca el estado global: todo sale por los callbacks de `hooks`.
  */
-import type { ColorRamp } from '../render/palette';
-import { MOODS, emptyPerson, todayIso, type Person } from '../data/person';
+import type { ColorRamp } from '@core/render/palette';
+import { MOODS, emptyPerson, todayIso, type Person } from '@data/person';
 import { paintBlob } from './blob';
 import { el } from './controls';
 

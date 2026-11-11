@@ -18,14 +18,14 @@
 
 /* La pantalla de registro: sus reglas entran en la capa `components`, antes
    de las utilidades, para que lo inline siga pudiendo pisarlas. */
-@import "./registro.css";
+@import "../mural/mural.css";
 
 /* El markup no esta en el HTML sino que lo arman los modulos TS, asi que el
    escaneo tiene que incluirlos. Las clases se escriben siempre completas:
    un `bg-${x}` armado a mano no lo ve el detector. */
-@source "./**/*.ts";
-@source "../index.html";
-@source "../registro.html";
+@source "../**/*.ts";
+@source "../pages/**/*.astro";
+@source "../layouts/**/*.astro";
 
 /* El ancho al que el kiosco pasa a telefono, en un solo lugar: lo usan las
    utilidades (`telefono:justify-center`) y el bloque de componentes de

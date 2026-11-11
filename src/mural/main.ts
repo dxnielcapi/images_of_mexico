@@ -5,30 +5,31 @@
  *
  * Carga el mural de ejemplo (dibujo + zonas + CSV), le suma las personas que
  * se registraron en este dispositivo y vuelve a pintar con cada alta. No tiene
- * controles de parametros: esos viven en la app completa (`index.html`).
+ * controles de parametros: esos viven en el studio (`/studio`).
  *
  * Todo queda en la maquina: el CSV de ejemplo es de solo lectura y las altas
- * se guardan en localStorage (ver `io/localStore`), con copia a archivo para
+ * se guardan en localStorage (ver `@data/repo/localRepo`), con copia a archivo para
  * no depender de que el navegador conserve sus datos.
  */
-import './style.css';
-import { loadDrawingUrl, linesLayer, type LoadedDrawing } from './io/loadDrawing';
-import { parseCsvText, recordsToCsv } from './io/loadCsv';
-import { parseConfig, downloadText } from './io/zonesConfig';
-import { clearLocal, loadLocal, mergeById, parseBackup, saveLocal, storageAvailable } from './io/localStore';
-import { analyzeDrawing, placeRecords, zonesFromConfig } from './scene';
-import { renderScene } from './render/compose';
-import { ColorRamp, PALETTES } from './render/palette';
-import { DEFAULT_WATERCOLOR } from './render/watercolor';
-import { SpatialGrid } from './sampling/grid';
+import { loadDrawingUrl, linesLayer, type LoadedDrawing } from '@io/readers/drawing';
+import { parseCsvText } from '@io/readers/csv';
+import { recordsToCsv } from '@io/writers/csv';
+import { parseConfig } from '@io/zonesConfig';
+import { downloadText } from '@io/writers/download';
+import { clearLocal, loadLocal, mergeById, parseBackup, saveLocal, storageAvailable } from '@data/repo/localRepo';
+import { analyzeDrawing, placeRecords, zonesFromConfig } from '@core/scene';
+import { renderScene } from '@core/render/compose';
+import { ColorRamp, PALETTES } from '@core/render/palette';
+import { DEFAULT_WATERCOLOR } from '@core/render/watercolor';
+import { SpatialGrid } from '@core/sampling/grid';
 import {
   PERSON_FIELD_KEYS, PersonIds, personToRecord, searchByName, todayIso, type Person,
-} from './data/person';
-import { personSearch, type PersonSearch } from './ui/personPanel';
-import { registroForm, type RegistroForm, type RegistroResult } from './ui/registroForm';
-import { Tooltip } from './ui/tooltip';
-import { el, button, fileButton, row } from './ui/controls';
-import type { DataRecord, PlacedPoint, RenderOptions, ZoneMap } from './types';
+} from '@data/person';
+import { personSearch, type PersonSearch } from '@ui/personPanel';
+import { registroForm, type RegistroForm, type RegistroResult } from '@ui/registroForm';
+import { Tooltip } from '@ui/tooltip';
+import { el, button, fileButton, row } from '@ui/controls';
+import type { DataRecord, PlacedPoint, RenderOptions, ZoneMap } from '@core/types';
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -227,7 +228,7 @@ function paint(): void {
   if (queda <= 0) return;
   const fase = (performance.now() % PULSE_MS) / PULSE_MS;
   const fin = Math.min(1, queda / 900);   // se desvanece al terminar
-  // Mismo carmin que `--accent` en registro.css.
+  // Mismo carmin que `--accent` en mural.css.
   ctx.strokeStyle = `rgba(158, 43, 43, ${(1 - fase) * 0.75 * fin})`;
   ctx.lineWidth = 3;
   ctx.beginPath();

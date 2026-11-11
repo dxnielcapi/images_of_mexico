@@ -1,5 +1,5 @@
-import type { Zone } from '../zones/zoneMask';
-import { pastelFor } from '../zones/zoneMask';
+import type { Zone } from '@core/zones/zoneMask';
+import { pastelFor } from '@core/zones/zoneMask';
 import { el, button } from './controls';
 
 export interface ZonePanelCallbacks {

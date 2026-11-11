@@ -5,9 +5,9 @@
  * tocando una de estas manchas es, literalmente, el color que va a quedar
  * en la flor.
  */
-import type { ColorRamp } from '../render/palette';
-import { DEFAULT_WATERCOLOR, drawWatercolorBlob, type WatercolorParams } from '../render/watercolor';
-import { hashString, mulberry32 } from '../sampling/prng';
+import type { ColorRamp } from '@core/render/palette';
+import { DEFAULT_WATERCOLOR, drawWatercolorBlob, type WatercolorParams } from '@core/render/watercolor';
+import { hashString, mulberry32 } from '@core/sampling/prng';
 
 export interface BlobOpts {
   /** Lado del canvas en px CSS. */

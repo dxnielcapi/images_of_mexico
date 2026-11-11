@@ -1,0 +1,20 @@
+---
+/**
+ * La pagina publica: el mural, la encuesta y las explicaciones.
+ *
+ * Es la unica que se publica. El `<script>` de abajo lo bundlea Astro con
+ * Vite y corre solo en el navegador, asi que el motor de acuarela nunca se
+ * ejecuta en el build.
+ */
+import Base from '../layouts/Base.astro';
+import '../styles/app.css';
+---
+
+<Base
+  title="Súmate al mural"
+  description="Un mural de acuarela que crece con cada persona que se suma."
+>
+  <script>
+    import '../mural/main';
+  </script>
+</Base>
