@@ -7,8 +7,13 @@ export interface RenderOptions {
   watercolor: WatercolorParams;
   bleed: number;
   grain: number;
-  paletteId: string;
   globalSeed: number;
   showLines: boolean;
   lineAlpha: number;
+  /**
+   * Pintar el fondo de papel bajo la escena. Por defecto si (el studio
+   * exporta una lamina acabada); el mural lo apaga para que la ilustracion
+   * quede a sangre sobre la pagina, sin el recuadro del lienzo.
+   */
+  paper?: boolean;
 }

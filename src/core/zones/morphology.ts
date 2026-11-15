@@ -30,6 +30,44 @@ export function dilate(mask: Uint8Array, width: number, height: number, radius: 
 }
 
 /**
+ * Relleno del trazo: los pixeles de fondo que se traga un cierre morfologico
+ * de radio `radius` (dilatar y volver a erosionar con el mismo disco).
+ *
+ * Es la salida para un dibujo que todavia no esta cerrado. Cuando el trazo es
+ * una banda de dos lineas —el cuerpo de la serpiente, una pluma—, su interior
+ * mide menos que el disco y el cierre lo rellena; los huecos grandes del
+ * dibujo (el aire entre dos vueltas de la espiral) son mas anchos que el disco
+ * y quedan afuera. Asi se recupera justo la superficie que habria encerrado el
+ * dibujo terminado, sin pedirle que cierre.
+ *
+ * El disco sale de la transformada de distancia, que ya es exacta: dilatar es
+ * quedarse con lo que esta a `radius` o menos de la tinta, y erosionar es
+ * quitarle a eso lo que este a `radius` o menos de su propio exterior.
+ */
+export function strokeFill(
+  ink: Uint8Array,
+  width: number,
+  height: number,
+  radius: number
+): Uint8Array {
+  const fill = new Uint8Array(ink.length);
+  if (radius <= 0) return fill;
+
+  const toInk = distanceToInk(ink, width, height);
+  // El exterior de la dilatacion, visto como "tinta" para medir desde adentro.
+  const outside = new Uint8Array(ink.length);
+  for (let i = 0; i < ink.length; i++) {
+    outside[i] = ink[i] || toInk[i] <= radius ? 0 : 1;
+  }
+
+  const toOutside = distanceToInk(outside, width, height);
+  for (let i = 0; i < ink.length; i++) {
+    if (!ink[i] && toOutside[i] > radius) fill[i] = 1;
+  }
+  return fill;
+}
+
+/**
  * Transformada de distancia euclidiana exacta (Felzenszwalb & Huttenlocher)
  * desde cada pixel de fondo hasta la tinta mas cercana.
  */

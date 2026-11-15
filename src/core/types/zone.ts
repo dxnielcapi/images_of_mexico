@@ -12,6 +12,8 @@ export interface ZonesConfig {
   height: number;
   threshold: number;
   dilate: number;
+  /** Radio para cerrar el trazo; ausente o 0 = dibujo ya cerrado. */
+  close?: number;
   minArea?: number;
   margin?: number;
   zones: { name: string; seedPoints: [number, number][] }[];

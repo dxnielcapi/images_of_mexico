@@ -2,6 +2,7 @@ import { loadDrawingFile, loadDrawingUrl, linesLayer, extractSvgPaths, type Load
 import { parseCsvFile, parseCsvText, type CsvResult } from '@io/readers/csv';
 import { pointsToCsv } from '@io/writers/csv';
 import { buildConfig, parseConfig } from '@io/zonesConfig';
+import { DATOS_EJEMPLO, PLANTILLA_DIBUJO, PLANTILLA_ZONAS } from '@io/plantilla';
 import { downloadText, downloadCanvas } from '@io/writers/download';
 import { type LabelResult } from '@core/zones/connectedComponents';
 import { buildZone, pastelFor, type Zone } from '@core/zones/zoneMask';
@@ -9,7 +10,7 @@ import {
   analyzeDrawing, hueFor, placeRecords, zoneFromSeeds, zonesFromConfig, type Analysis,
 } from '@core/scene';
 import { SpatialGrid } from '@core/sampling/grid';
-import { ColorRamp, PALETTES } from '@core/render/palette';
+import { CARMIN, ColorRamp } from '@core/render/palette';
 import { DEFAULT_WATERCOLOR } from '@core/render/watercolor';
 import { renderScene } from '@core/render/compose';
 import { drawLegend } from '@core/render/legend';
@@ -19,8 +20,9 @@ import { Tooltip } from '@ui/tooltip';
 import { emptyFilters, applyFilters, renderFilters, type FilterState } from '@ui/filters';
 import { personForm, personSearch, type PersonForm, type PersonSearch } from '@ui/personPanel';
 import {
-  NAME_KEY, PERSON_FIELD_KEYS, PersonIds, personToRecord, randomPerson, searchByName, type Person,
+  NAME_KEY, PERSON_FIELD_KEYS, PersonIds, randomPerson, searchByName, type Person,
 } from '@data/person';
+import { mapPerson, zonasDisponibles, type MappingContext } from '@data/mapping';
 import { mulberry32 } from '@core/sampling/prng';
 import type { DataRecord, PlacedPoint, PlacementMode, RenderOptions, Warning, ZonesConfig } from '@core/types';
 
@@ -41,7 +43,7 @@ interface State {
   csv: CsvResult | null;
   filters: FilterState;
   fixedRange: { on: boolean; min: number; max: number };
-  detect: { threshold: number; dilate: number; minArea: number; margin: number; useSvgPaths: boolean };
+  detect: { threshold: number; dilate: number; close: number; minArea: number; margin: number; useSvgPaths: boolean };
   placement: { mode: PlacementMode; minDistFactor: number };
   render: RenderOptions;
   view: 'zones' | 'render';
@@ -56,12 +58,12 @@ const S: State = {
   records: [], placed: [], warnings: [], csv: null,
   filters: emptyFilters(0, 1),
   fixedRange: { on: false, min: 0, max: 1 },
-  detect: { threshold: 150, dilate: 1, minArea: 180, margin: 3, useSvgPaths: false },
+  detect: { threshold: 150, dilate: 1, close: 0, minArea: 180, margin: 3, useSvgPaths: false },
   placement: { mode: 'random', minDistFactor: 1 },
   render: {
     width: 0, height: 0,
     watercolor: { ...DEFAULT_WATERCOLOR },
-    bleed: 0, grain: 0.5, paletteId: 'pigmentos',
+    bleed: 0, grain: 0.5,
     globalSeed: 1234, showLines: true, lineAlpha: 0.9,
   },
   view: 'zones',
@@ -69,9 +71,18 @@ const S: State = {
   highlightId: null,
 };
 
-let ramp = new ColorRamp(PALETTES[0].stops);
+const ramp = new ColorRamp(CARMIN);
 let sceneCanvas = document.createElement('canvas');
 let inkCanvas: HTMLCanvasElement | null = null;
+
+/**
+ * Los sliders de deteccion, por nombre. Importar un `.zones.json` cambia esos
+ * parametros desde el archivo: sin volver a moverlos, el panel mostraria los
+ * de antes y el de "cerrar trazo" diria "no" mientras el dibujo se esta
+ * cerrando.
+ */
+const detectSliders: Partial<Record<'threshold' | 'dilate' | 'close' | 'minArea' | 'margin',
+  { set: (v: number) => void }>> = {};
 let linesCanvas: HTMLCanvasElement | null = null;
 let zonesOverlay: HTMLCanvasElement | null = null;
 const regionOverlayCache = new Map<number, { canvas: HTMLCanvasElement; x: number; y: number }>();
@@ -599,6 +610,9 @@ function zoneNames(): string[] {
   return [...S.zones.keys()];
 }
 
+/** Lo que el mapeo necesita saber del dibujo: las zonas que hay ahora. */
+const mapping = (): MappingContext => ({ zonas: zonasDisponibles(S.zones) });
+
 /** Recalcula rango, leyenda y paneles tras tocar S.records. */
 function afterRecordsChanged(): void {
   let min = Infinity, max = -Infinity;
@@ -624,12 +638,18 @@ function afterRecordsChanged(): void {
   refreshLegend();
 }
 
-function addPerson(p: Person, zona: string): string | null {
-  if (!S.zones.has(zona)) return null;
-  const rec = personToRecord(p, zona, personIds.next(zona, p.fecha));
+/**
+ * Alta desde el panel. `zona` vacia deja que el mapeo elija; con zona puesta
+ * se respeta la del selector, que para eso esta.
+ */
+function addPerson(p: Person, zona: string): { id: string; zona: string } | null {
+  if (zona && !S.zones.has(zona)) return null;
+  if (!zona && S.zones.size === 0) return null;
+  const rec = mapPerson(p, personIds.next(p.fecha), mapping(), zona || undefined);
+  if (!rec.zona) return null;
   S.records.push(rec);
   // Si hay un filtro de zonas activo, se abre la zona del registro nuevo.
-  if (S.filters.zones.size) S.filters.zones.add(zona);
+  if (S.filters.zones.size) S.filters.zones.add(rec.zona);
   S.highlightId = rec.id;
   afterRecordsChanged();
   placeAndRender();
@@ -638,18 +658,18 @@ function addPerson(p: Person, zona: string): string | null {
   const point = highlightPoint();
   if (point) {
     showTooltipAt(point);
-    setStatus(`${nombre} registrada/o en ${zona} · ${rec.id}`, 'ok');
+    setStatus(`${nombre} registrada/o en ${rec.zona} · ${rec.id}`, 'ok');
   } else {
-    setStatus(`${nombre} registrada/o en ${zona}, pero su punto no se dibuja (revisa filtros y zonas).`, 'warn');
+    setStatus(`${nombre} registrada/o en ${rec.zona}, pero su punto no se dibuja (revisa filtros y zonas).`, 'warn');
   }
   personSearchRef?.refresh();
-  return rec.id;
+  return { id: rec.id, zona: rec.zona };
 }
 
-/** Una persona sorteada, ya convertida en registro. */
-function newRandomRecord(rng: () => number, zona: string): DataRecord {
+/** Una persona sorteada, ya convertida en registro por el mapeo. */
+function newRandomRecord(rng: () => number): DataRecord {
   const p = randomPerson(rng);
-  return personToRecord(p, zona, personIds.next(zona, p.fecha));
+  return mapPerson(p, personIds.next(p.fecha), mapping());
 }
 
 function addRandomPeople(n: number): void {
@@ -659,10 +679,8 @@ function addRandomPeople(n: number): void {
     return;
   }
   const rng = mulberry32((Math.random() * 2 ** 32) >>> 0);
-  for (let i = 0; i < n; i++) {
-    const zona = names[Math.floor(rng() * names.length) % names.length];
-    S.records.push(newRandomRecord(rng, zona));
-  }
+  // El reparto entre zonas no se hace aqui: lo decide el mapeo con cada id.
+  for (let i = 0; i < n; i++) S.records.push(newRandomRecord(rng));
   S.highlightId = null;
   afterRecordsChanged();
   placeAndRender();
@@ -734,29 +752,36 @@ function buildSidebar(): void {
         setStatus('Cargando dibujo…');
         await useDrawing(await loadDrawingFile(f));
       }, 'primary'),
-      button('Ejemplo (flor)', () => loadExample())
+      button('Plantilla del mural', () => loadExample())
     ),
     svgPathsRow,
-    slider({
+    (detectSliders.threshold = slider({
       label: 'umbral', min: 20, max: 240, step: 1, value: S.detect.threshold,
       onChangeOnly: true,
       onInput: (v) => { S.detect.threshold = v; detectZones(); },
-    }).root,
-    slider({
+    })).root,
+    (detectSliders.dilate = slider({
       label: 'engrosar lineas', min: 0, max: 3, step: 1, value: S.detect.dilate,
       format: (v) => `${v} px`, onChangeOnly: true,
       onInput: (v) => { S.detect.dilate = v; detectZones(); },
-    }).root,
-    slider({
+    })).root,
+    // Para un boceto que todavia no cierra ninguna region: rellena el interior
+    // del trazo (la banda del cuerpo, las plumas) y delimita sobre eso.
+    (detectSliders.close = slider({
+      label: 'cerrar trazo', min: 0, max: 60, step: 2, value: S.detect.close,
+      format: (v) => (v === 0 ? 'no' : `${v} px`), onChangeOnly: true,
+      onInput: (v) => { S.detect.close = v; detectZones(); },
+    })).root,
+    (detectSliders.minArea = slider({
       label: 'area minima', min: 20, max: 4000, step: 10, value: S.detect.minArea,
       format: (v) => `${v} px`, onChangeOnly: true,
       onInput: (v) => { S.detect.minArea = v; detectZones(); },
-    }).root,
-    slider({
+    })).root,
+    (detectSliders.margin = slider({
       label: 'margen interno', min: 0, max: 20, step: 1, value: S.detect.margin,
       format: (v) => `${v} px`, onChangeOnly: true,
       onInput: (v) => { S.detect.margin = v; rebuildAllZones(); placeAndRender(); },
-    }).root,
+    })).root,
     checkbox('ver dibujo original', S.showOriginal, (v) => { S.showOriginal = v; paint(); })
   );
   sidebar.append(sDraw);
@@ -865,19 +890,12 @@ function buildSidebar(): void {
   const wc = S.render.watercolor;
   const reRender = () => { invalidateScene(); if (S.view === 'render') { renderNow(); paint(); } };
   sPaint.append(
-    selectBox('paleta', PALETTES.map((p) => ({ value: p.id, label: p.name })), S.render.paletteId, (v) => {
-      S.render.paletteId = v;
-      const p = PALETTES.find((x) => x.id === v) ?? PALETTES[0];
-      ramp = new ColorRamp(p.stops);
-      refreshLegend();
-      reRender();
-    }),
-    customPaletteRow(reRender),
     slider({ label: 'radio', min: 2, max: 60, step: 1, value: wc.radius, format: (v) => `${v} px`, onChangeOnly: true, onInput: (v) => { wc.radius = v; buildGrid(); reRender(); } }).root,
     slider({ label: 'capas', min: 6, max: 40, step: 1, value: wc.layers, onChangeOnly: true, onInput: (v) => { wc.layers = v; reRender(); } }).root,
     slider({ label: 'opacidad', min: 0.01, max: 0.12, step: 0.005, value: wc.opacity, format: (v) => `${(v * 100).toFixed(1)}%`, onChangeOnly: true, onInput: (v) => { wc.opacity = v; reRender(); } }).root,
     slider({ label: 'deformacion', min: 0, max: 1, step: 0.05, value: wc.deform, format: (v) => v.toFixed(2), onChangeOnly: true, onInput: (v) => { wc.deform = v; reRender(); } }).root,
     slider({ label: 'humedad', min: 0, max: 1, step: 0.05, value: wc.wetness, format: (v) => v.toFixed(2), onChangeOnly: true, onInput: (v) => { wc.wetness = v; reRender(); } }).root,
+    slider({ label: 'dispersion', min: 0, max: 1, step: 0.05, value: wc.scatter, format: (v) => v.toFixed(2), onChangeOnly: true, onInput: (v) => { wc.scatter = v; reRender(); } }).root,
     slider({ label: 'borde', min: 0, max: 1, step: 0.05, value: wc.edge, format: (v) => v.toFixed(2), onChangeOnly: true, onInput: (v) => { wc.edge = v; reRender(); } }).root,
     slider({ label: 'sangrado', min: 0, max: 4, step: 1, value: S.render.bleed, format: (v) => `${v} px`, onChangeOnly: true, onInput: (v) => { S.render.bleed = v; reRender(); } }).root,
     slider({ label: 'grano del papel', min: 0, max: 1, step: 0.05, value: S.render.grain, format: (v) => v.toFixed(2), onChangeOnly: true, onInput: (v) => { S.render.grain = v; reRender(); } }).root,
@@ -917,25 +935,6 @@ function buildSidebar(): void {
 }
 
 let dataInfoRef: HTMLElement | null = null;
-
-function customPaletteRow(onChange: () => void): HTMLElement {
-  const inputs = ['#2E3A6B', '#3E8E8A', '#D9A441', '#B23A48'].map((c) => {
-    const i = el('input', {
-      type: 'color',
-      value: c,
-      class: 'w-[38px] h-[26px] p-0 rounded-sm border border-line',
-    });
-    i.addEventListener('change', () => {
-      const stops = inputs.map((x) => x.value);
-      ramp = new ColorRamp(stops);
-      S.render.paletteId = 'custom';
-      refreshLegend();
-      onChange();
-    });
-    return i;
-  });
-  return el('label', { class: 'ctl' }, [el('span', { class: 'lbl', text: 'paleta propia' }), el('div', { class: 'row' }, inputs)]);
-}
 
 // ---------------------------------------------------------------- vista zonas/render
 
@@ -995,8 +994,7 @@ function useCsv(res: CsvResult): void {
 function exportZones(): void {
   if (!S.drawing || !S.labeling) return;
   const cfg = buildConfig(
-    S.drawing.name, S.labeling.width, S.labeling.height,
-    S.detect.threshold, S.detect.dilate, S.detect.minArea, S.detect.margin, S.zones
+    S.drawing.name, S.labeling.width, S.labeling.height, S.detect, S.zones
   );
   const base = S.drawing.name.replace(/\.[^.]+$/, '');
   downloadText(`${base}.zones.json`, JSON.stringify(cfg, null, 2));
@@ -1006,8 +1004,15 @@ function importZones(cfg: ZonesConfig): void {
   if (!S.drawing) { setStatus('Carga primero el dibujo.', 'warn'); return; }
   S.detect.threshold = cfg.threshold ?? S.detect.threshold;
   S.detect.dilate = cfg.dilate ?? S.detect.dilate;
+  S.detect.close = cfg.close ?? 0;
   if (cfg.minArea !== undefined) S.detect.minArea = cfg.minArea;
   if (cfg.margin !== undefined) S.detect.margin = cfg.margin;
+
+  detectSliders.threshold?.set(S.detect.threshold);
+  detectSliders.dilate?.set(S.detect.dilate);
+  detectSliders.close?.set(S.detect.close);
+  detectSliders.minArea?.set(S.detect.minArea);
+  detectSliders.margin?.set(S.detect.margin);
 
   S.zones.clear();
   S.zoneSeq = 0;
@@ -1046,15 +1051,25 @@ function exportCoordsCsv(): void {
   downloadText(`${base}_puntos.csv`, pointsToCsv(rows), 'text/csv');
 }
 
+/**
+ * Arranca sobre la plantilla del mural: el mismo dibujo y las mismas zonas que
+ * ve la pagina publica, para probar aqui lo que se va a publicar alla. Si el
+ * `.zones.json` no carga, se cae a las regiones mas grandes del dibujo.
+ */
 async function loadExample(): Promise<void> {
-  setStatus('Cargando dibujo de ejemplo…');
-  await useDrawing(await loadDrawingUrl(`${import.meta.env.BASE_URL}samples/flor.png`));
-  autoZones(12);
+  setStatus('Cargando la plantilla del mural…');
+  await useDrawing(await loadDrawingUrl(PLANTILLA_DIBUJO));
+  try {
+    importZones(parseConfig(await fetch(PLANTILLA_ZONAS).then((r) => r.text())));
+  } catch {
+    setStatus('No se pudo leer boceto.zones.json: se toman las regiones mas grandes.', 'warn');
+    autoZones(12);
+  }
   await loadExampleCsv();
 }
 
 async function loadExampleCsv(): Promise<void> {
-  const text = await fetch(`${import.meta.env.BASE_URL}samples/datos_ejemplo.csv`).then((r) => r.text());
+  const text = await fetch(DATOS_EJEMPLO).then((r) => r.text());
   useCsv(parseCsvText(text));
 }
 

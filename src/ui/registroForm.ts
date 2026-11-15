@@ -4,7 +4,7 @@
  *
  * El paso del medio es el que da el tono: el estado de animo no se elige en
  * una lista sino tocando una mancha de acuarela pintada con el pincel del
- * mural, asi se ve de antemano el color que va a quedar en la flor.
+ * mural, asi se ve de antemano el color que va a quedar en el dibujo.
  *
  * No toca el estado global: todo sale por los callbacks de `hooks`.
  */
@@ -141,11 +141,11 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
   const listo = el('div', { class: 'paso hidden pt-1 text-center' });
 
   /**
-   * Las zonas de la muestra se llaman "zona_07": decirselo a quien se acaba
+   * Las zonas de la plantilla se llaman "zona_07": decirselo a quien se acaba
    * de registrar no le dice nada. Si alguien les puso nombre, se usa.
    */
   function dondeQuedo(zona: string): string {
-    return /^zona[ _-]?\d+$/i.test(zona) ? 'entre los pétalos' : `en ${zona}`;
+    return /^zona[ _-]?\d+$/i.test(zona) ? 'en la serpiente' : `en ${zona}`;
   }
 
   function showListo(p: Person, res: RegistroResult): void {
@@ -162,7 +162,7 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
     listo.textContent = '';
     listo.append(
       muestra,
-      el('p', { class: PREGUNTA, text: `Ya eres parte de la flor, ${p.nombre.split(' ')[0]}.` }),
+      el('p', { class: PREGUNTA, text: `Ya eres parte del mural, ${p.nombre.split(' ')[0]}.` }),
       // Ultima linea de la tarjeta: sin el aire de abajo que llevan las demas.
       el('p', { class: AYUDA, text: `Tu mancha quedó ${dondeQuedo(res.zona)}, en el color de “${p.estado_animo}”.` }),
       el('p', {

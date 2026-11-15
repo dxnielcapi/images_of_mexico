@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 import type { DataRecord, Warning } from '@core/types';
-import { generateId, parseId, normalizeZoneCode, todayCompact } from '@core/ids/idCodec';
+import { generateId, parseId, normalizeZoneCode, scopeIsZone, todayCompact } from '@core/ids/idCodec';
 
 export interface CsvResult {
   records: DataRecord[];
@@ -44,7 +44,6 @@ export function parseCsvText(text: string): CsvResult {
     if (!id) {
       counter++;
       id = generateId({
-        zona,
         categoria: (row['categoria'] || row['category'] || 'GEN').toUpperCase().slice(0, 8),
         fecha: (row['fecha'] || '').replace(/-/g, '') || today,
         registro: counter,
@@ -61,11 +60,13 @@ export function parseCsvText(text: string): CsvResult {
     if (parsedId.wellFormed && !parsedId.checksumOk) {
       warnings.push({ kind: 'checksum', id, message: `Checksum invalido (${parsedId.checksum})` });
     }
-    if (parsedId.wellFormed && parsedId.zona !== normalizeZoneCode(zona)) {
+    // Los ids historicos llevan la zona en el ambito; los nuevos no (la zona la
+    // decide el mapeo y puede cambiar). Solo se compara cuando la trae.
+    if (parsedId.wellFormed && scopeIsZone(parsedId.ambito) && parsedId.ambito !== normalizeZoneCode(zona)) {
       warnings.push({
         kind: 'zona-id',
         id,
-        message: `La zona del id (${parsedId.zona}) no coincide con la columna zona (${zona})`,
+        message: `La zona del id (${parsedId.ambito}) no coincide con la columna zona (${zona})`,
       });
     }
 

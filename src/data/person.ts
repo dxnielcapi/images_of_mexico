@@ -1,10 +1,10 @@
 /**
  * Esquema de los datos de cada registro: una persona.
  *
- * El heatmap sigue necesitando `zona` y `valor` numerico; el `valor` se deriva
- * del estado de animo (ver `MOODS`), asi el color de la mancha es el animo.
- * Todo lo demas son campos descriptivos que se muestran en el tooltip y en la
- * busqueda, en el orden declarado aqui.
+ * Aqui viven los campos, los estados de animo y la generacion al azar. Quien
+ * decide la zona y el valor de alguien es el mapeo (`@data/mapping`), no este
+ * archivo: asi cambiar la regla no obliga a tocar el esquema, y cambiar el
+ * esquema no obliga a tocar la regla.
  */
 import { mulberry32, hashString, type Rng } from '@core/sampling/prng';
 import { generateId, parseId, todayCompact } from '@core/ids/idCodec';
@@ -263,23 +263,36 @@ export class PersonIds {
     }
   }
 
-  next(zona: string, fecha: string): string {
+  next(fecha: string): string {
     const f = fecha.replace(/-/g, '') || todayCompact();
     let id: string;
     do {
       this.seq++;
-      id = generateId({ zona, categoria: PERSON_CATEGORY, fecha: f, registro: this.seq });
+      id = generateId({ categoria: PERSON_CATEGORY, fecha: f, registro: this.seq });
     } while (this.taken.has(id));
     this.taken.add(id);
     return id;
   }
 }
 
-/** Convierte una persona en registro del dataset: el animo fija el valor. */
-export function personToRecord(p: Person, zona: string, id: string): DataRecord {
+/** Campos de la persona como columnas, para guardar y para el tooltip. */
+export function personToExtra(p: Person): Record<string, string> {
   const extra: Record<string, string> = {};
   for (const k of PERSON_FIELD_KEYS) if (p[k]) extra[k] = p[k];
-  return { id, zona, valor: valorForMood(p.estado_animo, id), extra };
+  return extra;
+}
+
+/**
+ * Reconstruye la persona desde las columnas de un registro. Es lo que permite
+ * remapear algo ya guardado: el dato de origen nunca se pierde en el camino.
+ */
+export function personFromExtra(extra: Record<string, string>): Person {
+  const p = emptyPerson();
+  for (const k of PERSON_FIELD_KEYS) {
+    const v = extra[k];
+    if (v) p[k] = v;
+  }
+  return p;
 }
 
 /** Normaliza un nombre para comparar: sin acentos, en minusculas. */

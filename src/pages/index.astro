@@ -1,6 +1,8 @@
 ---
 /**
- * La pagina publica: el mural, la encuesta y las explicaciones.
+ * La pagina publica: el Hero limpio con efecto cristal sobre el mapeo
+ * desenfocado, seguido inmediatamente del mural interactivo y las demas
+ * secciones informativas con textos por defecto.
  *
  * Es la unica que se publica. El `<script>` de abajo lo bundlea Astro con
  * Vite y corre solo en el navegador, asi que el motor de acuarela nunca se
@@ -8,12 +10,560 @@
  */
 import Base from '../layouts/Base.astro';
 import '../styles/app.css';
+import { MOODS } from '../data/person';
+import { PLANTILLA_DIBUJO } from '../io/plantilla';
+
+const BASE = import.meta.env.BASE_URL;
 ---
 
 <Base
-  title="Súmate al mural"
-  description="Un mural de acuarela que crece con cada persona que se suma."
+  title="Mural de Acuarela · Cartografía Emocional Colectiva"
+  description="Mural de acuarela interactivo sobre la dieta de la milpa y la violencia alimentaria estructurada. Proyecto independiente de Daniel Capistran, con dirección visual de Syle Studio."
+  bodyClass="bg-[#f9f6f0]"
 >
+  <!-- ======================================================== Barra superior -->
+  <header id="nav" class="glass-nav glass-nav--hero sticky top-0 z-40">
+    <div class="mx-auto flex h-[60px] max-w-[1180px] items-center justify-between gap-4 px-5 telefono:px-3.5">
+      <div class="flex items-center gap-3">
+        <a
+          href="#inicio"
+          class="text-md font-mid tracking-[-0.01em] text-ink no-underline hover:text-[#9e2b2b] transition-colors"
+        >
+          Mural Colectivo
+        </a>
+      </div>
+
+      <nav aria-label="Secciones de la página" class="hidden md:flex items-center gap-6 text-base text-muted">
+        <a href="#inicio" class="hover:text-ink transition-colors no-underline">Inicio</a>
+        <a href="#mural" class="hover:text-ink transition-colors no-underline">El mural</a>
+        <a href="#proyecto" class="hover:text-ink transition-colors no-underline">La milpa</a>
+        <a href="#datos" class="hover:text-ink transition-colors no-underline">Los datos</a>
+        <a href="#implementaciones" class="hover:text-ink transition-colors no-underline">La ilustración</a>
+        <a href="#como-funciona" class="hover:text-ink transition-colors no-underline">Participar</a>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          data-mural-action="registrar"
+          class="cursor-pointer border-none bg-transparent p-0 text-md font-mid tracking-[-0.01em] text-[#9e2b2b] transition-opacity hover:opacity-75"
+        >
+          Sumar mi mancha
+        </button>
+        <span class="h-4 w-px bg-line" aria-hidden="true"></span>
+        <a
+          href="https://syle.studio/"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Syle Studio (syle.studio)"
+          class="flex items-center transition-opacity hover:opacity-75"
+        >
+          <img
+            src={`${BASE}Logos/syle.svg`}
+            alt="Syle Studio"
+            class="h-6 w-auto brightness-[0.12]"
+          />
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ================================================ Hero con efecto Glass -->
+    <section
+      id="inicio"
+      class="relative -mt-[60px] flex min-h-[100dvh] items-center justify-center overflow-hidden bg-[#fcfaf5] px-6 pt-[calc(60px+4rem)] pb-16 telefono:px-4 telefono:pt-[calc(60px+3rem)] telefono:pb-12"
+    >
+      <!-- Capa 1: El mapeo real de fondo (dibujo + manchas de acuarela) -->
+      <div
+        id="hero-bg"
+        aria-hidden="true"
+        class="hero-exit-target pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden select-none"
+      >
+        <div class="absolute -top-24 -left-24 h-[420px] w-[420px] rounded-full bg-[#b23a48]/12 blur-[90px]"></div>
+        <div class="absolute top-1/3 -right-24 h-[440px] w-[440px] rounded-full bg-[#3e8e8a]/12 blur-[95px]"></div>
+        <div class="absolute -bottom-24 left-1/4 h-[380px] w-[380px] rounded-full bg-[#d9a441]/15 blur-[85px]"></div>
+
+        <div class="relative flex h-[min(96vw,86dvh)] w-[min(96vw,86dvh)] items-center justify-center scale-105 md:scale-115">
+          <img
+            src={PLANTILLA_DIBUJO}
+            alt=""
+            class="absolute inset-0 h-full w-full object-contain opacity-60"
+          />
+          <canvas
+            id="hero-canvas"
+            class="relative h-full w-full object-contain opacity-0 transition-opacity duration-500"
+          ></canvas>
+        </div>
+      </div>
+
+      <!-- Capa 2: Cristal esmerilado sobre todo el Hero desenfocando el mapeo -->
+      <div aria-hidden="true" class="glass-hero-veil pointer-events-none absolute inset-0"></div>
+
+      <!-- Capa 3: Solo el titulo y el texto debajo, limpio sin recuadros -->
+      <div id="hero-content" class="hero-exit-target relative z-10 mx-auto max-w-[820px] text-center">
+        <h1 class="hero-title mx-auto max-w-[780px] text-[42px] font-mid leading-[1.12] tracking-[-0.02em] md:text-[52px] telefono:text-[30px]">
+          Los Dioses mediante su fruto siguen cuidando a sus hijos
+        </h1>
+
+        <p class="mx-auto mt-5 max-w-[660px] text-lg leading-[1.65] text-ink/85 md:text-xl telefono:text-base">
+          Una obra donde cada persona tiene algo que decir, todo un pueblo que se siente lastimado y necesita volver a conectar con su tierra
+          todo expresado mediante un lienzo. Al encontrarse aqui, el pueblo habla y se
+          funde con sus raices y revelan el pulso vivo de quienes aun mantienen lo que por derecho les pertenece.
+        </p>
+      </div>
+
+      <!-- Capa 4: Pista de la interaccion (cualquier gesto baja al mural) -->
+      <div
+        id="hero-hint"
+        class="pointer-events-none absolute bottom-7 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1.5 text-muted telefono:bottom-5"
+      >
+        <span class="text-xs font-mid tracking-[0.12em] uppercase">Desliza o toca para ver el mural</span>
+        <svg class="hero-hint-arrow h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </div>
+    </section>
+
+    <!-- ======================================== 01 · El Mural Interactivo -->
+    <!-- A sangre y del alto de la pantalla, sin encabezado ni recuadro: el
+         lienzo es la seccion entera. Las entradas a los paneles siguen siendo
+         los dos iconos al pie del propio mural y el boton de la barra. -->
+    <section id="mural" class="h-[calc(100dvh-60px)] scroll-mt-[60px]">
+      <!-- Aqui monta `src/mural/main.ts` el `.kiosk` intacto -->
+      <div id="mural-mount" class="h-full"></div>
+    </section>
+
+    <!-- ======================================= Información dentro del cartel -->
+    <section id="proyecto" class="scroll-mt-[60px] border-t border-line/80 bg-paper/60 py-20 px-5 telefono:py-12 telefono:px-3.5">
+      <div class="mx-auto max-w-[1120px]">
+        <div class="grid grid-cols-1 gap-10 lg:grid-cols-[1.05fr_1fr] lg:items-center">
+          <div>
+            <p class="text-xs font-mid tracking-[0.1em] uppercase text-[#9e2b2b]">
+              Información dentro del cartel
+            </p>
+            <h2 class="mt-2 text-[32px] font-mid leading-[1.18] tracking-[-0.015em] text-ink telefono:text-[24px]">
+              La dieta de la milpa: el sistema alimentario que nos sigue nombrando
+            </h2>
+            <p class="mt-4 text-lg leading-[1.65] text-muted">
+              Nuestro tema central son los sistemas alimentarios y, de manera específica, la dieta de
+              la milpa: un sistema agroalimentario que viene relatándose desde las culturas
+              mesoamericanas. Fue pieza fundamental para todas y cada una de ellas, desde los
+              mazahuas hasta los mayas.
+            </p>
+            <p class="mt-3 text-lg leading-[1.65] text-muted">
+              Esta dieta reúne una composición de distintos alimentos: el maíz, la calabaza y el
+              frijol son los más representativos, pero también la acompañan el nopal, el chile,
+              algunos insectos y muchos más. Su consumo era indispensable, porque era la base de la
+              alimentación y se ocupaba en distintos rituales; no era un simple alimento, era
+              sinónimo de vida.
+            </p>
+            <p class="mt-3 text-lg leading-[1.65] text-muted">
+              Hasta la fecha el sistema sigue vigente. Aunque no tiene la misma repercusión que
+              antes, existen estudios científicos que relatan su importancia en algunas poblaciones:
+              sigue siendo el mayor beneficio para muchas comunidades y es innegable que hoy son
+              símbolo de nuestra identidad, en estrecha relación con nuestra cultura.
+            </p>
+
+            <blockquote class="mt-6 rounded-[16px] border-l-4 border-[#9e2b2b] bg-panel p-5 shadow-[0_6px_20px_rgb(60_48_30_/_0.06)]">
+              <p class="text-md italic leading-[1.55] text-ink">
+                “Los dioses siguen cuidando a sus hijos a través de su fruto.”
+              </p>
+              <footer class="mt-2 text-xs tracking-[0.04em] uppercase text-muted">
+                Frase y título del cartel
+              </footer>
+            </blockquote>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4">
+            <article class="glass-card rounded-[18px] p-6">
+              <h3 class="text-xl font-mid text-ink">Maíz, frijol y calabaza</h3>
+              <p class="mt-2 text-base leading-[1.55] text-muted">
+                La triada más representativa del sistema, acompañada del nopal, el chile, los
+                insectos y los demás alimentos que durante siglos se han sembrado y comido juntos en
+                la misma parcela.
+              </p>
+            </article>
+
+            <article class="glass-card rounded-[18px] p-6">
+              <h3 class="text-xl font-mid text-ink">Alimento, ritual y vida</h3>
+              <p class="mt-2 text-base leading-[1.55] text-muted">
+                En la época mesoamericana estos alimentos no se quedaban en el plato: sostenían la
+                ceremonia, el calendario y la palabra. Comer era una forma de pertenecer.
+              </p>
+            </article>
+
+            <article class="glass-card rounded-[18px] p-6">
+              <h3 class="text-xl font-mid text-ink">Vigente y documentada</h3>
+              <p class="mt-2 text-base leading-[1.55] text-muted">
+                La milpa sigue alimentando comunidades enteras y la ciencia lo respalda: es herencia
+                viva, no pieza de museo, y continúa siendo símbolo de nuestra identidad.
+              </p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== Visualización de datos -->
+    <section id="datos" class="scroll-mt-[60px] border-t border-line/80 py-20 px-5 telefono:py-12 telefono:px-3.5">
+      <div class="mx-auto max-w-[1120px]">
+        <div class="mx-auto max-w-[780px] text-center">
+          <p class="text-xs font-mid tracking-[0.1em] uppercase text-[#9e2b2b]">
+            Visualización de datos
+          </p>
+          <h2 class="mt-2 text-[32px] font-mid leading-[1.18] tracking-[-0.015em] text-ink telefono:text-[24px]">
+            Violencia alimentaria estructurada
+          </h2>
+          <p class="mt-3 text-lg leading-[1.6] text-muted">
+            Un sistema alimentario no se compone solo de la estructura general de una dieta: también
+            va cargado de factores sociales, económicos e incluso políticos. Es aquí donde queremos
+            poner más peso.
+          </p>
+        </div>
+
+        <div class="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_1fr] lg:items-start">
+          <div>
+            <p class="text-lg leading-[1.65] text-muted">
+              La alimentación promedio de un mexicano se ha visto gravemente afectada por todos esos
+              factores. Tener una alimentación sana y de calidad debería ser un derecho garantizado
+              por parte de nuestros gobernantes; en cambio, acceder a alimentos superprocesados
+              resulta más fácil y más barato que acceder a alimentos que llevan siglos en nuestra
+              cultura y que son mucho más benéficos para la población.
+            </p>
+            <p class="mt-3 text-lg leading-[1.65] text-muted">
+              Y lo es sobre todo para la gente que los produce, los transporta o los comercializa. En
+              su lugar se beneficia a compañías transnacionales que solo se preocupan por producir y
+              producir, mientras al mismo pueblo que día tras día se despierta y sostiene este país
+              no se le puede brindar ni un alimento de calidad. Todo este tipo de circunstancias
+              también es un tipo de violencia, y se llama <strong class="font-mid text-ink">violencia
+              alimentaria estructurada</strong>.
+            </p>
+
+            <blockquote class="mt-6 rounded-[16px] border-l-4 border-[#9e2b2b] bg-panel p-5 shadow-[0_6px_20px_rgb(60_48_30_/_0.06)]">
+              <p class="text-md italic leading-[1.55] text-ink">
+                “Cuando se ejerce esta violencia no solo se pierde una alimentación: se pierde toda
+                una cultura que ha resistido por siglos.”
+              </p>
+            </blockquote>
+          </div>
+
+          <div class="glass-card rounded-[20px] p-6">
+            <h3 class="text-xl font-mid text-ink">Testimonios, no estadísticas frías</h3>
+            <p class="mt-2 text-base leading-[1.55] text-muted">
+              Nuestra visualización de datos está representada mediante testimonios de personas
+              reales. No nos enfocamos en un solo sector: hablamos de todo un pueblo.
+            </p>
+            <ul class="mt-5 flex flex-wrap gap-2 p-0 text-sm text-ink list-none">
+              <li class="rounded-full border border-line bg-paper/90 px-3 py-1.5">Trabajadores</li>
+              <li class="rounded-full border border-line bg-paper/90 px-3 py-1.5">Transportistas</li>
+              <li class="rounded-full border border-line bg-paper/90 px-3 py-1.5">Estudiantes</li>
+              <li class="rounded-full border border-line bg-paper/90 px-3 py-1.5">Maestros</li>
+              <li class="rounded-full border border-line bg-paper/90 px-3 py-1.5">Vendedores ambulantes</li>
+              <li class="rounded-full border border-line bg-paper/90 px-3 py-1.5">Comerciantes</li>
+              <li class="rounded-full border border-line bg-paper/90 px-3 py-1.5">Oficios</li>
+              <li class="rounded-full border border-line bg-paper/90 px-3 py-1.5">Profesiones</li>
+            </ul>
+            <p class="mt-5 text-base leading-[1.55] text-muted">
+              Cada registro que llega al mural es una voz: su mancha se suma a las demás y, juntas,
+              dibujan el tamaño de algo que casi nunca se mide.
+            </p>
+            <button
+              type="button"
+              data-mural-action="registrar"
+              class="glass-btn mt-6 cursor-pointer rounded-full px-5 py-2.5 text-sm font-mid"
+            >
+              Sumar mi testimonio →
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================ Implementaciones visuales -->
+    <section id="implementaciones" class="scroll-mt-[60px] border-t border-line/80 bg-paper/60 py-20 px-5 telefono:py-12 telefono:px-3.5">
+      <div class="mx-auto max-w-[1120px]">
+        <div class="mx-auto max-w-[780px] text-center">
+          <p class="text-xs font-mid tracking-[0.1em] uppercase text-[#9e2b2b]">
+            Implementaciones visuales
+          </p>
+          <h2 class="mt-2 text-[32px] font-mid leading-[1.18] tracking-[-0.015em] text-ink telefono:text-[24px]">
+            El mito de Quetzalcóatl como referente del cartel
+          </h2>
+          <p class="mt-3 text-lg leading-[1.6] text-muted">
+            Dentro de las lecturas que dejaron nuestros antepasados se encuentra lo que hoy conocemos
+            como “El mito de Quetzalcóatl”. En él se nos explica cuál era la representación de este
+            Dios-Hombre, creador de la humanidad, y algo de su significado. De sus citas tomamos dos
+            partes como referente.
+          </p>
+        </div>
+
+        <div class="mx-auto mt-8 grid max-w-[900px] grid-cols-1 gap-4 md:grid-cols-2">
+          <blockquote class="glass-card rounded-[18px] p-6">
+            <p class="text-md italic leading-[1.55] text-ink">
+              “Quetzalcóatl… después de haber creado al hombre con su propia sangre, busca la manera
+              de alimentarlo y descubre el maíz.”
+            </p>
+          </blockquote>
+          <blockquote class="glass-card rounded-[18px] p-6">
+            <p class="text-md italic leading-[1.55] text-ink">
+              “Pero sobre todo enseñó al hombre la ciencia.”
+            </p>
+          </blockquote>
+        </div>
+
+        <div class="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
+          <article class="glass-card flex flex-col rounded-[20px] p-6">
+            <span class="font-mono text-2xs tracking-[0.12em] uppercase text-[#9e2b2b]">01 · El protector</span>
+            <h3 class="mt-2 text-2xl font-mid leading-[1.2] text-ink">Quetzalcóatl al centro</h3>
+            <p class="mt-2 text-base leading-[1.55] text-muted">
+              En los relatos también se habla de él como una estrella, el padre del sol. Por eso lo
+              ocupamos como pieza central de la ilustración: símbolo protector de nuestro pueblo.
+              Desprendemos de él, y él cuida a todos sus hijos a través de estos alimentos, de este
+              maíz que se nos heredó y que por generaciones sigue acompañándonos.
+            </p>
+          </article>
+
+          <article class="glass-card flex flex-col rounded-[20px] p-6">
+            <span class="font-mono text-2xs tracking-[0.12em] uppercase text-[#9e2b2b]">02 · La sangre</span>
+            <h3 class="mt-2 text-2xl font-mid leading-[1.2] text-ink">La mancha de cochinilla</h3>
+            <p class="mt-2 text-base leading-[1.55] text-muted">
+              La creación a partir de su misma sangre se resuelve con elementos de la milpa. Del nopal
+              tomamos la cochinilla, que nos da un pigmento rojizo: esa mancha representa la sangre de
+              Quetzalcóatl, la misma de la que desprendemos nosotros, hecha con alimentos que siguen
+              intactos desde hace miles de años.
+            </p>
+            <div class="mt-5 h-2 w-full rounded-full bg-[linear-gradient(90deg,#f1dcd8_0%,#c45a52_45%,#9e2b2b_100%)]"></div>
+          </article>
+
+          <article class="glass-card flex flex-col rounded-[20px] p-6">
+            <span class="font-mono text-2xs tracking-[0.12em] uppercase text-[#9e2b2b]">03 · La ciencia</span>
+            <h3 class="mt-2 text-2xl font-mid leading-[1.2] text-ink">La computación como voz</h3>
+            <p class="mt-2 text-base leading-[1.55] text-muted">
+              La parte donde Quetzalcóatl enseñó al hombre la ciencia aquí está demostrada y aplicada:
+              esta ciencia, que es la computación, nos ayuda a dar visibilidad a un pueblo que se
+              siente lastimado y a dar un mensaje.
+            </p>
+          </article>
+        </div>
+
+        <p class="mx-auto mt-10 max-w-[820px] text-center text-lg leading-[1.65] text-muted">
+          La mancha está acompañada de una herramienta tecnológica que conocemos como visualización de
+          datos, con un compendio de testimonios: cientos de mexicanos que se sienten lastimados y
+          reprimidos ante dirigentes que no pueden darles una alimentación digna. Cuando esa
+          responsabilidad se abandona y se ejerce violencia, se pierden también los símbolos que han
+          mantenido su arraigo con la tierra original.
+        </p>
+      </div>
+    </section>
+
+    <!-- ================================================ Cómo funciona -->
+    <section id="como-funciona" class="scroll-mt-[60px] border-t border-line/80 py-20 px-5 telefono:py-12 telefono:px-3.5">
+      <div class="mx-auto max-w-[1120px]">
+        <div class="mx-auto max-w-[680px] text-center">
+          <p class="text-xs font-mid tracking-[0.1em] uppercase text-[#9e2b2b]">
+            Participación paso a paso
+          </p>
+          <h2 class="mt-2 text-[32px] font-mid leading-[1.18] tracking-[-0.015em] text-ink telefono:text-[24px]">
+            Tres preguntas breves para sumarte al lienzo
+          </h2>
+          <p class="mt-3 text-lg leading-[1.6] text-muted">
+            El proceso está diseñado para completarse en menos de un minuto, sin formularios largos
+            ni pantallas complejas.
+          </p>
+        </div>
+
+        <div class="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
+          <div class="glass-card flex flex-col justify-between rounded-[20px] p-6">
+            <div>
+              <h3 class="text-2xl font-mid text-ink">¿Cómo te llamas?</h3>
+              <p class="mt-2 text-base leading-[1.55] text-muted">
+                Comparte tu nombre (el único dato indispensable) junto con tu edad, ocupación y lugar
+                de origen para acompañar tu ficha dentro del mural.
+              </p>
+            </div>
+            <div class="mt-6 rounded-[12px] border border-line bg-paper/90 p-3.5 text-xs text-muted">
+              <div class="flex justify-between border-b border-line pb-1.5">
+                <span>Tu nombre</span>
+                <span class="font-mid text-ink">Obligatorio</span>
+              </div>
+              <div class="mt-1.5 flex justify-between">
+                <span>Edad · Ocupación · Origen</span>
+                <span>Opcionales</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card flex flex-col justify-between rounded-[20px] p-6">
+            <div>
+              <h3 class="text-2xl font-mid text-ink">¿Cómo estás hoy?</h3>
+              <p class="mt-2 text-base leading-[1.55] text-muted">
+                En lugar de elegir en una lista fría, tocas directamente una de las nueve manchas de
+                acuarela pintadas con el pincel del mural.
+              </p>
+            </div>
+            <div class="mt-6 rounded-[12px] border border-line bg-paper/90 p-3.5 text-xs text-muted">
+              <div class="flex items-center justify-between">
+                <span>Paleta emocional</span>
+                <span class="font-mid text-ink">Tonos de pigmento</span>
+              </div>
+              <div class="mt-2 h-2 w-full rounded-full bg-[linear-gradient(90deg,#2e3a6b_0%,#3e8e8a_35%,#d9a441_70%,#b23a48_100%)]"></div>
+            </div>
+          </div>
+
+          <div class="glass-card flex flex-col justify-between rounded-[20px] p-6">
+            <div>
+              <h3 class="text-2xl font-mid text-ink">¿Qué te gustaría decir?</h3>
+              <p class="mt-2 text-base leading-[1.55] text-muted">
+                Escribe un mensaje breve con tus propias palabras o toca una de las frases sugeridas
+                según el ánimo elegido. Al terminar, verás latir tu mancha en el dibujo.
+              </p>
+            </div>
+            <div class="mt-6 rounded-[12px] border border-line bg-paper/90 p-3.5 text-xs text-muted">
+              <span class="block italic text-ink">“Algo bueno se está armando…”</span>
+              <span class="mt-1 block text-2xs">Frases sugeridas o texto libre</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================ El ánimo es el color -->
+    <section id="emociones" class="scroll-mt-[60px] border-t border-line/80 bg-paper/60 py-20 px-5 telefono:py-12 telefono:px-3.5">
+      <div class="mx-auto max-w-[1120px]">
+        <div class="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div class="max-w-[640px]">
+            <p class="text-xs font-mid tracking-[0.1em] uppercase text-[#9e2b2b]">
+              Lenguaje visual
+            </p>
+            <h2 class="mt-2 text-[32px] font-mid leading-[1.18] tracking-[-0.015em] text-ink telefono:text-[24px]">
+              El ánimo es el color de cada gota
+            </h2>
+            <p class="mt-3 text-lg leading-[1.6] text-muted">
+              Cada estado de ánimo ocupa un punto en nuestra rampa de pigmentos. Dos personas con el
+              mismo sentimiento nunca pintan exactamente igual: una sutil variación hace que cada
+              mancha sea única.
+            </p>
+          </div>
+          <button
+            type="button"
+            data-mural-action="registrar"
+            class="glass-btn self-start md:self-auto cursor-pointer rounded-full px-5 py-2.5 text-sm font-mid"
+          >
+            Elegir mi color en el mural →
+          </button>
+        </div>
+
+        <div class="mt-10 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-9">
+          {MOODS.map((m) => (
+            <div class="glass-card flex flex-col items-center rounded-[16px] p-4 text-center">
+              <canvas
+                data-mood={m.name}
+                width="62"
+                height="62"
+                class="blob mx-auto block h-[62px] w-[62px]"
+              ></canvas>
+              <span class="mt-2 text-md font-mid capitalize text-ink">{m.name}</span>
+              <span class="mt-0.5 font-mono text-2xs text-muted">
+                intensidad {Math.round(m.valor * 100)}%
+              </span>
+              <p class="mt-2 line-clamp-2 text-xs italic leading-[1.35] text-muted">
+                “{m.frases[0]}”
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================== Pie de pagina -->
+  <footer class="border-t border-line bg-paper py-12 px-5 telefono:px-3.5">
+    <div class="mx-auto max-w-[1120px]">
+      <div class="flex flex-col justify-between gap-8 md:flex-row md:items-start">
+        <div class="max-w-[460px]">
+          <div class="flex items-center gap-4">
+            <a
+              href="https://www.imagesofmexico.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="transition-opacity hover:opacity-75"
+              title="Images of Mexico (imagesofmexico.com)"
+            >
+              <img
+                src={`${BASE}Logos/Images_of_Mexico.svg`}
+                alt="Images of Mexico"
+                class="h-6 w-auto opacity-85"
+              />
+            </a>
+            <span class="h-4 w-px bg-line" aria-hidden="true"></span>
+            <a
+              href="https://syle.studio/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="transition-opacity hover:opacity-75"
+              title="Syle Studio (syle.studio)"
+            >
+              <img
+                src={`${BASE}Logos/Syle_Fuente_Negro.svg`}
+                alt="Syle Studio"
+                class="h-5 w-auto opacity-80"
+              />
+            </a>
+          </div>
+          <p class="mt-3 text-sm leading-[1.55] text-muted">
+            Mural de acuarela interactivo sobre la dieta de la milpa y la violencia alimentaria
+            estructurada. Desarrollado para la convocatoria de <a href="https://www.imagesofmexico.com/" target="_blank" rel="noopener noreferrer" class="font-mid text-ink underline hover:text-[#9e2b2b]">Images of Mexico</a> en colaboración creativa con <a href="https://syle.studio/" target="_blank" rel="noopener noreferrer" class="font-mid text-ink underline hover:text-[#9e2b2b]">Syle Studio</a> y Daniel Capistran.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap gap-x-8 gap-y-4 text-sm text-muted">
+          <div class="flex flex-col gap-2">
+            <span class="font-mono text-2xs uppercase tracking-wider text-ink font-mid">Secciones</span>
+            <a href="#inicio" class="hover:text-ink no-underline">Inicio</a>
+            <a href="#mural" class="hover:text-ink no-underline">Ir al mural</a>
+            <a href="#proyecto" class="hover:text-ink no-underline">La dieta de la milpa</a>
+            <a href="#datos" class="hover:text-ink no-underline">Visualización de datos</a>
+            <a href="#implementaciones" class="hover:text-ink no-underline">Implementaciones visuales</a>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <span class="font-mono text-2xs uppercase tracking-wider text-ink font-mid">Participación</span>
+            <a href="#como-funciona" class="hover:text-ink no-underline">Cómo participar</a>
+            <a href="#emociones" class="hover:text-ink no-underline">Paleta de ánimos</a>
+            <a href="#colaboradores" class="hover:text-ink no-underline">Iniciativa y estudio</a>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <span class="font-mono text-2xs uppercase tracking-wider text-ink font-mid">Enlaces oficiales</span>
+            <a
+              href="https://www.imagesofmexico.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1 hover:text-ink no-underline"
+            >
+              Images of Mexico ↗
+            </a>
+            <a
+              href="https://syle.studio/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1 hover:text-ink no-underline"
+            >
+              Syle Studio ↗
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-8 flex flex-col justify-between gap-2 border-t border-line/70 pt-6 text-xs text-muted sm:flex-row">
+        <span>© {new Date().getFullYear()} Mural Colectivo de Acuarela · Desarrollado para Images of Mexico · Daniel Capistran & Syle Studio.</span>
+        <span class="count">295 personas en el mural</span>
+      </div>
+    </div>
+  </footer>
+
   <script>
     import '../mural/main';
   </script>

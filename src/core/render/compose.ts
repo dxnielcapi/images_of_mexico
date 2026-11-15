@@ -31,7 +31,12 @@ export function renderScene(
   target.height = H;
   const ctx = target.getContext('2d')!;
 
-  paintPaper(ctx, W, H, options.grain);
+  // Sin papel la escena queda transparente: las manchas y las lineas se
+  // componen sobre lo que haya debajo en la pagina. Los `multiply` siguen
+  // funcionando —sobre pixel transparente el modo deja pasar el origen tal
+  // cual— siempre que la capa de lineas tampoco traiga fondo.
+  if (options.paper === false) ctx.clearRect(0, 0, W, H);
+  else paintPaper(ctx, W, H, options.grain);
 
   // Agrupar puntos por zona: cada zona se pinta en su propia capa recortada.
   const byZone = new Map<string, PlacedPoint[]>();

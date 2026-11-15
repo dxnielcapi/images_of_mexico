@@ -75,14 +75,28 @@ function rasterize(
   };
 }
 
-/** Capa de lineas: el dibujo sobre fondo blanco, listo para componer en multiply. */
-export function linesLayer(drawing: LoadedDrawing, width: number, height: number): HTMLCanvasElement {
+/**
+ * Capa de lineas, lista para componer en multiply.
+ *
+ * El fondo blanco es neutro para el multiply y le da base a los PNG/JPG, que
+ * no tienen alfa. Con `fondo: false` la capa queda transparente: hace falta
+ * cuando la escena tampoco lleva papel (el mural a sangre), porque sobre un
+ * lienzo transparente el multiply pintaria ese blanco como un recuadro.
+ */
+export function linesLayer(
+  drawing: LoadedDrawing,
+  width: number,
+  height: number,
+  fondo = true
+): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = width;
   c.height = height;
   const ctx = c.getContext('2d')!;
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, width, height);
+  if (fondo) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+  }
   ctx.drawImage(drawing.source, 0, 0, width, height);
   return c;
 }

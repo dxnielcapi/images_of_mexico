@@ -3,7 +3,7 @@
  *
  * Usa el mismo pincel y la misma rampa que pintan el mural: lo que se elige
  * tocando una de estas manchas es, literalmente, el color que va a quedar
- * en la flor.
+ * en el mural.
  */
 import type { ColorRamp } from '@core/render/palette';
 import { DEFAULT_WATERCOLOR, drawWatercolorBlob, type WatercolorParams } from '@core/render/watercolor';
@@ -39,9 +39,15 @@ export function paintBlob(canvas: HTMLCanvasElement, ramp: ColorRamp, t: number,
     ramp.at(t),
     {
       ...DEFAULT_WATERCOLOR,
-      radius: (px / 2) * (opts.fill ?? 0.72),
-      layers: 26,
-      opacity: 0.05,
+      // Mas chica y menos dispersa que en el mural, y bastante mas densa: en
+      // el mural el color lo hace la suma de muchas manchas superpuestas,
+      // mientras que aqui cada muestra esta sola en su recuadro y tiene que
+      // leerse entera —y distinguirse de la de al lado, que es el mismo
+      // carmin a otra profundidad— sin salirse del canvas.
+      radius: (px / 2) * (opts.fill ?? 0.54),
+      layers: 28,
+      opacity: 0.062,
+      scatter: 0.3,
       ...opts.params,
     },
     mulberry32(hashString(opts.seed))

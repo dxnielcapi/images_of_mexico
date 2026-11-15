@@ -13,14 +13,17 @@ import { el, button, row } from './controls';
 export interface PersonPanelHooks {
   /** Zonas disponibles ahora mismo. */
   zoneNames: () => string[];
-  /** Agrega el registro; devuelve el id generado, o null si no se pudo. */
-  add: (person: Person, zona: string) => string | null;
+  /**
+   * Agrega el registro. `zona` fuerza una zona; vacia significa "la decide el
+   * mapeo". Devuelve el id y la zona que quedo, o null si no se pudo.
+   */
+  add: (person: Person, zona: string) => { id: string; zona: string } | null;
   /** Agrega n personas al azar repartidas entre las zonas. */
   addRandom?: (n: number) => void;
 }
 
 export interface PersonFormOpts {
-  /** Selector de zona; si se oculta, la zona se sortea al agregar. */
+  /** Selector de zona; si se oculta, la zona la decide el mapeo. */
   zonePicker?: boolean;
   /** Fila "Generar N al azar"; fuera en la pantalla publica. */
   bulk?: boolean;
@@ -143,17 +146,17 @@ export function personForm(hooks: PersonPanelHooks, opts: PersonFormOpts = {}): 
       feedback.textContent = 'Primero define zonas en el dibujo.';
       return;
     }
-    const zona = zoneSel.value || names[Math.floor(Math.random() * names.length)];
-    const id = hooks.add(p, zona);
-    if (!id) {
+    // Sin eleccion explicita no se sortea aqui: la zona es cosa del mapeo.
+    const res = hooks.add(p, zoneSel.value);
+    if (!res) {
       feedback.className = 'hint bad';
       feedback.textContent = 'No se pudo agregar el registro.';
       return;
     }
     feedback.className = 'hint ok';
     feedback.textContent = opts.message
-      ? opts.message(p, zona, id)
-      : `${p.nombre} agregada/o en ${zona} · ${id}`;
+      ? opts.message(p, res.zona, res.id)
+      : `${p.nombre} agregada/o en ${res.zona} · ${res.id}`;
     const keep = p.fecha;
     write({ ...emptyPerson(), fecha: keep });
   };

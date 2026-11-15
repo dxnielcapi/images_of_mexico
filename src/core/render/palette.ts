@@ -51,20 +51,20 @@ export function oklabToRgb(c: Oklab): Rgb {
   };
 }
 
-export interface Palette {
-  id: string;
-  name: string;
-  stops: string[];
-}
+/**
+ * La paleta del mural: carmin, y solo carmin.
+ *
+ * Una sola familia de color de punta a punta, asi el mural se lee como una
+ * sola tinta aguada. Lo que varia con el valor no es el tono sino la
+ * profundidad: del rosa ceniza mas lavado al carmin oscuro. Interpolado en
+ * OKLab, el recorrido no pasa por ningun gris sucio intermedio.
+ *
+ * No hay selector de paleta ni paletas alternativas: si alguna vez hace falta
+ * otra tinta, se cambian estas cuatro paradas y nada mas.
+ */
+export const CARMIN: string[] = ['#EFC3C7', '#DB8290', '#B82B41', '#8A1527'];
 
-export const PALETTES: Palette[] = [
-  { id: 'pigmentos', name: 'Pigmentos', stops: ['#2E3A6B', '#3E8E8A', '#D9A441', '#B23A48'] },
-  { id: 'botanico', name: 'Botanico', stops: ['#1F4036', '#4E8C5A', '#C7B23F', '#A8432B'] },
-  { id: 'crepusculo', name: 'Crepusculo', stops: ['#1B2A4A', '#6B4E8E', '#D26B7A', '#F0B254'] },
-  { id: 'tinta', name: 'Tinta china', stops: ['#1A1A2E', '#4A4E69', '#9A8C98', '#C9ADA7'] },
-];
-
-/** Rampa precalculada de una paleta: 256 colores interpolados en OKLab. */
+/** Rampa precalculada de la paleta: 256 colores interpolados en OKLab. */
 export class ColorRamp {
   private lut: Rgb[] = [];
 

@@ -5,11 +5,35 @@
  * modifica. Las personas que se suman en este dispositivo viven en
  * localStorage y, para que no dependan de que el navegador conserve sus datos,
  * se pueden bajar como CSV y volver a cargar desde ahi.
+ *
+ * Lo guardado va con la version del mapeo que lo produjo. Los campos `zona` y
+ * `valor` de cada registro son cache de esa regla, no dato de origen: el dato
+ * de origen son las columnas de la persona, y de ahi se puede recalcular todo
+ * (ver `@data/mapping`). Por eso cambiar el mapeo no obliga a migrar nada a
+ * mano ni deja registros viejos con una regla mezclada.
  */
 import { parseCsvText } from '@io/readers/csv';
 import type { DataRecord } from '@core/types';
+import { MAPPING_VERSION } from '@data/mapping';
 
 const KEY = 'mural.personas.v1';
+
+/** Version del formato guardado (no del mapeo). */
+const FORMAT = 2;
+
+/**
+ * Version del mapeo que se le atribuye a lo que no la declara: lo guardado por
+ * el formato 1 y las copias que llegan como CSV. La regla 1 es "cualquier
+ * petalo", y una zona ya sorteada la cumple, asi que se respeta tal como esta
+ * y recien se remapea cuando `MAPPING_VERSION` avance.
+ */
+const LEGACY_MAPPING = 1;
+
+/** Una tanda de registros con la version del mapeo que los produjo. */
+export interface StoredBatch {
+  records: DataRecord[];
+  mapeo: number;
+}
 
 /** True si el navegador deja escribir (en modo privado puede fallar). */
 export function storageAvailable(): boolean {
@@ -44,19 +68,35 @@ function sanitize(data: unknown): DataRecord[] {
   return out;
 }
 
-export function loadLocal(): DataRecord[] {
+/** Lee una tanda guardada, venga del formato 1 (lista pelada) o del 2. */
+function readBatch(data: unknown): StoredBatch {
+  if (Array.isArray(data)) return { records: sanitize(data), mapeo: LEGACY_MAPPING };
+  if (data && typeof data === 'object') {
+    const { personas, mapeo } = data as { personas?: unknown; mapeo?: unknown };
+    return {
+      records: sanitize(personas),
+      mapeo: typeof mapeo === 'number' && isFinite(mapeo) ? mapeo : LEGACY_MAPPING,
+    };
+  }
+  return { records: [], mapeo: MAPPING_VERSION };
+}
+
+export function loadLocal(): StoredBatch {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? sanitize(JSON.parse(raw)) : [];
+    return raw ? readBatch(JSON.parse(raw)) : { records: [], mapeo: MAPPING_VERSION };
   } catch {
-    return [];
+    return { records: [], mapeo: MAPPING_VERSION };
   }
 }
 
-/** Guarda; devuelve false si el navegador no dejo (modo privado o cuota). */
+/**
+ * Guarda junto a la version del mapeo vigente; devuelve false si el navegador
+ * no dejo (modo privado o cuota).
+ */
 export function saveLocal(records: DataRecord[]): boolean {
   try {
-    localStorage.setItem(KEY, JSON.stringify(records));
+    localStorage.setItem(KEY, JSON.stringify({ v: FORMAT, mapeo: MAPPING_VERSION, personas: records }));
     return true;
   } catch {
     return false;
@@ -71,18 +111,21 @@ export function clearLocal(): void {
   }
 }
 
-/** Lee una copia bajada antes: el CSV del dataset o el JSON interno. */
-export function parseBackup(text: string): DataRecord[] {
+/**
+ * Lee una copia bajada antes: el CSV del dataset o el JSON interno. El JSON
+ * dice con que mapeo se guardo; el CSV no, y se asume el heredado.
+ */
+export function parseBackup(text: string): StoredBatch {
   const t = text.trim();
-  if (!t) return [];
+  if (!t) return { records: [], mapeo: MAPPING_VERSION };
   if (t.startsWith('[') || t.startsWith('{')) {
     try {
-      return sanitize(JSON.parse(t));
+      return readBatch(JSON.parse(t));
     } catch {
-      return [];
+      return { records: [], mapeo: MAPPING_VERSION };
     }
   }
-  return parseCsvText(t).records;
+  return { records: parseCsvText(t).records, mapeo: LEGACY_MAPPING };
 }
 
 /** Une dos listas sin repetir ids; devuelve la lista y cuantos entraron. */

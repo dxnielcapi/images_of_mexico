@@ -15,33 +15,68 @@ import { loadDrawingUrl, linesLayer, type LoadedDrawing } from '@io/readers/draw
 import { parseCsvText } from '@io/readers/csv';
 import { recordsToCsv } from '@io/writers/csv';
 import { parseConfig } from '@io/zonesConfig';
+import { DATOS_EJEMPLO, PLANTILLA_DIBUJO, PLANTILLA_ZONAS } from '@io/plantilla';
 import { downloadText } from '@io/writers/download';
 import { clearLocal, loadLocal, mergeById, parseBackup, saveLocal, storageAvailable } from '@data/repo/localRepo';
-import { analyzeDrawing, placeRecords, zonesFromConfig } from '@core/scene';
+import { analyzeDrawing, placeRecords, typicalDepth, zonesFromConfig } from '@core/scene';
 import { renderScene } from '@core/render/compose';
-import { ColorRamp, PALETTES } from '@core/render/palette';
+import { CARMIN, ColorRamp } from '@core/render/palette';
+import { PAPER_COLOR } from '@core/render/paper';
 import { DEFAULT_WATERCOLOR } from '@core/render/watercolor';
 import { SpatialGrid } from '@core/sampling/grid';
 import {
-  PERSON_FIELD_KEYS, PersonIds, personToRecord, searchByName, todayIso, type Person,
+  MOODS, PERSON_FIELD_KEYS, PersonIds, searchByName, todayIso, type Person,
 } from '@data/person';
+import { mapPerson, remapAll, zonasDisponibles, type MappingContext } from '@data/mapping';
 import { personSearch, type PersonSearch } from '@ui/personPanel';
 import { registroForm, type RegistroForm, type RegistroResult } from '@ui/registroForm';
+import { paintBlob } from '@ui/blob';
 import { Tooltip } from '@ui/tooltip';
+import { createHeroReveal, type HeroReveal } from './heroReveal';
 import { el, button, fileButton, row } from '@ui/controls';
 import type { DataRecord, PlacedPoint, RenderOptions, ZoneMap } from '@core/types';
-
-const BASE = import.meta.env.BASE_URL;
 
 const RENDER: RenderOptions = {
   width: 0, height: 0,
   watercolor: { ...DEFAULT_WATERCOLOR },
-  bleed: 0, grain: 0.5, paletteId: 'pigmentos',
+  bleed: 0, grain: 0.5,
   globalSeed: 1234, showLines: true, lineAlpha: 0.9,
+  // Sin papel: la ilustracion va a sangre sobre el fondo de la pagina, sin el
+  // recuadro que dibujaba el lienzo opaco.
+  paper: false,
 };
 
-const ramp = new ColorRamp(PALETTES[0].stops);
+/**
+ * Tamano de la mancha como fraccion del lado mayor del dibujo. La plantilla se
+ * rasteriza al vuelo desde el SVG, asi que el lienzo mide lo que de el archivo
+ * (hoy ~2000 px): con un radio fijo en pixeles las manchas se verian del
+ * tamano de una mota. Atado a la proporcion, el mural se ve igual aunque
+ * manana la ilustracion se exporte mas grande o mas chica.
+ */
+const RADIO_MANCHA = 0.019;
+
+/**
+ * ...salvo que el hueco donde tiene que caer sea mas angosto que eso: entonces
+ * manda el hueco, y la mancha mide mas o menos su ancho (`typicalDepth` da la
+ * mitad). Es lo que deja que el mismo mural sirva para un dibujo de petalos
+ * anchos y para un boceto que todavia es una cinta de 14 px: con el radio de
+ * siempre, cada mancha saldria recortada en una raya y el trazo entero se
+ * empastaria de un solo rojo.
+ */
+const ANCHO_HUECO = 2.2;
+
+/** Radio de mancha que le cabe a este dibujo. */
+function radioMancha(lado: number, hueco: number): number {
+  const porDibujo = lado * RADIO_MANCHA;
+  const porHueco = hueco > 0 ? hueco * ANCHO_HUECO : porDibujo;
+  return Math.max(4, Math.round(Math.min(porDibujo, porHueco)));
+}
+
+const ramp = new ColorRamp(CARMIN);
 const ids = new PersonIds();
+
+/** Lo que el mapeo necesita saber del mural: las zonas que hay ahora. */
+const mapping = (): MappingContext => ({ zonas: zonasDisponibles(zones) });
 const fmtValue = (v: number) => v.toFixed(3).replace(/\.?0+$/, '');
 
 let drawing: LoadedDrawing | null = null;
@@ -63,7 +98,7 @@ let pulseRaf = 0;
 
 // ---------------------------------------------------------------- layout
 
-const view = el('canvas', { class: 'max-w-full max-h-full bg-paper shadow-paper' });
+const view = el('canvas', { class: 'max-w-full max-h-full' });
 
 // El aviso flotante se apoya sobre la fila de iconos, nunca debajo.
 const flash = el('div', {
@@ -73,9 +108,9 @@ const flash = el('div', {
 });
 
 const mural = el('section', {
-  class: 'absolute inset-0 flex items-center justify-center overflow-hidden '
+  class: 'lienzo absolute inset-0 flex items-center justify-center overflow-hidden '
     + 'p-6 pb-[calc(24px+var(--bar))] '
-    + 'bg-[radial-gradient(circle_at_50%_35%,#f7f2e8_0%,#e6dfd1_100%)]',
+    + 'bg-[radial-gradient(circle_at_50%_35%,#fcf9f2_0%,#f1ece0_100%)]',
 }, [view, flash]);
 
 const panels = el('div', { class: 'flex flex-auto min-h-0' });
@@ -97,8 +132,13 @@ const page = el('div', { class: 'kiosk' }, [
       + 'telefono:left-[var(--edge)] telefono:items-stretch',
   }, [panels, tools]),
 ]);
-document.body.append(page);
+const mount = document.getElementById('mural-mount') ?? document.body;
+mount.append(page);
 
+const heroCanvas = document.getElementById('hero-canvas') as HTMLCanvasElement | null;
+let heroReveal: HeroReveal | null = null;   // trazado animado del Hero
+/** Lado mayor del lienzo de fondo del Hero. */
+const HERO_MAX_SIDE = 900;
 const tooltip = new Tooltip(document.body);
 const ctx = view.getContext('2d')!;
 const scene = document.createElement('canvas');
@@ -144,7 +184,7 @@ function setOpen(which: PanelId): void {
     return;
   }
   const panel = which === 'buscar' ? searchPanel : addPanel;
-  panel.querySelector('input')?.focus();
+  panel.querySelector('input')?.focus({ preventScroll: true });
 }
 
 document.addEventListener('keydown', (e) => {
@@ -186,6 +226,12 @@ function refreshCounts(): void {
   for (const node of document.querySelectorAll('.count')) {
     node.textContent = `${placed.length} personas en el mural`;
   }
+  for (const node of document.querySelectorAll('[data-stat="personas"]')) {
+    node.textContent = String(placed.length);
+  }
+  for (const node of document.querySelectorAll('[data-stat="zonas"]')) {
+    node.textContent = String(zones.size || 12);
+  }
   if (mine) {
     mine.textContent = `${plural(propios.length, 'registro guardado', 'registros guardados')} en este dispositivo`;
   }
@@ -194,6 +240,39 @@ function refreshCounts(): void {
 function render(): void {
   renderScene(scene, { zones, points: placed, ramp, options: RENDER, lines }, 1);
   paint();
+  paintHero();
+}
+
+/** Copia el mapeo renderizado al lienzo de fondo del Hero (bajo el efecto cristal). */
+function paintHero(): void {
+  if (!heroCanvas || !drawing) return;
+  // Va desenfocado bajo el velo de cristal: no hace falta la resolucion de
+  // trabajo entera, y asi el trazado animado repinta barato cada fotograma.
+  const k = Math.min(1, HERO_MAX_SIDE / Math.max(RENDER.width, RENDER.height));
+  const w = Math.max(1, Math.round(RENDER.width * k));
+  const h = Math.max(1, Math.round(RENDER.height * k));
+  if (heroCanvas.width !== w || heroCanvas.height !== h) {
+    heroCanvas.width = w;
+    heroCanvas.height = h;
+  }
+  const hctx = heroCanvas.getContext('2d');
+  if (!hctx) return;
+  // Con el trazado en curso el Hero muestra solo lo que lleva dibujado.
+  if (heroReveal) {
+    heroReveal.paint(hctx, scene);
+  } else {
+    hctx.clearRect(0, 0, w, h);
+    hctx.drawImage(scene, 0, 0, w, h);
+  }
+  // La escena del mural va sin papel —ahi la ilustracion es a sangre, sin
+  // recuadro—, pero el fondo del Hero si lo quiere: desenfocado bajo el velo
+  // de cristal, sin esa lamina crema no se adivinaria nada. Va debajo de lo
+  // ya pintado, que es tambien donde el trazado animado espera su papel.
+  hctx.globalCompositeOperation = 'destination-over';
+  hctx.fillStyle = PAPER_COLOR;
+  hctx.fillRect(0, 0, w, h);
+  hctx.globalCompositeOperation = 'source-over';
+  heroCanvas.classList.remove('opacity-0');
 }
 
 function paint(): void {
@@ -318,7 +397,9 @@ function exportPropios(): void {
 async function importPropios(file: File): Promise<void> {
   let incoming: DataRecord[] = [];
   try {
-    incoming = parseBackup(await file.text());
+    const batch = parseBackup(await file.text());
+    // Si la copia se hizo con una regla anterior, se remapea al entrar.
+    incoming = remapAll(batch.records, batch.mapeo, mapping()).records;
   } catch {
     incoming = [];
   }
@@ -380,15 +461,12 @@ function backupBox(): HTMLElement {
 
 // ---------------------------------------------------------------- alta y busqueda
 
-function zonaAlAzar(): string {
-  const names = [...zones.keys()];
-  return names[Math.floor(Math.random() * names.length)];
-}
-
 function addPerson(p: Person): RegistroResult | null {
-  const zona = zonaAlAzar();
-  if (!zona) return null;
-  const rec = personToRecord(p, zona, ids.next(zona, p.fecha));
+  if (zones.size === 0) return null;
+  // El id va primero y no depende de la zona: si manana el mapeo manda a esta
+  // persona a otro petalo, sigue siendo la misma y su mancha no se duplica.
+  const rec = mapPerson(p, ids.next(p.fecha), mapping());
+  if (!rec.zona) return null;
   propios.push(rec);
   persist();
   ids.sync(records());
@@ -399,12 +477,12 @@ function addPerson(p: Person): RegistroResult | null {
   paint();
   search?.refresh();
   ultimoNombre = p.nombre;
-  return { id: rec.id, zona };
+  return { id: rec.id, zona: rec.zona };
 }
 
 /** "Ver mi mancha": cierra el recuadro y deja el aviso sobre el mural. */
 function verMancha(): void {
-  if (ultimoNombre) showFlash(`Gracias, ${ultimoNombre}. Tu mancha ya está en la flor.`);
+  if (ultimoNombre) showFlash(`Gracias, ${ultimoNombre}. Tu mancha ya está en el mural.`);
   setOpen(null);
   startPulse();
   alta?.reset();
@@ -436,6 +514,165 @@ view.addEventListener('mousemove', (e) => {
   else tooltip.hide();
 });
 view.addEventListener('mouseleave', () => tooltip.hide());
+window.addEventListener('scroll', () => tooltip.hide(), { passive: true });
+
+// ---------------------------------------------------------------- pagina publica
+
+/**
+ * Deja la ilustracion del Hero dibujandose sola en bucle. El ciclo solo corre
+ * con el Hero a la vista: fuera de pantalla se queda quieto donde estaba y
+ * sigue desde ahi al volver, para no gastar fotogramas en vano.
+ */
+function initHeroReveal(img: ImageData): void {
+  if (!heroCanvas) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  heroReveal = createHeroReveal(img, paintHero);
+  heroReveal.play();
+
+  const hero = document.getElementById('inicio');
+  if (!hero || !('IntersectionObserver' in window)) return;
+  const observer = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) heroReveal?.play();
+      else heroReveal?.pause();
+    }
+  }, { threshold: 0 });
+  observer.observe(hero);
+
+  // Con la pestaña en segundo plano tampoco hace falta seguir pintando.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) heroReveal?.pause();
+    else if (hero.getBoundingClientRect().bottom > 0) heroReveal?.play();
+  });
+}
+
+function initLanding(): void {
+  // Muestras reales de acuarela para la leyenda de emociones de la pagina.
+  for (const node of document.querySelectorAll<HTMLCanvasElement>('canvas[data-mood]')) {
+    const moodName = node.dataset.mood ?? '';
+    const mood = MOODS.find((m) => m.name === moodName);
+    if (mood) {
+      paintBlob(node, ramp, mood.valor, { size: 62, seed: `animo|${mood.name}` });
+    }
+  }
+
+  // Botones del Hero y las secciones que bajan al mural y abren un panel.
+  for (const btn of document.querySelectorAll<HTMLElement>('[data-mural-action]')) {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const action = btn.dataset.muralAction;
+      const target = document.getElementById('mural') ?? page;
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (action === 'registrar') setOpen('registrar');
+      else if (action === 'buscar') setOpen('buscar');
+      else setOpen(null);
+    });
+  }
+
+  // Animacion al salir del Hero haciendo scroll hacia el mural.
+  const hero = document.getElementById('inicio');
+  const heroContent = document.getElementById('hero-content');
+  const heroBg = document.getElementById('hero-bg');
+  const heroHint = document.getElementById('hero-hint');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // La barra superior se funde con el Hero mientras este a la vista y recupera
+  // su fondo solido al entrar en el resto de las secciones.
+  const nav = document.getElementById('nav');
+  if (nav && hero) {
+    const syncNav = () => {
+      nav.classList.toggle('glass-nav--hero', window.scrollY < hero.offsetHeight * 0.5);
+    };
+    window.addEventListener('scroll', syncNav, { passive: true });
+    window.addEventListener('resize', syncNav);
+    syncNav();
+  }
+
+  // El Hero ocupa la pantalla entera: el primer gesto (rueda, deslizar, toque
+  // o tecla) no desplaza de a poco sino que baja de un salto al mural. Solo
+  // actua mientras la pagina esta arriba del todo; despues el scroll es normal.
+  const muralSection = document.getElementById('mural');
+  if (hero && muralSection) {
+    let jumping = false;
+
+    /** Arriba del todo, con el Hero llenando la pantalla. */
+    const atHero = (): boolean => window.scrollY < 24;
+
+    const goToMural = (e?: Event): void => {
+      if (jumping || !atHero()) return;
+      e?.preventDefault();
+      jumping = true;
+      muralSection.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'start',
+      });
+      // Candado mientras corre el desplazamiento suave, para que los gestos
+      // que siguen no lo reinicien ni lo peleen.
+      window.setTimeout(() => { jumping = false; }, reduceMotion ? 0 : 900);
+    };
+
+    // Rueda y trackpad: solo hacia abajo (hacia arriba ya no hay nada).
+    window.addEventListener('wheel', (e) => {
+      if (e.deltaY > 0) goToMural(e);
+    }, { passive: false });
+
+    // Dedo: cuenta como gesto en cuanto sube lo suficiente.
+    let touchY: number | null = null;
+    hero.addEventListener('touchstart', (e) => {
+      touchY = e.touches[0]?.clientY ?? null;
+    }, { passive: true });
+    hero.addEventListener('touchmove', (e) => {
+      const y = e.touches[0]?.clientY;
+      if (touchY === null || y === undefined) return;
+      if (touchY - y > 12) goToMural(e);
+    }, { passive: false });
+
+    // Toque o clic suelto sobre el Hero (no sobre un boton o enlace).
+    hero.addEventListener('click', (e) => {
+      if ((e.target as Element | null)?.closest('a, button, input, [data-mural-action]')) return;
+      goToMural();
+    });
+
+    // Teclado: las teclas con las que se baja una pantalla.
+    window.addEventListener('keydown', (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as Element | null;
+      if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (['ArrowDown', 'PageDown', ' ', 'Spacebar', 'End'].includes(e.key)) goToMural(e);
+    });
+  }
+
+  if (hero && (heroContent || heroBg) && !reduceMotion) {
+    let ticking = false;
+    const updateHeroExit = () => {
+      ticking = false;
+      const h = Math.max(1, hero.offsetHeight);
+      const t = Math.min(1, Math.max(0, window.scrollY / (h * 0.85)));
+      if (heroContent) {
+        heroContent.style.opacity = String(Math.max(0, 1 - t * 1.15));
+        heroContent.style.transform = `translate3d(0, ${-t * 44}px, 0) scale(${1 - t * 0.06})`;
+        heroContent.style.filter = `blur(${t * 6}px)`;
+      }
+      if (heroBg) {
+        heroBg.style.opacity = String(Math.max(0.15, 1 - t * 0.7));
+        heroBg.style.transform = `translate3d(0, ${t * 56}px, 0) scale(${1 + t * 0.08})`;
+      }
+      if (heroHint) {
+        heroHint.style.opacity = String(Math.max(0, 1 - t * 4));
+      }
+    };
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(updateHeroExit);
+      }
+    }, { passive: true });
+    updateHeroExit();
+  }
+}
+
+initLanding();
 
 // ---------------------------------------------------------------- arranque
 
@@ -452,31 +689,51 @@ async function start(): Promise<void> {
   mural.append(loading);
 
   const [d, cfgText, csvText] = await Promise.all([
-    loadDrawingUrl(`${BASE}samples/flor.png`),
-    fetch(`${BASE}samples/flor.zones.json`).then((r) => r.text()),
-    fetch(`${BASE}samples/datos_ejemplo.csv`).then((r) => r.text()),
+    loadDrawingUrl(PLANTILLA_DIBUJO),
+    fetch(PLANTILLA_ZONAS).then((r) => r.text()),
+    fetch(DATOS_EJEMPLO).then((r) => r.text()),
   ]);
 
   drawing = d;
   RENDER.width = d.width;
   RENDER.height = d.height;
-  lines = linesLayer(d, d.width, d.height);
+  // Sin fondo: la escena es transparente y un blanco aca volveria a dibujar
+  // el recuadro al componer en multiply.
+  lines = linesLayer(d, d.width, d.height, false);
 
   const cfg = parseConfig(cfgText);
   const analysis = analyzeDrawing(d.imageData, d.width, d.height, {
     threshold: cfg.threshold,
     dilate: cfg.dilate,
+    // Mientras el boceto no cierre sus regiones, lo pintable es el relleno
+    // del trazo (ver `strokeFill`); el dibujo terminado llegara con 0.
+    close: cfg.close ?? 0,
     minArea: cfg.minArea ?? 180,
   });
   zones = zonesFromConfig(cfg, analysis, cfg.margin ?? 3).zones;
+  RENDER.watercolor.radius = radioMancha(
+    Math.max(d.width, d.height),
+    typicalDepth(zones, analysis.dist)
+  );
 
-  base = parseCsvText(csvText).records;
-  propios = loadLocal();
+  // El CSV simulado trae la zona que le toco en una version anterior del
+  // dibujo: eso es cache, no dato. Se remapea con la regla vigente (mapeo 0 =
+  // "de otra version", fuerza el recalculo) para que caiga donde corresponde
+  // en la plantilla de hoy, igual que lo registrado en el dispositivo.
+  base = remapAll(parseCsvText(csvText).records, 0, mapping()).records;
+
+  // Lo guardado en este dispositivo puede venir de una version anterior del
+  // mapeo: se recalcula con la regla vigente y se vuelve a guardar, asi no
+  // quedan dos reglas mezcladas en el mismo mural.
+  const guardado = loadLocal();
+  const { records: propiosAlDia, remapped } = remapAll(guardado.records, guardado.mapeo, mapping());
+  propios = propiosAlDia;
+  if (remapped > 0) saveLocal(propios);
   ids.sync(records());
 
   alta = registroForm({ ramp, add: addPerson, onDone: verMancha });
   addPanel.append(
-    ...panelHeader('Súmate al mural', 'Tres preguntas y tu mancha de acuarela queda en la flor.'),
+    ...panelHeader('Súmate al mural', 'Tres preguntas y tu mancha de acuarela queda en el mural.'),
     alta.root,
     // `count` no viste: es el gancho con el que `refreshCount` lo encuentra.
     el('p', { class: 'count mt-3 text-right text-xs text-muted' }),
@@ -498,6 +755,9 @@ async function start(): Promise<void> {
   tools.classList.remove('hidden');
   placeAll();
   render();
+
+  // Con la escena ya pintada, el Hero se dibuja solo trazo a trazo.
+  initHeroReveal(d.imageData);
 }
 
 start().catch((err) => {

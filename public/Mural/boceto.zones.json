@@ -1,0 +1,33 @@
+{
+  "drawing": "boceto.svg",
+  "width": 1932,
+  "height": 2000,
+  "threshold": 150,
+  "dilate": 1,
+  "minArea": 180,
+  "margin": 3,
+  "zones": [
+    {"name": "zona_01", "seedPoints": [[1121, 334]]},
+    {"name": "zona_02", "seedPoints": [[253, 158]]},
+    {"name": "zona_03", "seedPoints": [[384, 362]]},
+    {"name": "zona_04", "seedPoints": [[1741, 569]]},
+    {"name": "zona_05", "seedPoints": [[915, 101]]},
+    {"name": "zona_06", "seedPoints": [[1258, 176]]},
+    {"name": "zona_07", "seedPoints": [[357, 506]]},
+    {"name": "zona_08", "seedPoints": [[1652, 365]]},
+    {"name": "zona_09", "seedPoints": [[1823, 621]]},
+    {"name": "zona_10", "seedPoints": [[1483, 353]]},
+    {"name": "zona_11", "seedPoints": [[746, 557]]},
+    {"name": "zona_12", "seedPoints": [[1678, 565]]},
+    {"name": "zona_13", "seedPoints": [[564, 552]]},
+    {"name": "zona_14", "seedPoints": [[1756, 411]]},
+    {"name": "zona_15", "seedPoints": [[703, 536]]},
+    {"name": "zona_16", "seedPoints": [[174, 533]]},
+    {"name": "zona_17", "seedPoints": [[100, 555]]},
+    {"name": "zona_18", "seedPoints": [[672, 597]]},
+    {"name": "zona_19", "seedPoints": [[249, 503]]},
+    {"name": "zona_20", "seedPoints": [[141, 570]]},
+    {"name": "zona_21", "seedPoints": [[233, 469]]},
+    {"name": "zona_22", "seedPoints": [[112, 614]]}
+  ]
+}

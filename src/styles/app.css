@@ -104,6 +104,7 @@
   :root {
     font-size: 13px;
     color-scheme: light;
+    scroll-behavior: smooth;
   }
 
   body {

@@ -5,6 +5,9 @@
  *
  * No es parte del producto: es la herramienta con la que se afina el preset
  * que despues consume la pagina publica. Se queda en TypeScript vanilla.
+ *
+ * Vive fuera de `src/pages/` a proposito: no es una ruta del sitio. La inyecta
+ * `astro.config.mjs` solo en `astro dev`, asi el deploy no la publica.
  */
 import Base from '../layouts/Base.astro';
 import '../styles/app.css';
@@ -12,6 +15,6 @@ import '../styles/app.css';
 
 <Base title="Studio · Heatmap acuarela">
   <script>
-    import '../studio/main';
+    import './main';
   </script>
 </Base>

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
+    "tunnel": "cloudflared tunnel --url http://127.0.0.1:4321",
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check"
