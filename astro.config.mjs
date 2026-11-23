@@ -13,32 +13,6 @@ import tailwindcss from '@tailwindcss/vite';
  */
 
 /**
- * El studio es el banco de pruebas, no producto: publicarlo seria dejar el
- * laboratorio entero abierto a quien tenga la URL. Por eso su pagina vive en
- * `src/studio/page.astro`, fuera de `src/pages/`, y la ruta se inyecta solo
- * cuando hace falta:
- *
- *   - `astro dev`            -> `/studio` disponible;
- *   - `astro build`          -> no se emite, el deploy sale sin el;
- *   - `STUDIO=1 astro build` -> escotilla para compilarlo a proposito.
- *
- * `astro preview` sirve `dist/`, asi que ahi tampoco aparece salvo que el
- * build se haya hecho con la escotilla.
- */
-const studioFueraDelDeploy = {
-  name: 'studio-fuera-del-deploy',
-  hooks: {
-    'astro:config:setup': ({ command, injectRoute, logger }) => {
-      if (command !== 'dev' && process.env.STUDIO !== '1') {
-        logger.info('studio: fuera del build (STUDIO=1 para incluirlo)');
-        return;
-      }
-      injectRoute({ pattern: '/studio', entrypoint: './src/studio/page.astro' });
-    },
-  },
-};
-
-/**
  * Para mostrar el mural fuera de esta maquina (celular en la misma red, o un
  * tunel de cloudflared) el dev server tiene que dejar de ser privado en dos
  * sentidos distintos:
@@ -55,7 +29,6 @@ const studioFueraDelDeploy = {
  */
 export default defineConfig({
   output: 'static',
-  integrations: [studioFueraDelDeploy],
   server: { host: true },
   vite: {
     plugins: [tailwindcss()],

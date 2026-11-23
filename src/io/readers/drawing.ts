@@ -100,24 +100,3 @@ export function linesLayer(
   ctx.drawImage(drawing.source, 0, 0, width, height);
   return c;
 }
-
-/** Extrae los `d` de los <path> de un SVG, con su transformacion a pixeles. */
-export interface SvgPathInfo { d: string; index: number }
-
-export function extractSvgPaths(svgText: string): { paths: SvgPathInfo[]; viewBox: [number, number, number, number] | null } {
-  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
-  const svg = doc.querySelector('svg');
-  const nodes = Array.from(doc.querySelectorAll('path'));
-  const paths: SvgPathInfo[] = nodes
-    .map((n, index) => ({ d: n.getAttribute('d') || '', index }))
-    .filter((p) => p.d.length > 0);
-  let viewBox: [number, number, number, number] | null = null;
-  const vb = svg?.getAttribute('viewBox');
-  if (vb) {
-    const parts = vb.trim().split(/[\s,]+/).map(Number);
-    if (parts.length === 4 && parts.every((n) => isFinite(n))) {
-      viewBox = [parts[0], parts[1], parts[2], parts[3]];
-    }
-  }
-  return { paths, viewBox };
-}

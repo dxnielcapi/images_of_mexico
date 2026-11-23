@@ -92,10 +92,6 @@ export class ColorRamp {
     return this.lut[i];
   }
 
-  hexAt(t: number): string {
-    return rgbToHex(this.at(t));
-  }
-
   rgbaAt(t: number, alpha: number): string {
     const { r, g, b } = this.at(t);
     return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${alpha})`;

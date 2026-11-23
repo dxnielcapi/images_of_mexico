@@ -1,30 +1,18 @@
-import type { ZonesConfig, ZoneMap } from '@core/types';
-import type { DetectParams } from '@core/scene';
-
-/** Los parametros con los que se delimito: deteccion + margen interno. */
-export interface ConfigParams extends DetectParams {
-  margin: number;
-}
-
-export function buildConfig(
-  drawing: string,
-  width: number,
-  height: number,
-  p: ConfigParams,
-  zones: ZoneMap
-): ZonesConfig {
-  return {
-    drawing,
-    width,
-    height,
-    threshold: p.threshold,
-    dilate: p.dilate,
-    close: p.close ?? 0,
-    minArea: p.minArea,
-    margin: p.margin,
-    zones: [...zones.values()].map((z) => ({ name: z.name, seedPoints: z.seedPoints })),
-  };
-}
+/**
+ * El `.zones.json` del dibujo: solo lectura.
+ *
+ * Lo escribia el studio, que era donde se delimitaban las regiones a mano.
+ * Desde que el mural es una red de afinidades el acomodo no sale de las
+ * zonas, y el studio se borro: el archivo quedo como lo que ya era, una
+ * configuracion versionada junto a la ilustracion. De el se siguen leyendo
+ * los parametros con los que se binariza el dibujo —de ahi sale el campo que
+ * le pone borde a la red— y las semillas de las regiones.
+ *
+ * Si manana cambia la ilustracion hay que rehacer ese archivo, y ya no hay
+ * editor: habria que volver a escribir uno, o medir las semillas con un
+ * script al lado de `tools/`.
+ */
+import type { ZonesConfig } from '@core/types';
 
 export function parseConfig(text: string): ZonesConfig {
   const cfg = JSON.parse(text) as ZonesConfig;
