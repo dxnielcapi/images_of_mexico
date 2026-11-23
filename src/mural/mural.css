@@ -38,19 +38,36 @@
   }
 
   /* Velo de cristal esmerilado del Hero: desenfoca el mapeo de fondo como
-     cristal real dejando pasar las formas y colores de la acuarela. */
+     cristal real dejando pasar las formas y colores de la acuarela.
+
+     El desenfoque y la lamina blanca estan medidos contra el trazado animado
+     que corre detras: con 18 px de blur un trazo de dos pixeles se deshace
+     antes de llegar al ojo y la lamina al 56-82 % lo apagaba del todo, asi
+     que el dibujo se hacia y se borraba sin que nadie lo viera. Baja el velo
+     hasta donde el trazo se lee y sube en el centro, que es donde cae el
+     titulo y donde el dibujo tiene mas tinta. */
   .glass-hero-veil {
     background:
       radial-gradient(
         circle at 50% 45%,
-        rgb(255 254 251 / 0.56) 0%,
-        rgb(253 250 244 / 0.68) 65%,
-        rgb(250 246 238 / 0.82) 100%
+        rgb(255 254 251 / 0.52) 0%,
+        rgb(253 250 244 / 0.46) 65%,
+        rgb(250 246 238 / 0.58) 100%
       );
-    backdrop-filter: blur(18px) saturate(1.2);
-    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+    backdrop-filter: blur(7px) saturate(1.25);
+    -webkit-backdrop-filter: blur(7px) saturate(1.25);
     border-bottom: 1px solid rgb(255 255 255 / 0.9);
     box-shadow: inset 0 -1px 0 0 rgb(255 255 255 / 0.8);
+  }
+
+  /* El lienzo del Hero es una lamina de papel opaca y rectangular. Con el
+     velo tan cargado daba igual, pero ahora que el trazado se ve tambien se
+     veia el canto del rectangulo contra el fondo de la pagina. Se difumina
+     en redondo: la ilustracion es una corona y cabe entera dentro del tramo
+     opaco de la mascara. */
+  .hero-lamina {
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 58%, transparent 93%);
+    mask-image: radial-gradient(circle at 50% 50%, #000 58%, transparent 93%);
   }
 
   /* Transicion suave de salida del Hero al hacer scroll. */
@@ -176,6 +193,402 @@
     background: #9e2b2b;
     border-color: #9e2b2b;
     color: #fff;
+  }
+
+  /* ============================================ la escala en tarjetas
+
+     Los nueve pasos de `SENTIRES` en la seccion `#escala`, uno por tarjeta
+     sobre el carmin del fondo. Antes iban los nueve dentro de un solo
+     recuadro crema a nueve columnas: la muestra de acuarela quedaba del
+     tamano de un icono y los nombres largos ("ni bien ni mal") partian en
+     tres renglones. La tarjeta lleva lo justo —la mancha, la respuesta y
+     el medidor— y por eso puede ser baja: de un vistazo se leen los nueve.
+
+     El color del medidor no esta aqui: lo pone `main.ts` en `--tinta` con
+     la misma rampa que pinta el mural, asi que la barra y la mancha de al
+     lado son exactamente el mismo pigmento. El valor escrito es el
+     respaldo, para que la barra no salga incolora si el script no corre.
+     ------------------------------------------------------------------ */
+
+  .escala-tarjeta {
+    --tinta: #b82b41;
+    display: flex;
+    /* Con dos renglones de contenido, la mancha manda la altura: el texto
+       se centra contra ella y no contra el borde de arriba. */
+    align-items: center;
+    gap: 13px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    /* Papel con un canto claro: sobre el carmin de la seccion un borde
+       oscuro cerraria la tarjeta y la separaria del fondo de golpe. */
+    border: 1px solid rgb(255 255 255 / 0.55);
+    background: linear-gradient(168deg, #fffdf8 0%, #f8f2e7 100%);
+    box-shadow: 0 12px 26px -16px rgb(40 10 10 / 0.6);
+  }
+
+  /* La muestra. El tamano queda reservado desde la hoja para que la
+     tarjeta no salte cuando el script pinta el canvas (`paintBlob` le
+     reescribe el `style` al pintarlo). */
+  .escala-mancha {
+    flex: 0 0 auto;
+    display: block;
+    width: 58px;
+    height: 58px;
+  }
+
+  /* Sin esto un nombre largo ensancharia la columna en vez de partirse: un
+     hijo flexible no baja de su ancho de contenido. */
+  .escala-cuerpo { min-width: 0; flex: 1 1 auto; }
+
+  .escala-nombre {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-mid);
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    color: var(--color-ink);
+  }
+  /* La escala se guarda en minusculas —es lo que se lee en el alta y en el
+     CSV—, asi que la mayuscula del titulo la pone la tarjeta. */
+  .escala-nombre::first-letter { text-transform: uppercase; }
+
+  /* El medidor: el riel es el carmin lavado y el relleno el pigmento
+     exacto del paso. El ancho del relleno lo escribe la pagina desde el
+     valor del sentir; el riel ocupa el renglon entero, que es lo que
+     mantiene la tarjeta llena ahora que el numero no se escribe. */
+  .escala-medidor {
+    margin-top: 8px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgb(158 43 43 / 0.12);
+    overflow: hidden;
+  }
+  .escala-relleno {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--tinta);
+  }
+
+  /* ================================================= fondo de la dieta
+     Las tres fotos de la milpa se relevan en un ciclo largo detras del
+     texto de la seccion. Van desenfocadas y bajo un velo crema para que
+     el texto se lea encima sin necesitar recuadro, y la escena es
+     `sticky` para que acompanen todo el scroll de la seccion en vez de
+     pasar de largo en el primer parrafo.
+
+     El rotulo de abajo a la derecha nombra la foto que esta a la vista:
+     comparte keyframes, duracion y retardos con ella, asi que los dos
+     relevos salen del mismo reloj y no se desfasan.
+     ------------------------------------------------------------------ */
+
+  .dieta-escena {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    /* El contenedor va con `overflow: clip` y no `hidden`: `hidden` haria
+       de el un contenedor de scroll y el `sticky` dejaria de pegar. */
+    overflow: clip;
+  }
+
+  .dieta-foto {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    filter: blur(12px) saturate(0.95);
+    /* El desenfoque desvanece los bordes: la escala de mas los saca de
+       cuadro para que no se vea el marco claro de la foto. */
+    transform: scale(1.1);
+    animation: dietaRelevo 21s ease-in-out infinite;
+  }
+
+  .dieta-velo {
+    position: absolute;
+    inset: 0;
+    /* El velo es mas espeso en el centro, justo donde cae la columna de
+       texto, y se abre hacia los lados para dejar ver la foto. */
+    background:
+      radial-gradient(
+        ellipse 58% 78% at 50% 50%,
+        rgb(252 249 242 / 0.86) 0%,
+        rgb(250 246 238 / 0.72) 55%,
+        rgb(248 243 234 / 0.54) 100%
+      ),
+      /* Y un lavado de carmin por las esquinas: tine la seccion del mismo
+         rojo de los titulos sin llegar a la columna de texto. */
+      radial-gradient(
+        ellipse 92% 92% at 50% 50%,
+        rgb(158 43 43 / 0) 48%,
+        rgb(158 43 43 / 0.16) 100%
+      );
+  }
+
+  /* ------------------------------------------------- titulos de seccion
+
+     Un solo formato para todos los titulos de seccion, el que nacio en la
+     dieta de la milpa: carmin del Hero, cuerpo grande, su misma respiracion
+     de brasa (`dietaBrasa`, el ciclo del Hero con el minimo mas alto) y una
+     regla corta al pie. Asi los titulos de todas las secciones y la frase
+     del cartel se leen como una sola voz.
+
+     El color va por variable para que la seccion de la escala, que lleva el
+     carmin en el fondo, pueda pasar el titulo a blanco sin repetir reglas:
+     ahi basta anadir `seccion-titulo-claro`.
+     ------------------------------------------------------------------ */
+
+  .seccion-titulo {
+    --titulo-tinta: #9e2b2b;
+    --titulo-tinta-fin: rgb(178 58 72 / 0.2);
+    --titulo-brillo: rgb(158 43 43 / 0.34);
+    color: var(--titulo-tinta);
+    text-wrap: balance;
+    animation: dietaBrasa 5.2s ease-in-out infinite;
+  }
+
+  /* Sobre el fondo carmin de la escala el rojo no se ve: ahi el titulo va
+     en blanco, y con el la regla y el resplandor de la brasa. */
+  .seccion-titulo-claro {
+    --titulo-tinta: #fff;
+    --titulo-tinta-fin: rgb(255 255 255 / 0.22);
+    --titulo-brillo: rgb(255 255 255 / 0.3);
+  }
+
+  /* La regla al pie del titulo mide siempre lo mismo, no lo que el texto. */
+  .seccion-titulo::after {
+    content: "";
+    display: block;
+    width: 88px;
+    height: 3px;
+    margin-top: 16px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--titulo-tinta) 0%, var(--titulo-tinta-fin) 100%);
+  }
+
+  /* La frase que da titulo al cartel: respira medio ciclo corrido del
+     titulo de arriba para que los dos no laten al unisono. */
+  .dieta-cartel {
+    color: #9e2b2b;
+    text-wrap: balance;
+    animation: dietaBrasa 5.2s ease-in-out infinite;
+    animation-delay: -2.6s;
+  }
+
+  /* La barra de la cita, en carmin pleno en vez del lavado de las otras. */
+  .dieta-cita {
+    border-color: #9e2b2b;
+  }
+
+  /* El cuerpo deja el gris por un tono tierra con algo de rojo: aguanta
+     mejor la foto de fondo y acompana a los titulos. Solo los parrafos
+     sueltos de la columna: el de la cita lleva su propio carmin. */
+  .dieta-cuerpo > p {
+    color: #6b4a3d;
+  }
+
+  /* -------------------------------------------- aparicion con el scroll
+
+     Cada bloque entra al llegar a la pantalla: sube unos pixeles y abre la
+     opacidad cuando el observador de `main.ts` lo marca. El estado de
+     partida solo existe con `revelar-activo` en el <html> —lo pone un
+     script en linea antes de pintar la pagina—, asi que si el script no
+     corre el texto se ve entero desde el primer fotograma.
+     ------------------------------------------------------------------ */
+
+  .revelar-activo .dieta-revelar {
+    opacity: 0;
+    transform: translateY(30px);
+    /* El retardo lo reparte `main.ts` entre los bloques que entran juntos. */
+    transition:
+      opacity 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) var(--revelar-retardo, 0ms),
+      transform 0.85s cubic-bezier(0.22, 0.61, 0.36, 1) var(--revelar-retardo, 0ms);
+    will-change: opacity, transform;
+  }
+
+  /* Titulos: aparecen al entrar y se desvanecen al salir de la pantalla,
+     con un leve desenfoque y el tracking que se cierra. */
+  .revelar-activo .titulo-revelar {
+    opacity: 0;
+    filter: blur(6px);
+    letter-spacing: 0.02em;
+    transform: translateY(10px);
+    transition:
+      opacity 0.9s ease, filter 0.9s ease,
+      letter-spacing 1.1s cubic-bezier(0.22, 0.61, 0.36, 1),
+      transform 0.9s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .revelar-activo .titulo-revelar.visible {
+    opacity: 1;
+    filter: none;
+    letter-spacing: normal;
+    transform: none;
+  }
+
+  .revelar-activo .dieta-revelar.revelado {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* --------------------------------------------------------- el rotulo */
+
+  .dieta-rotulo {
+    position: absolute;
+    right: 20px;
+    bottom: 24px;
+    text-align: right;
+  }
+
+  /* Los tres nombres comparten celda: la columna mide siempre lo que el
+     mas largo y el rotulo no se mueve al cambiar de foto. */
+  .dieta-nombre {
+    display: grid;
+    justify-items: end;
+  }
+  .dieta-nombre > span {
+    grid-area: 1 / 1;
+    opacity: 0;
+    color: #9e2b2b;
+    /* El nombre no cruza con el siguiente como las fotos: en cuerpo grande
+       los dos a la vez se leerian como un borron. Se apaga antes de que
+       entre el que sigue, con el mismo reloj. */
+    animation: dietaRelevoTexto 21s ease-in-out infinite;
+  }
+
+  /* Un turno por foto: 7s de los 21 del ciclo, con el relevo cruzado. */
+  .dieta-foto:nth-of-type(2),
+  .dieta-nombre > span:nth-of-type(2) { animation-delay: 7s; }
+  .dieta-foto:nth-of-type(3),
+  .dieta-nombre > span:nth-of-type(3) { animation-delay: 14s; }
+
+  /* Debajo de este ancho la columna de texto ya llega al borde derecho: si
+     la escena siguiera pegada, el rotulo flotaria encima de los parrafos
+     durante todo el scroll. Entonces la foto cubre la seccion entera y el
+     rotulo se queda quieto en su esquina, al pie de la seccion. */
+  @media (width < 1080px) {
+    .dieta-escena {
+      position: absolute;
+      inset: 0;
+      height: auto;
+    }
+  }
+
+  /* ==================================== la mesa de referencias
+
+     La galeria de `#concepto`: tres grupos, uno por carpeta de
+     `public/Conceptos`. Las fotos llegan en dos formatos —vertical de
+     telefono y horizontal de vitrina— y una rejilla de celdas iguales
+     tendria que recortar los codices justo por donde se leen. Por eso va
+     en columnas y no en `grid`: cada figura conserva su proporcion y la
+     columna se encarga de acomodarlas.
+     ------------------------------------------------------------------ */
+
+  .concepto-rejilla {
+    columns: 1;
+    column-gap: 22px;
+  }
+
+  @media (width >= 620px) {
+    .concepto-rejilla { columns: 2; }
+  }
+
+  /* Solo los grupos de tres o mas abren la tercera columna: con dos fotos
+     la ultima quedaria vacia y el grupo se leeria descuadrado. */
+  @media (width >= 960px) {
+    .concepto-rejilla[data-columnas="3"] { columns: 3; }
+  }
+
+  /* La figura no se parte entre dos columnas: el pie siempre viaja con su
+     imagen. */
+  .concepto-figura {
+    break-inside: avoid;
+    margin-bottom: 22px;
+  }
+
+  .concepto-marco {
+    overflow: hidden;
+    border-radius: 14px;
+    border: 1px solid var(--color-line);
+    background: var(--color-panel);
+    box-shadow: 0 10px 28px rgb(60 48 30 / 0.08);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .concepto-marco > img {
+    display: block;
+    width: 100%;
+    height: auto;
+    /* Son fotos de sala de museo: un punto de saturacion de menos las
+       acerca al crema del papel del sitio. */
+    filter: saturate(0.92);
+    transition:
+      transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1),
+      filter 0.4s ease;
+  }
+
+  .concepto-figura:hover .concepto-marco {
+    border-color: var(--color-wash-line);
+    box-shadow: 0 16px 38px rgb(60 48 30 / 0.14);
+  }
+  .concepto-figura:hover .concepto-marco > img {
+    transform: scale(1.04);
+    filter: saturate(1);
+  }
+
+  .concepto-pie {
+    display: block;
+    padding: 12px 2px 0;
+  }
+
+  .concepto-pie-titulo {
+    display: block;
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-mid);
+    color: var(--color-ink);
+    text-wrap: balance;
+  }
+
+  .concepto-pie-texto {
+    display: block;
+    margin-top: 4px;
+    font-size: var(--text-md);
+    line-height: 1.55;
+    color: var(--color-muted);
+  }
+
+  /* El numero del grupo lleva la regla al lado para que los tres
+     encabezados se lean como una serie y no como tres titulos sueltos. */
+  .concepto-numero {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgb(158 43 43 / 0.75);
+  }
+  .concepto-numero::after {
+    content: "";
+    flex: 1 1 auto;
+    height: 1px;
+    background: linear-gradient(90deg, rgb(158 43 43 / 0.3) 0%, rgb(158 43 43 / 0) 100%);
+  }
+
+  /* El grupo que todavia espera sus imagenes propias: el distintivo avisa
+     que lo que se ve son marcadores de sitio y no la obra. */
+  .concepto-pendiente {
+    display: inline-block;
+    border: 1px dashed rgb(158 43 43 / 0.4);
+    border-radius: 999px;
+    padding: 3px 11px;
+    background: rgb(158 43 43 / 0.05);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgb(158 43 43 / 0.8);
   }
 
   /* ============================================================== kiosco */
@@ -362,7 +775,7 @@
   }
   .campo-area:focus { border-color: var(--color-accent); }
 
-  /* ------------------------------------------------- animo = color */
+  /* --------------------------------- la escala de alimentacion = color */
 
   .animo {
     display: grid;
@@ -389,6 +802,38 @@
   }
   .animo.sel { background: var(--color-accent-soft); color: var(--color-ink); font-weight: var(--font-weight-mid); }
   .animo.sel .blob { opacity: 1; transform: scale(1.08); }
+
+  /* ------------------------------------------ preguntas de opcion */
+
+  /* Los botones de respuesta de `PREGUNTAS`. Van en pildora como las frases
+     sugeridas del ultimo paso, pero con estado elegido: la respuesta tiene
+     que quedar a la vista despues del toque, porque se contestan dos por
+     pantalla y hay que poder revisarlas antes de seguir. */
+  .opcion {
+    padding: 8px 13px;
+    border: 1.5px solid var(--color-accent-line);
+    border-radius: 999px;
+    background: var(--color-paper);
+    font: inherit;
+    font-size: 13.5px;
+    line-height: 1.3;
+    text-align: left;
+    color: var(--color-muted);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.12s, background 0.12s, color 0.12s;
+  }
+  @media (hover: hover) {
+    .opcion:hover { border-color: var(--color-accent); color: var(--color-ink); }
+  }
+  .opcion:focus-visible { border-color: var(--color-accent); color: var(--color-ink); outline: none; }
+  .opcion.sel {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+    color: var(--color-ink);
+    font-weight: var(--font-weight-mid);
+  }
 
   /* --------------------------------------------- avisos y botonera */
 
@@ -482,6 +927,32 @@
     .hero-hint-arrow { animation: none; }
     .paso:not(.hidden) { animation: none; }
     .punto, .animo .blob { transition: none; }
+
+    /* Sin relevo queda la primera foto fija, con su nombre: si solo se
+       apagara la animacion, todo se quedaria en `opacity: 0`. */
+    .dieta-foto,
+    .dieta-nombre > span { animation: none; opacity: 0; }
+    .dieta-foto:first-of-type,
+    .dieta-nombre > span:first-of-type { opacity: 1; }
+
+    .seccion-titulo,
+    .dieta-cartel { animation: none; }
+
+    /* La galeria del concepto se queda quieta: el acercamiento al pasar
+       el cursor era el unico movimiento que le quedaba. */
+    .concepto-marco > img,
+    .concepto-marco { transition: none; }
+    .concepto-figura:hover .concepto-marco > img { transform: none; }
+
+    /* Sin movimiento no hay entrada: el texto esta puesto desde el inicio. */
+    .revelar-activo .dieta-revelar,
+    .revelar-activo .titulo-revelar {
+      opacity: 1;
+      filter: none;
+      letter-spacing: normal;
+      transform: none;
+      transition: none;
+    }
   }
 }
 
@@ -497,9 +968,43 @@
   }
 }
 
+/* La misma brasa del Hero para los titulos de la dieta, con el ciclo igual
+   pero el minimo mas alto y el resplandor mas abierto: van en cuerpo grande
+   y sobre las fotos, donde el apagado del Hero los dejaba en gris. */
+@keyframes dietaBrasa {
+  0%, 100% {
+    opacity: 0.88;
+    text-shadow: none;
+  }
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 34px var(--titulo-brillo, rgb(158 43 43 / 0.34));
+  }
+}
+
 @keyframes heroHint {
   0%, 100% { transform: translateY(0); opacity: 0.7; }
   50% { transform: translateY(5px); opacity: 1; }
+}
+
+/* El turno dura un tercio del ciclo y el apagado del que sale pisa el
+   encendido del que entra: siempre hay una foto en cuadro. */
+@keyframes dietaRelevo {
+  0%      { opacity: 0; }
+  4%      { opacity: 1; }
+  33.33%  { opacity: 1; }
+  37.33%  { opacity: 0; }
+  100%    { opacity: 0; }
+}
+
+/* El mismo turno, sin el cruce: el nombre ya esta en cero cuando arranca
+   el del relevo. */
+@keyframes dietaRelevoTexto {
+  0%      { opacity: 0; }
+  3%      { opacity: 1; }
+  30%     { opacity: 1; }
+  33.33%  { opacity: 0; }
+  100%    { opacity: 0; }
 }
 
 @keyframes entra {
