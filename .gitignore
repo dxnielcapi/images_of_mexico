@@ -2,3 +2,8 @@ node_modules
 dist
 .astro
 .DS_Store
+
+# Excluir referencias y documentos
+/public/references/
+*.md
+!README.md
