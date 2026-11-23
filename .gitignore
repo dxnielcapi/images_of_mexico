@@ -7,3 +7,4 @@ dist
 /public/references/
 *.md
 !README.md
+__pycache__/
