@@ -49,8 +49,9 @@ export class Tooltip {
     for (const key of PERSON_FIELD_KEYS) {
       if (key === NAME_KEY) continue;
       const v = r.extra[key];
-      // El animo es lo que define el color de la mancha: va realzado.
-      if (v) add(fieldLabel(key), v, key === 'estado_animo' ? `v strong ${marca()}` : 'v');
+      // Como se siente con su alimentacion es lo que define el color de la
+      // mancha: va realzado.
+      if (v) add(fieldLabel(key), v, key === 'alimentacion' ? `v strong ${marca()}` : 'v');
     }
     for (const [k, v] of Object.entries(r.extra)) {
       if (isPersonField(k)) continue;

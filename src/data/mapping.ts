@@ -19,14 +19,19 @@
  *   regla vigente (`remapAll`). Subir `MAPPING_VERSION` es todo lo que hace
  *   falta para que lo ya registrado se reacomode solo.
  *
- * Regla vigente (version 2): la zona es una region cualquiera del dibujo,
- * sorteada de forma determinista desde el id y en proporcion al espacio que
- * tiene; el valor sale del estado de animo.
+ * Regla vigente (version 3): el valor es la intensidad cultural que sale de
+ * las cinco respuestas juntas (ver `@data/afinidad`), no ya de la escala
+ * sola. La zona se sigue calculando igual —una region cualquiera del dibujo,
+ * sorteada en proporcion a su espacio— pero ya no decide donde se pinta
+ * nadie: desde que el mural es una red, el lugar de cada quien lo deciden
+ * sus respuestas (ver `@core/render/red`). La zona queda como lo que
+ * siempre fue debajo, una etiqueta del registro.
  */
 import { hashString, mulberry32 } from '@core/sampling/prng';
+import { intensidad, rasgosDe } from './afinidad';
 import type { DataRecord, ZoneMap } from '@core/types';
 import {
-  PERSON_FIELD_KEYS, personFromExtra, personToExtra, valorForMood, type Person,
+  PERSON_FIELD_KEYS, personFromExtra, personToExtra, type Person,
 } from './person';
 
 /**
@@ -34,7 +39,7 @@ import {
  * el valor: los registros guardados con una version anterior se remapean al
  * cargarlos.
  */
-export const MAPPING_VERSION = 2;
+export const MAPPING_VERSION = 3;
 
 /** Una zona del dibujo y el espacio que tiene para manchas. */
 export interface ZonaDisponible {
@@ -93,9 +98,18 @@ export function zonaFor(_person: Person, id: string, ctx: MappingContext): strin
   return zonas[zonas.length - 1].nombre;
 }
 
-/** Valor en [0,1] que pinta la mancha. Version 1: el estado de animo. */
-export function valorFor(person: Person, id: string): number {
-  return valorForMood(person.estado_animo, id);
+/**
+ * Valor en [0,1] que carga el color de alguien: su intensidad cultural, con
+ * las cinco respuestas adentro (ver `@data/afinidad`).
+ *
+ * Ya no lleva el jitter que tenia cuando salia de la escala sola. Entonces
+ * hacia falta, porque nueve respuestas posibles daban nueve colores y dos
+ * personas con el mismo animo se pintaban identicas; ahora la combinacion de
+ * las cinco da un abanico de valores propio y ensuciarlo a proposito solo
+ * taparia la diferencia real entre dos respuestas vecinas.
+ */
+export function valorFor(person: Person, _id: string): number {
+  return intensidad(rasgosDe(person));
 }
 
 /**

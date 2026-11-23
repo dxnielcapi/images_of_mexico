@@ -1,12 +1,19 @@
 /**
  * Esquema de los datos de cada registro: una persona.
  *
- * Aqui viven los campos, los estados de animo y la generacion al azar. Quien
- * decide la zona y el valor de alguien es el mapeo (`@data/mapping`), no este
+ * Aqui viven los campos, la escala de como se siente cada quien con su
+ * alimentacion, las preguntas de opcion y la generacion al azar. Quien decide
+ * la zona y el valor de alguien es el mapeo (`@data/mapping`), no este
  * archivo: asi cambiar la regla no obliga a tocar el esquema, y cambiar el
  * esquema no obliga a tocar la regla.
+ *
+ * El mural nacio preguntando por el estado de animo y hoy pregunta por la
+ * alimentacion: el campo se llama `alimentacion` y la escala `SENTIRES`. Lo
+ * guardado con el nombre anterior (`estado_animo`) se sigue leyendo —ver
+ * `personFromExtra` y `ALIAS_HEREDADOS`— porque el dato de origen de un
+ * registro ya dado de alta no se puede recuperar de ningun otro lado.
  */
-import { mulberry32, hashString, type Rng } from '@core/sampling/prng';
+import { mulberry32, hashString } from '@core/sampling/prng';
 import { generateId, parseId, todayCompact } from '@core/ids/idCodec';
 import type { DataRecord } from '@core/types';
 
@@ -15,7 +22,11 @@ export const PERSON_FIELDS = [
   { key: 'edad', label: 'Edad' },
   { key: 'ocupacion', label: 'Ocupación' },
   { key: 'lugar_origen', label: 'Lugar de origen' },
-  { key: 'estado_animo', label: 'Estado de ánimo' },
+  { key: 'alimentacion', label: 'Cómo se siente con su alimentación' },
+  { key: 'prefiere', label: 'Qué prefiere comer' },
+  { key: 'merece_digna', label: 'Merece una alimentación digna' },
+  { key: 'oportunidades_justas', label: 'Las oportunidades son justas' },
+  { key: 'perdida_soberania', label: 'Por qué se perdieron los alimentos soberanos' },
   { key: 'mensaje', label: 'Qué te gustaría decir' },
   { key: 'fecha', label: 'Fecha' },
 ] as const;
@@ -43,202 +54,240 @@ export const NAME_KEY: PersonFieldKey = 'nombre';
 /** Categoria que llevan los IDs generados para personas. */
 export const PERSON_CATEGORY = 'PERSONA';
 
-// ---------------------------------------------------------------- estados de animo
+// ------------------------------------------------- como te sientes con tu alimentacion
 
-export interface Mood {
+/** Un punto de la escala: como se siente alguien con lo que come. */
+export interface Sentir {
+  /** La respuesta tal como se guarda y se muestra. */
   name: string;
   /** Valor base en [0,1] que alimenta el mapa de calor. */
   valor: number;
-  /** Frases coherentes con el animo, para el campo "que te gustaria decir". */
+  /** Frases coherentes con ese sentir, para el campo "que te gustaria decir". */
   frases: string[];
 }
 
-export const MOODS: Mood[] = [
+/**
+ * La escala, de "nada bien" a "muy bien", en nueve pasos.
+ *
+ * Son nueve y no cinco porque la rampa de pigmentos los distingue: con cinco,
+ * el mural pierde la mitad de sus tonos. Van de mayor a menor valor —el orden
+ * en que se pintan los botones del alta y la leyenda de la pagina— y los
+ * valores son los mismos nueve de la escala de animos que habia antes, asi
+ * que lo ya registrado no cambia de color al pasar al nuevo esquema.
+ */
+export const SENTIRES: Sentir[] = [
   {
-    name: 'radiante',
+    name: 'muy bien',
     valor: 0.96,
     frases: [
-      'Hoy todo florecio al mismo tiempo',
-      'Que no se acabe este dia',
-      'Vengo cantando desde temprano',
-      'La cosecha salio mejor de lo que esperaba',
+      'Como de la milpa y me cae bien',
+      'Hoy comí completo y con gusto',
+      'En mi casa se cocina todos los días',
+      'Lo que como lo sembró alguien que conozco',
     ],
   },
   {
-    name: 'contento',
+    name: 'bien',
     valor: 0.82,
     frases: [
-      'Gracias por preguntar, estoy bien',
-      'Me gusta como quedo el patio',
-      'Comi rico y dormi suficiente',
-      'Hoy el trabajo rindio',
+      'Me alcanza para comer bien',
+      'Casi siempre hay verdura en la mesa',
+      'Cocino yo y eso ya es ganancia',
+      'No me falta lo básico',
     ],
   },
   {
-    name: 'esperanzado',
+    name: 'casi bien',
     valor: 0.7,
     frases: [
-      'Creo que esta vez si se puede',
-      'Voy a volver a intentarlo',
-      'Algo bueno se esta armando',
-      'Sembre algo que todavia no se ve',
+      'Podría comer mejor, pero no me quejo',
+      'Unos días sí, otros de prisa',
+      'Me gustaría tener más tiempo para cocinar',
+      'Trato de que haya algo fresco',
     ],
   },
   {
-    name: 'tranquilo',
+    name: 'más o menos',
     valor: 0.56,
     frases: [
-      'Sin apuro, paso a paso',
-      'Me senti a mirar el agua un rato',
-      'Nada que reclamar hoy',
-      'Prefiero el silencio de la manana',
+      'Como lo que se puede',
+      'A veces me salto una comida',
+      'Depende de cómo venga la semana',
+      'Lleno el estómago, no sé si me alimento',
     ],
   },
   {
-    name: 'pensativo',
+    name: 'ni bien ni mal',
     valor: 0.45,
     frases: [
-      'Le estoy dando vueltas a una decision',
-      'No se si quedarme o irme',
-      'Hay cosas que todavia no entiendo',
-      'Me acorde de algo que tenia guardado',
+      'No me fijo mucho en lo que como',
+      'Es lo de siempre',
+      'Ni bueno ni malo, solo comida',
+      'Como para aguantar el día',
     ],
   },
   {
-    name: 'nostalgico',
+    name: 'algo mal',
     valor: 0.34,
     frases: [
-      'Me acuerdo de la casa de mi abuela',
-      'Antes el rio llegaba mas arriba',
-      'Me gustaria volver aunque sea un dia',
-      'Guardo una foto de cuando eramos todos',
+      'Casi todo viene en paquete',
+      'La verdura está cara',
+      'Como rápido y de pie',
+      'Me falta algo y no sé qué',
     ],
   },
   {
-    name: 'cansado',
+    name: 'mal',
     valor: 0.24,
     frases: [
-      'Fue una semana larga',
-      'Necesito dormir tres dias seguidos',
-      'El cuerpo me esta pidiendo pausa',
-      'Hice lo que pude y alcanzo',
+      'Casi no comemos nada fresco',
+      'Lo barato es lo procesado',
+      'Un día sí y otro no',
+      'Me duele el estómago seguido',
     ],
   },
   {
-    name: 'inquieto',
+    name: 'muy mal',
     valor: 0.17,
     frases: [
-      'No me puedo quedar quieto',
-      'Algo me tiene con el pecho apretado',
-      'Estoy esperando una respuesta',
-      'Demasiadas cosas al mismo tiempo',
+      'No siempre hay para la comida',
+      'Comemos lo que haya',
+      'Mis hijos comen antes que yo',
+      'Hace mucho que no veo fruta en la mesa',
     ],
   },
   {
-    name: 'triste',
+    name: 'nada bien',
     valor: 0.08,
     frases: [
-      'Hoy preferiria no hablar mucho',
-      'Me hace falta alguien',
-      'Se me hizo cuesta arriba el dia',
-      'Ya va a pasar, siempre pasa',
+      'Hay días en que no como',
+      'No alcanza y no hay de dónde',
+      'Lo que llega es lo que regalan',
+      'Nadie debería comer así',
     ],
   },
 ];
 
-export const MOOD_NAMES = MOODS.map((m) => m.name);
+/**
+ * La escala de animos anterior, punto por punto. Los nueve animos tenian los
+ * mismos nueve valores, asi que la equivalencia es exacta: un registro viejo
+ * se lee con la escala nueva y pinta igual que siempre.
+ */
+const ALIAS_HEREDADOS: Record<string, string> = {
+  radiante: 'muy bien',
+  contento: 'bien',
+  esperanzado: 'casi bien',
+  tranquilo: 'más o menos',
+  pensativo: 'ni bien ni mal',
+  nostalgico: 'algo mal',
+  nostálgico: 'algo mal',
+  cansado: 'mal',
+  inquieto: 'muy mal',
+  triste: 'nada bien',
+};
 
-export function moodByName(name: string): Mood | null {
-  const n = name.trim().toLowerCase();
-  return MOODS.find((m) => m.name === n) ?? null;
+/** Para comparar respuestas: sin acentos, en minusculas, sin espacios de mas. */
+function clave(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+const POR_CLAVE = new Map<string, Sentir>(SENTIRES.map((s) => [clave(s.name), s]));
+
+/**
+ * El punto de la escala que le corresponde a una respuesta. Acepta los nombres
+ * de la escala vigente, los de la anterior, y cualquiera de los dos escrito
+ * sin acentos (un CSV editado a mano).
+ */
+export function sentirByName(name: string): Sentir | null {
+  const k = clave(name);
+  return POR_CLAVE.get(k) ?? POR_CLAVE.get(clave(ALIAS_HEREDADOS[k] ?? '')) ?? null;
 }
 
 /**
- * Valor numerico de un registro a partir de su animo, con un jitter
- * determinista derivado de la semilla (asi dos "contentos" no pintan igual).
+ * Valor numerico de un registro a partir de como se siente con su
+ * alimentacion, con un jitter determinista derivado de la semilla (asi dos
+ * "bien" no pintan igual).
+ *
+ * El prefijo `animo|` de la semilla se queda como esta a proposito: no es una
+ * etiqueta que se lea en ningun lado, es lo que hace que el jitter de cada
+ * registro sea el mismo de siempre. Cambiarlo repintaria el mural entero sin
+ * que ningun dato hubiera cambiado.
  */
-export function valorForMood(mood: string, seed: string): number {
-  const m = moodByName(mood);
-  if (!m) return 0.5;
+export function valorForSentir(sentir: string, seed: string): number {
+  const s = sentirByName(sentir);
+  if (!s) return 0.5;
   const jitter = (mulberry32(hashString(`animo|${seed}`))() - 0.5) * 0.1;
-  return Math.round(Math.min(1, Math.max(0, m.valor + jitter)) * 1000) / 1000;
+  return Math.round(Math.min(1, Math.max(0, s.valor + jitter)) * 1000) / 1000;
 }
 
-// ---------------------------------------------------------------- catalogos
+// ---------------------------------------------------------------- preguntas de opcion
 
-const NOMBRES = [
-  'Ana', 'Lucia', 'Mateo', 'Sofia', 'Ignacio', 'Camila', 'Joaquin', 'Valentina',
-  'Tomas', 'Pilar', 'Facundo', 'Rocio', 'Benicio', 'Martina', 'Emilio', 'Renata',
-  'Agustin', 'Delfina', 'Ramiro', 'Celeste', 'Bautista', 'Olivia', 'Nicolas',
-  'Mirta', 'Horacio', 'Juana', 'Elias', 'Amalia', 'Gaspar', 'Isidora', 'Ruben',
-  'Dolores', 'Teo', 'Catalina', 'Simon', 'Antonia', 'Lautaro', 'Mercedes',
-];
-
-const APELLIDOS = [
-  'Quiroga', 'Alvarez', 'Pereyra', 'Sosa', 'Bustos', 'Ferreyra', 'Ocampo',
-  'Zabala', 'Mansilla', 'Carrizo', 'Vera', 'Luna', 'Peralta', 'Ibarra',
-  'Moyano', 'Cardozo', 'Barrios', 'Escobar', 'Aguirre', 'Villalba', 'Nunes',
-  'Maidana', 'Rolon', 'Cabrera', 'Benitez', 'Solis', 'Arce', 'Gimenez',
-];
-
-const OCUPACIONES = [
-  'agricultor/a', 'veterinario/a', 'docente rural', 'apicultor/a', 'agronomo/a',
-  'tambero/a', 'tractorista', 'enfermero/a', 'almacenero/a', 'tecnico/a en riego',
-  'panadero/a', 'carpintero/a', 'viverista', 'camionero/a', 'cocinero/a',
-  'estudiante', 'herrero/a', 'contador/a', 'guia de campo', 'modista',
-  'jubilado/a', 'mecanico/a', 'bibliotecario/a', 'constructor/a', 'fotografo/a',
-  'pescador/a', 'arriero/a', 'radialista',
-];
-
-const LUGARES = [
-  'Tandil', 'Chivilcoy', 'Villa Dolores', 'Obera', 'San Rafael', 'Cafayate',
-  'Esquel', 'Rafaela', 'Gualeguay', 'Chascomus', 'Tilcara', 'Coronel Suarez',
-  'Pergamino', 'Cosquin', 'Las Flores', 'Puerto Tirol', 'Trenque Lauquen',
-  'Villa Elisa', 'Salsipuedes', 'San Javier', 'Monte Caseros', 'Laborde',
-  'Loberia', 'Chepes', 'Dina Huapi', 'Alta Gracia',
-];
-
-function pickFrom<T>(rng: Rng, arr: readonly T[]): T {
-  return arr[Math.floor(rng() * arr.length) % arr.length];
+/** Una pregunta de opcion del alta: un toque y queda respondida. */
+export interface Pregunta {
+  key: PersonFieldKey;
+  /** La pregunta como se le muestra a la persona. */
+  pregunta: string;
+  /** Las opciones: `valor` es lo que se guarda, `etiqueta` lo que se lee. */
+  opciones: { valor: string; etiqueta: string }[];
 }
 
-/** Fecha aleatoria de los ultimos `dias`, en formato YYYY-MM-DD. */
-function randomDate(rng: Rng, ref: Date, dias: number): string {
-  const d = new Date(ref.getTime() - Math.floor(rng() * dias) * 86400000);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
+const SI_NO = [
+  { valor: 'sí', etiqueta: 'Sí' },
+  { valor: 'no', etiqueta: 'No' },
+];
 
+/**
+ * Las cuatro preguntas que acompanan a la escala.
+ *
+ * No son relleno de formulario: son las dimensiones con las que va a trabajar
+ * el mapeo cuando deje de repartir por zonas. Por eso lo que se guarda es un
+ * token corto y estable (`superprocesado`, `cadenas grandes`) y no la etiqueta
+ * larga: la etiqueta se puede reescribir sin invalidar lo ya registrado.
+ */
+export const PREGUNTAS: Pregunta[] = [
+  {
+    key: 'prefiere',
+    pregunta: '¿Qué prefieres comer?',
+    opciones: [
+      { valor: 'comida mexicana', etiqueta: 'Comida completamente mexicana' },
+      { valor: 'superprocesado', etiqueta: 'Algún producto superprocesado' },
+    ],
+  },
+  {
+    key: 'merece_digna',
+    pregunta: '¿Crees que mereces una alimentación digna?',
+    opciones: SI_NO,
+  },
+  {
+    key: 'oportunidades_justas',
+    pregunta: '¿Crees que son justas las oportunidades alimenticias para los mexicanos?',
+    opciones: SI_NO,
+  },
+  {
+    key: 'perdida_soberania',
+    pregunta: '¿Por qué crees que se han perdido los alimentos soberanos de México?',
+    opciones: [
+      { valor: 'gobernantes', etiqueta: 'Por los gobernantes' },
+      { valor: 'cadenas grandes', etiqueta: 'Por las cadenas grandes' },
+      { valor: 'al pueblo ya no le interesa', etiqueta: 'Al pueblo ya no le interesa' },
+    ],
+  },
+];
+
+
+/** La fecha de hoy en YYYY-MM-DD, que es como la guarda el registro. */
 export function todayIso(d = new Date()): string {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-export interface RandomPersonOpts {
-  /** Fecha fija; si falta, se sortea dentro de los ultimos 30 dias. */
-  fecha?: string;
-  ref?: Date;
-}
-
-/** Genera una persona completa al azar con el Rng dado. */
-export function randomPerson(rng: Rng, opts: RandomPersonOpts = {}): Person {
-  const mood = pickFrom(rng, MOODS);
-  return {
-    nombre: `${pickFrom(rng, NOMBRES)} ${pickFrom(rng, APELLIDOS)}`,
-    edad: String(16 + Math.floor(rng() * 70)),
-    ocupacion: pickFrom(rng, OCUPACIONES),
-    lugar_origen: pickFrom(rng, LUGARES),
-    estado_animo: mood.name,
-    mensaje: pickFrom(rng, mood.frases),
-    fecha: opts.fecha ?? randomDate(rng, opts.ref ?? new Date(), 30),
-  };
 }
 
 /** Persona vacia, para inicializar el formulario de registro. */
 export function emptyPerson(): Person {
   return {
     nombre: '', edad: '', ocupacion: '', lugar_origen: '',
-    estado_animo: MOODS[3].name, mensaje: '', fecha: todayIso(),
+    alimentacion: SENTIRES[3].name,
+    prefiere: '', merece_digna: '', oportunidades_justas: '', perdida_soberania: '',
+    mensaje: '', fecha: todayIso(),
   };
 }
 
@@ -292,6 +341,12 @@ export function personFromExtra(extra: Record<string, string>): Person {
     const v = extra[k];
     if (v) p[k] = v;
   }
+  // Lo registrado antes del cambio de pregunta guarda la respuesta en
+  // `estado_animo`. Se pregunta por el `extra` y no por `p.alimentacion`,
+  // porque `emptyPerson` ya dejo un punto de la escala puesto para el
+  // formulario: mirando la persona, la respuesta heredada nunca entraria y el
+  // registro se repintaria con el valor del medio en vez del suyo.
+  if (!extra['alimentacion'] && extra['estado_animo']) p.alimentacion = extra['estado_animo'];
   return p;
 }
 

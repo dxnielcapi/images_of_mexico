@@ -1,15 +1,24 @@
 /**
- * Alta en la pantalla publica: tres preguntas cortas en vez de un formulario
+ * Alta en la pantalla publica: preguntas cortas en vez de un formulario
  * largo. Cada paso entra en una pantalla de telefono sin scrollear.
  *
- * El paso del medio es el que da el tono: el estado de animo no se elige en
- * una lista sino tocando una mancha de acuarela pintada con el pincel del
- * mural, asi se ve de antemano el color que va a quedar en el dibujo.
+ * El paso de la escala es el que da el tono: como se siente alguien con su
+ * alimentacion no se elige en una lista sino tocando una mancha de acuarela
+ * pintada con el pincel del mural, asi se ve de antemano el color que va a
+ * quedar en el dibujo.
+ *
+ * Los dos pasos que siguen son las cuatro preguntas de opcion (`PREGUNTAS`):
+ * van de a dos por pantalla, un toque cada una. Podrian ir las cuatro juntas,
+ * pero en un telefono eso ya es una pantalla con scroll, y este formulario se
+ * llena de pie en un kiosco.
  *
  * No toca el estado global: todo sale por los callbacks de `hooks`.
  */
 import type { ColorRamp } from '@core/render/palette';
-import { MOODS, emptyPerson, todayIso, type Person } from '@data/person';
+import {
+  PREGUNTAS, SENTIRES, emptyPerson, sentirByName, todayIso,
+  type Person, type Pregunta,
+} from '@data/person';
 import { paintBlob } from './blob';
 import { el } from './controls';
 
@@ -53,18 +62,32 @@ function campo(
   };
 }
 
-/* La pregunta y su bajada se repiten en los tres pasos y en la tarjeta final:
-   van en una constante en vez de copiar la tira cuatro veces. El margen de
+/* La pregunta y su bajada se repiten en todos los pasos y en la tarjeta final:
+   van en una constante en vez de copiar la tira cinco veces. El margen de
    AYUDA queda afuera porque la tarjeta la usa como ultima linea, y entre dos
    utilidades de la misma propiedad gana la que Tailwind emite ultima, no la
    que este despues en el atributo `class`. */
 const PREGUNTA = 'mb-[5px] text-2xl telefono:text-3xl font-mid leading-[1.3] tracking-[-0.005em]';
+/* Cuando van dos preguntas en el mismo paso, el tamano grande no cabe. */
+const PREGUNTA_PAR = 'mb-2 text-lg telefono:text-xl font-mid leading-[1.35] tracking-[-0.005em]';
 const AYUDA = 'text-[12.5px] leading-[1.45] text-muted';
 
-const STEPS = 3;
+/** Las cuatro preguntas de opcion, de a dos por paso. */
+const PARES: Pregunta[][] = [PREGUNTAS.slice(0, 2), PREGUNTAS.slice(2, 4)];
+
+/** Datos · escala · dos pares de preguntas · mensaje. */
+const STEPS = 3 + PARES.length;
+
+/** Un grupo de opciones: se responde con un toque y se puede volver a cambiar. */
+interface Grupo {
+  root: HTMLElement;
+  /** Lo elegido, o '' si todavia no hay respuesta. */
+  valor: () => string;
+  clear: () => void;
+}
 
 export function registroForm(hooks: RegistroFormHooks): RegistroForm {
-  const person: Person = { ...emptyPerson(), estado_animo: '', fecha: todayIso() };
+  const person: Person = { ...emptyPerson(), alimentacion: '', fecha: todayIso() };
   let step = 0;
 
   // ------------------------------------------------------------ paso 1
@@ -81,46 +104,99 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
   ]);
 
   // ------------------------------------------------------------ paso 2
-  const animos = el('div', { class: 'grid grid-cols-3 gap-0.5 mt-0.5' });
+  const escala = el('div', { class: 'grid grid-cols-3 gap-0.5 mt-0.5' });
   const botones = new Map<string, HTMLButtonElement>();
 
-  for (const m of MOODS) {
-    const b = el('button', { class: 'animo', type: 'button', title: m.name });
+  for (const s of SENTIRES) {
+    const b = el('button', { class: 'animo', type: 'button', title: s.name });
     b.setAttribute('aria-pressed', 'false');
     const canvas = document.createElement('canvas');
     canvas.className = 'blob';
-    paintBlob(canvas, hooks.ramp, m.valor, { size: 58, seed: `animo|${m.name}` });
-    b.append(canvas, el('span', { class: 'leading-[1.2]', text: m.name }));
-    b.addEventListener('click', () => pickMood(m.name));
-    botones.set(m.name, b);
-    animos.append(b);
+    paintBlob(canvas, hooks.ramp, s.valor, { size: 58, seed: `animo|${s.name}` });
+    b.append(canvas, el('span', { class: 'leading-[1.2]', text: s.name }));
+    b.addEventListener('click', () => pickSentir(s.name));
+    botones.set(s.name, b);
+    escala.append(b);
   }
 
   const paso2 = el('div', { class: 'paso' }, [
-    el('p', { class: PREGUNTA, text: '¿Cómo estás hoy?' }),
+    el('p', { class: PREGUNTA, text: '¿Cómo te sientes con tu alimentación?' }),
     el('p', { class: `${AYUDA} mb-3`, text: 'Toca el color que más se te parezca: ese va a ser el de tu mancha.' }),
-    animos,
+    escala,
   ]);
 
-  // ------------------------------------------------------------ paso 3
+  // ------------------------------------------------------------ pasos 3 y 4
+
+  /** Los botones de una pregunta de opcion, con su estado elegido. */
+  function grupo(q: Pregunta): Grupo {
+    let elegido = '';
+    const fila = el('div', { class: 'flex flex-wrap gap-1.5' });
+    const items = new Map<string, HTMLButtonElement>();
+
+    for (const o of q.opciones) {
+      const b = el('button', { class: 'opcion', type: 'button', text: o.etiqueta });
+      b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', () => {
+        elegido = o.valor;
+        for (const [v, node] of items) {
+          const on = v === o.valor;
+          node.classList.toggle('sel', on);
+          node.setAttribute('aria-pressed', String(on));
+        }
+        clearAviso();
+      });
+      items.set(o.valor, b);
+      fila.append(b);
+    }
+
+    return {
+      root: el('div', { class: 'mt-4 first:mt-0' }, [
+        el('p', { class: PREGUNTA_PAR, text: q.pregunta }),
+        fila,
+      ]),
+      valor: () => elegido,
+      clear: () => {
+        elegido = '';
+        for (const node of items.values()) {
+          node.classList.remove('sel');
+          node.setAttribute('aria-pressed', 'false');
+        }
+      },
+    };
+  }
+
+  /** Un paso por par de preguntas, con sus grupos a mano para validar. */
+  const paresPasos = PARES.map((par) => {
+    const grupos = par.map(grupo);
+    return {
+      preguntas: par,
+      grupos,
+      root: el('div', { class: 'paso' }, grupos.map((g) => g.root)),
+    };
+  });
+
+  // ------------------------------------------------------------ ultimo paso
   const mensaje = el('textarea', { class: 'campo-input campo-area', rows: 3 });
   // Sin placeholder y sin etiqueta propia: la pregunta de arriba la nombra.
   mensaje.setAttribute('aria-label', 'Qué te gustaría decir');
   const frases = el('div', { class: 'flex flex-wrap gap-1.5 mt-[11px]' });
 
-  const paso3 = el('div', { class: 'paso' }, [
+  const pasoMensaje = el('div', { class: 'paso' }, [
     el('p', { class: PREGUNTA, text: '¿Qué te gustaría decir?' }),
     el('label', { class: 'block mt-[15px]' }, [mensaje]),
     frases,
     el('p', { class: `${AYUDA} mb-3`, text: 'Toca una frase para usarla, o escribe la tuya. También puedes dejarlo en blanco.' }),
   ]);
 
-  /** Frases sugeridas del animo elegido: un toque las copia al mensaje. */
+  /** Los pasos en orden: es lo que recorre `goto`. */
+  const PASOS: HTMLElement[] = [paso1, paso2, ...paresPasos.map((p) => p.root), pasoMensaje];
+
+  /** Frases sugeridas del punto elegido en la escala: un toque las copia. */
   function refreshFrases(): void {
     frases.textContent = '';
-    const mood = MOODS.find((m) => m.name === person.estado_animo);
-    if (!mood) return;
-    for (const f of mood.frases) {
+    const sentir = sentirByName(person.alimentacion);
+    if (!sentir) return;
+    for (const f of sentir.frases) {
       const chip = el('button', {
         class: 'px-[11px] py-1.5 rounded-full border border-accent-line bg-paper '
           + 'text-sm leading-[1.3] text-left text-muted cursor-pointer touch-manipulation '
@@ -149,10 +225,10 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
   }
 
   function showListo(p: Person, res: RegistroResult): void {
-    const mood = MOODS.find((m) => m.name === p.estado_animo);
+    const sentir = sentirByName(p.alimentacion);
     const muestra = document.createElement('canvas');
     muestra.className = 'blob blob-grande';
-    paintBlob(muestra, hooks.ramp, mood?.valor ?? 0.5, { size: 108, seed: res.id });
+    paintBlob(muestra, hooks.ramp, sentir?.valor ?? 0.5, { size: 108, seed: res.id, mechon: true });
 
     const otra = el('button', { class: 'btn', type: 'button', text: 'Sumar a otra persona' });
     otra.addEventListener('click', reset);
@@ -164,7 +240,7 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
       muestra,
       el('p', { class: PREGUNTA, text: `Ya eres parte del mural, ${p.nombre.split(' ')[0]}.` }),
       // Ultima linea de la tarjeta: sin el aire de abajo que llevan las demas.
-      el('p', { class: AYUDA, text: `Tu mancha quedó ${dondeQuedo(res.zona)}, en el color de “${p.estado_animo}”.` }),
+      el('p', { class: AYUDA, text: `Tu mancha quedó ${dondeQuedo(res.zona)}, en el color de “${p.alimentacion}”.` }),
       el('p', {
         class: 'inline-block mt-3 px-[9px] py-[5px] rounded-[6px] border border-accent-line '
           + 'bg-paper font-mono text-xs text-muted break-all',
@@ -172,7 +248,7 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
       }),
       el('div', { class: 'alta-acciones' }, [ver, otra])
     );
-    for (const paso of [paso1, paso2, paso3]) paso.classList.add('hidden');
+    for (const paso of PASOS) paso.classList.add('hidden');
     pasos.classList.add('hidden');
     nav.classList.add('hidden');
     aviso.classList.add('hidden');
@@ -181,7 +257,7 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
   }
 
   // ------------------------------------------------------------ navegacion
-  const cuerpo = el('div', { class: 'min-h-[232px]' }, [paso1, paso2, paso3, listo]);
+  const cuerpo = el('div', { class: 'min-h-[232px]' }, [...PASOS, listo]);
 
   const pasos = el('div', { class: 'flex gap-[7px] mb-3.5' });
   const puntos: HTMLElement[] = [];
@@ -202,8 +278,8 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
     else submit();
   });
 
-  function pickMood(name: string): void {
-    person.estado_animo = name;
+  function pickSentir(name: string): void {
+    person.alimentacion = name;
     for (const [n, b] of botones) {
       const on = n === name;
       b.classList.toggle('sel', on);
@@ -239,7 +315,21 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
       return true;
     }
     if (step === 1) {
-      if (!person.estado_animo) return fail('Elige cómo estás hoy.'), false;
+      if (!person.alimentacion) return fail('Elige cómo te sientes con tu alimentación.'), false;
+      return true;
+    }
+    // Los pasos de opciones: las preguntas se contestan con un toque, asi que
+    // se piden todas. Son las que va a leer el mapeo.
+    const par = paresPasos[step - 2];
+    if (par) {
+      for (const [i, g] of par.grupos.entries()) {
+        if (!g.valor()) {
+          return fail(par.grupos.length > 1 && i === 1
+            ? 'Falta la segunda pregunta de esta pantalla.'
+            : 'Elige una respuesta para seguir.'), false;
+        }
+      }
+      for (const [i, g] of par.grupos.entries()) person[par.preguntas[i].key] = g.valor();
       return true;
     }
     person.mensaje = mensaje.value.trim();
@@ -252,7 +342,7 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
     step = next;
     clearAviso();
 
-    for (const [i, p] of [paso1, paso2, paso3].entries()) p.classList.toggle('hidden', i !== step);
+    for (const [i, p] of PASOS.entries()) p.classList.toggle('hidden', i !== step);
     for (const [i, p] of puntos.entries()) {
       p.classList.toggle('on', i === step);
       p.classList.toggle('done', i < step);
@@ -277,7 +367,7 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
   }
 
   function reset(): void {
-    Object.assign(person, { ...emptyPerson(), estado_animo: '', fecha: todayIso() });
+    Object.assign(person, { ...emptyPerson(), alimentacion: '', fecha: todayIso() });
     nombre.input.value = '';
     edad.input.value = '';
     ocupacion.input.value = '';
@@ -287,6 +377,7 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
       b.classList.remove('sel');
       b.setAttribute('aria-pressed', 'false');
     }
+    for (const par of paresPasos) for (const g of par.grupos) g.clear();
     refreshFrases();
     listo.classList.add('hidden');
     pasos.classList.remove('hidden');
