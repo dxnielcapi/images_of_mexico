@@ -1,10 +1,9 @@
 /**
  * La plantilla del mural: la ilustracion sobre la que se trabaja todo.
  *
- * Un solo lugar nombra los archivos del mural para que la pagina publica, la
- * pantalla de registro y el studio carguen siempre el mismo dibujo. Cambiar la
- * ilustracion es cambiar estas rutas (y exportar su `.zones.json` desde el
- * studio); ningun otro modulo sabe donde viven.
+ * Un solo lugar nombra los archivos del mural. Cambiar la ilustracion es
+ * cambiar estas rutas y rehacer los archivos que van a su lado; ningun otro
+ * modulo sabe donde viven.
  *
  * Hoy la plantilla es `public/Mural/bocetoactualizado.svg`, la serpiente
  * emplumada en espiral. Se carga como SVG y el motor lo rasteriza al vuelo
@@ -24,8 +23,31 @@ const BASE = import.meta.env.BASE_URL;
 /** El dibujo de lineas: la ilustracion principal. */
 export const PLANTILLA_DIBUJO = `${BASE}Mural/bocetoactualizado.svg`;
 
-/** Las zonas delimitadas sobre ese dibujo (exportadas desde el studio). */
+/**
+ * Las zonas delimitadas sobre ese dibujo, y los parametros con los que se
+ * binariza. Ya no decide donde se pinta nadie —de eso se encarga la red—,
+ * pero de aqui sale el campo que le pone borde a la figura. Es un archivo a
+ * mano desde que se borro el studio (ver `@io/zonesConfig`).
+ */
 export const PLANTILLA_ZONAS = `${BASE}Mural/bocetoactualizado.zones.json`;
+
+/**
+ * El recorrido de la espiral: la columna sobre la que se arma la
+ * visualizacion (ver `@core/render/espina`). Se hornea con `tools/espina.py`
+ * a partir del mismo SVG y se versiona al lado; si cambia la ilustracion, hay
+ * que volver a correrlo.
+ */
+export const PLANTILLA_ESPINA = `${BASE}Mural/bocetoactualizado.espina.json`;
+
+/**
+ * Las lineas del dibujo, una por una: lo que las pinceladas de la gente van
+ * a trazar (ver `@core/render/boceto`). El mural no muestra el boceto —la
+ * figura aparece porque la pintan los registros—, asi que esto no es un
+ * adorno: sin el archivo no hay figura que dibujar y el mural cae al reparto
+ * por zonas de antes. Se hornea con `tools/trazos.py` desde el mismo SVG y se
+ * versiona al lado; si cambia la ilustracion, hay que volver a correrlo.
+ */
+export const PLANTILLA_TRAZOS = `${BASE}Mural/bocetoactualizado.trazos.json`;
 
 /** El banco de registros simulados, de solo lectura. */
 export const DATOS_EJEMPLO = `${BASE}samples/datos_ejemplo.csv`;

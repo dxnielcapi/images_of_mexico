@@ -1,6 +1,4 @@
 import type { LabelResult } from './connectedComponents';
-import { dilate } from './morphology';
-import { createSurfaceCtx } from '../platform/surface';
 
 /** Una zona nombrada: una o varias regiones conexas agrupadas. */
 export interface Zone {
@@ -79,46 +77,6 @@ export function buildZone(
     valid: Int32Array.from(valid),
     hue,
   };
-}
-
-/**
- * Canvas de recorte de la zona (alfa 255 dentro), opcionalmente con sangrado.
- * El canvas cubre el bbox expandido por `bleed`, escalado por `scale`.
- */
-export function zoneClipCanvas(zone: Zone, bleed: number, scale: number): {
-  canvas: HTMLCanvasElement; offsetX: number; offsetY: number;
-} {
-  const b = Math.max(0, Math.round(bleed));
-  const w = zone.maskW + b * 2;
-  const h = zone.maskH + b * 2;
-  const padded = new Uint8Array(w * h);
-  for (let y = 0; y < zone.maskH; y++) {
-    for (let x = 0; x < zone.maskW; x++) {
-      if (zone.mask[y * zone.maskW + x]) padded[(y + b) * w + (x + b)] = 1;
-    }
-  }
-  const grown = b > 0 ? dilate(padded, w, h, b) : padded;
-
-  const { canvas: base, ctx: bctx } = createSurfaceCtx(w, h);
-  const img = bctx.createImageData(w, h);
-  for (let i = 0; i < grown.length; i++) {
-    if (grown[i]) {
-      img.data[i * 4] = 255; img.data[i * 4 + 1] = 255;
-      img.data[i * 4 + 2] = 255; img.data[i * 4 + 3] = 255;
-    }
-  }
-  bctx.putImageData(img, 0, 0);
-
-  if (scale === 1) {
-    return { canvas: base, offsetX: zone.minX - b, offsetY: zone.minY - b };
-  }
-  const { canvas: up, ctx: uctx } = createSurfaceCtx(
-    Math.round(w * scale),
-    Math.round(h * scale)
-  );
-  uctx.imageSmoothingEnabled = true;
-  uctx.drawImage(base, 0, 0, up.width, up.height);
-  return { canvas: up, offsetX: (zone.minX - b) * scale, offsetY: (zone.minY - b) * scale };
 }
 
 /** Paleta pastel estable para distinguir zonas al resaltar. */
