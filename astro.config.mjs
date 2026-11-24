@@ -4,8 +4,10 @@ import tailwindcss from '@tailwindcss/vite';
 /**
  * Sitio estatico, sin adapter: la pagina se prerenderiza como HTML y el motor
  * de acuarela corre en el navegador (los `<script>` de los `.astro` son
- * client-only). Los datos se piden en runtime a Supabase desde el cliente,
- * asi que el HTML cacheado nunca queda viejo.
+ * client-only). Los registros no estan en el HTML: hoy salen del
+ * `localStorage` del dispositivo y del banco simulado, y cuando haya base de
+ * datos se pediran en runtime desde el cliente. En los dos casos el HTML
+ * cacheado nunca queda viejo.
  *
  * Si algun dia el alta necesita pasar por un endpoint propio (rate limit,
  * captcha), se instala un adapter y se marca ESA sola ruta con

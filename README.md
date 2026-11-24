@@ -224,9 +224,10 @@ Como el navegador puede borrar sus datos, el recuadro de alta trae al pie un
 puesto, no de quien se registra—:
 
 - **Descargar copia** — baja `mural_registros_<fecha>.csv` con las personas
-  registradas en este dispositivo, con las mismas diez columnas que
+  registradas en este dispositivo, con las mismas catorce columnas que
   `datos_ejemplo.csv` (`id, zona, valor, nombre, edad, ocupacion, lugar_origen,
-  estado_animo, mensaje, fecha`). Sirve de respaldo, para pasar a otra máquina y
+  alimentacion, prefiere, merece_digna, oportunidades_justas,
+  perdida_soberania, mensaje, fecha`). Sirve de respaldo, para pasar a otra máquina y
   para cargarlo después en un servicio gestionado.
 - **Importar copia** — vuelve a cargar ese CSV (o el JSON interno). Se omiten
   los ids repetidos y los que ya están en el CSV de ejemplo, así reimportar no
@@ -407,8 +408,12 @@ para quien quiera verla de todos modos.
 de alguien. Está aparte del esquema (`@data/person`) y de la persistencia
 (`@data/repo/localRepo`) porque es justo lo que va a cambiar cuando estén
 delimitados los datos y las zonas definitivas, y el resto del sistema no debería
-enterarse. La regla vigente (versión 1) es: la zona es un pétalo cualquiera
-sorteado desde el ID, y el valor sale del estado de ánimo.
+enterarse. La regla vigente (**versión 3**) es: el valor es la intensidad
+cultural que sale de las cinco respuestas juntas (`intensidad(rasgosDe(…))`,
+ver *La afinidad*), y la zona se sigue sorteando desde el ID en proporción al
+espacio de cada región —pero ya no decide dónde se pinta nadie: eso lo deciden
+las respuestas, a través de la red. La zona quedó como lo que siempre fue
+debajo, una etiqueta del registro.
 
 Tres reglas sostienen que ese cambio no genere conflictos:
 
@@ -838,15 +843,31 @@ pestaña está al frente (`visibilitychange`) y el sistema no pide
 no esté a la vista: el fondo del Hero mira esa misma escena. Con movimiento
 reducido no hay bucle y el mural se ve igual, quieto y entero.
 
-## El ánimo es el color
+## Las respuestas son el color
 
-`estado_animo` toma uno de nueve valores (`radiante`, `contento`, `esperanzado`,
-`tranquilo`, `pensativo`, `nostalgico`, `cansado`, `inquieto`, `triste`) y cada
-uno tiene un `valor` base en `[0,1]` con un jitter determinista derivado del ID
-(`src/data/person.ts`). Por eso el mapa de calor se lee como un mapa de ánimos,
-y dos personas igual de contentas no pintan exactamente del mismo color. Cada
-ánimo trae además sus frases sugeridas, que son las que ofrece el paso 3 del
-alta. Si el CSV trae su propia columna `valor`, se respeta tal cual.
+`alimentacion` toma uno de los nueve pasos de `SENTIRES` (`muy bien`, `bien`,
+`casi bien`, `más o menos`, `ni bien ni mal`, `algo mal`, `mal`, `muy mal`,
+`nada bien`) y cada paso trae sus frases sugeridas, que son las que ofrece el
+último paso del alta.
+
+Pero el color no sale de la escala sola: sale de las **cinco** respuestas
+juntas, vía `intensidad(rasgosDe(person))` en `@data/afinidad`. La escala pesa
+lo suyo y las cuatro preguntas de opción corren el valor hacia arriba o hacia
+abajo, así que dos personas que se sienten igual con su comida pueden pintar
+distinto si no piensan igual sobre ella.
+
+Ese cambio se llevó el jitter que había antes. Cuando el valor salía de la
+escala sola hacía falta —nueve respuestas daban nueve colores exactos, y dos
+personas igual de contentas se pintaban idénticas—; ahora la combinación de las
+cinco da su propio abanico, y ensuciarlo a propósito solo taparía la diferencia
+real entre dos respuestas vecinas.
+
+Nueve pasos y no cinco porque la rampa los distingue: con cinco, el mural
+pierde la mitad de sus tonos. Y conservan los nueve valores de la escala de
+ánimos anterior, así que lo registrado antes del cambio no se movió de color.
+Lo guardado con el nombre viejo (`estado_animo`) se sigue leyendo, vía
+`ALIAS_HEREDADOS`. Si el CSV trae su propia columna `valor`, se respeta tal
+cual.
 
 ## El carmín es la tinta
 
@@ -896,8 +917,8 @@ no trae `id`, se genera uno y se reporta en advertencias.
   de dos líneas —el cuerpo, una pluma— su interior mide menos que el disco y se
   rellena; el aire entre dos vueltas de la espiral es más ancho y queda afuera.
   Sale justo la superficie que habría encerrado el dibujo terminado, sin pedirle
-  que cierre. Con `close: 24`, el boceto actual da 121 piezas y 407 000 px
-  pintables, agrupadas en una sola zona. En el dibujo definitivo vuelve a 0.
+  que cierre. Con `close: 24`, `Final.svg` da 261 piezas agrupadas en una sola
+  zona. Si el dibujo llega cerrando sus regiones, vuelve a 0.
 - **Tamaño de la mancha** — 1,9 % del lado mayor del dibujo, *salvo* que el
   hueco donde tiene que caer sea más angosto: entonces manda el hueco y la
   mancha mide su ancho (`typicalDepth`, la mediana de la distancia al borde
@@ -1089,7 +1110,7 @@ Tailwind dentro de strings de TypeScript. `core/`, `io/` y `data/` no se tocan.
   habla solo con ese módulo—.
 - **El boceto no está cerrado y las zonas no tienen nombre propio.** Mientras
   el dibujo siga sin cerrar, todo cae en una sola `zona_01` repartida por los
-  121 trozos del relleno del trazo: el mapeo tiene una sola casilla donde
+  261 trozos del relleno del trazo: el mapeo tiene una sola casilla donde
   mandar a la gente. Cuando llegue el dibujo con sus regiones delimitadas hay
   que volver `close` a 0 y nombrar las zonas en el `.zones.json` que escribe
   `tools/zonas.py`; ahí `dondeQuedo()` puede decir algo mejor que "en la
@@ -1103,10 +1124,6 @@ Tailwind dentro de strings de TypeScript. `core/`, `io/` y `data/` no se tocan.
 - **La ficha solo se abre con mouse.** El hover escucha `mousemove`; en teléfono
   —el dispositivo para el que está diseñada la pantalla— la única forma de ver a
   alguien es el buscador.
-- **El mapeo todavía no mira los datos.** La versión 1 reparte en cualquier
-  pétalo, por igual entre grandes y chicos, sin leer ningún campo de la persona.
-  Cuando los datos estén delimitados, el cuerpo que cambia es `zonaFor` y basta
-  subir `MAPPING_VERSION`.
 - **Deploy sin definir**: `astro.config.mjs` no fija `site` ni `base`. El código
   respeta `import.meta.env.BASE_URL`, pero para publicar bajo subruta hay que
   configurarlo.
