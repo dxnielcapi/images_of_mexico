@@ -16,6 +16,19 @@
  * version anterior del mapeo, aqui se devuelve al dia y se avisa cuantos
  * cambiaron (`remapeados`), pero volver a escribirlo es decision de quien
  * llama. El kiosco lo hace; el timelapse, que es de solo mirar, no.
+ *
+ * La gente del mural sale de dos sitios y solo uno es real: `propios` son las
+ * personas que se registraron en este dispositivo y `base` es el banco
+ * simulado de `tools/registros.mjs`, que existe porque sin gente no hay figura
+ * que dibujar. Cual de los dos entra lo decide `PUBLIC_DATOS_SIMULADOS` en el
+ * momento del build, no la rama: asi el mismo codigo sirve para la pantalla de
+ * pruebas —donde el banco llena el cartel— y para la de produccion, donde el
+ * mural tiene que ser lo que de verdad dejo la gente y nada mas.
+ *
+ * Va apagado por defecto a proposito. Si algun dia falta la variable, el peor
+ * caso es un mural vacio donde se esperaba el banco: raro, y se ve de
+ * inmediato. Al revez —mil ochocientas personas inventadas haciendose pasar
+ * por reales en la pantalla publica— no se nota y es mentira.
  */
 import { loadDrawingUrl, loadImage, type LoadedDrawing } from '@io/readers/drawing';
 import { parseCsvText } from '@io/readers/csv';
@@ -37,6 +50,13 @@ import { remapAll, zonasDisponibles, type MappingContext } from '@data/mapping';
 import { FIRMAS, PUESTO_DE_FIRMA, afinidad, firmaDe, rasgosDe, type Rasgos } from '@data/afinidad';
 import { personFromExtra } from '@data/person';
 import type { DataRecord, RenderOptions, ZoneMap } from '@core/types';
+
+/**
+ * Si el mural se llena con el banco simulado. Se resuelve en el build: Vite
+ * reemplaza `import.meta.env` por el valor literal, asi que en produccion el
+ * `fetch` del CSV no queda ni escrito.
+ */
+const SIMULADOS = import.meta.env.PUBLIC_DATOS_SIMULADOS === 'true';
 
 /**
  * Como se ve el mural, antes de conocer el dibujo.
@@ -81,7 +101,10 @@ export interface Mural {
   cartel: Cartel;
   /** Lo que el mapeo necesita saber del mural: las zonas que hay. */
   mapeo: MappingContext;
-  /** Los registros del CSV de ejemplo, de solo lectura. */
+  /**
+   * El banco simulado, de solo lectura. Vacio si `PUBLIC_DATOS_SIMULADOS` no
+   * esta encendido, que es como corre la pantalla de produccion.
+   */
   base: DataRecord[];
   /** Los registrados en este navegador. */
   propios: DataRecord[];
@@ -103,7 +126,9 @@ export async function cargarMural(render: RenderOptions): Promise<Mural> {
   const [d, cfgText, csvText, espinaText, trazosText, tlacuiloSvg, tlacuiloImg] = await Promise.all([
     loadDrawingUrl(PLANTILLA_DIBUJO),
     fetch(PLANTILLA_ZONAS).then((r) => r.text()),
-    fetch(DATOS_EJEMPLO).then((r) => r.text()),
+    // El banco simulado solo si esta encendido (ver `SIMULADOS`). Apagado no
+    // se pide: produccion no tiene por que bajar 300 KB de gente inventada.
+    SIMULADOS ? fetch(DATOS_EJEMPLO).then((r) => r.text()) : Promise.resolve(''),
     // La espiral es el eje y las lineas son el detalle que se le va sumando
     // al recorrido. Si faltaran, el mural tiene que abrir igual: sin espiral
     // se cae al reparto por zonas de antes, y sin lineas la red se queda en
@@ -179,7 +204,9 @@ export async function cargarMural(render: RenderOptions): Promise<Mural> {
   // dibujo: eso es cache, no dato. Se remapea con la regla vigente (mapeo 0 =
   // "de otra version", fuerza el recalculo) para que caiga donde corresponde
   // en la plantilla de hoy, igual que lo registrado en el dispositivo.
-  const base = remapAll(parseCsvText(csvText).records, 0, mapeo).records;
+  const base = csvText
+    ? remapAll(parseCsvText(csvText).records, 0, mapeo).records
+    : [];
 
   // Lo guardado en este dispositivo puede venir de una version anterior del
   // mapeo: se recalcula con la regla vigente. Volver a guardarlo es de quien

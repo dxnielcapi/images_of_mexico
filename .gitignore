@@ -8,3 +8,8 @@ dist
 *.md
 !README.md
 __pycache__/
+
+# El valor de cada maquina y de cada despliegue; la plantilla es .env.example
+.env
+.env.*
+!.env.example
