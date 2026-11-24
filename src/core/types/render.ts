@@ -1,9 +1,6 @@
 import type { WatercolorParams } from '../render/watercolor';
 import type { TrazoParams } from '../render/trazo';
-import type { RamaParams } from '../render/rama';
 import type { PinceladaParams } from '../render/pincelada';
-import type { TroncoParams } from '../render/tronco';
-import type { TestimonioParams } from '../render/testimonios';
 import type { RedParams } from '../render/red';
 import type { SiluetaParams } from '../render/silueta';
 
@@ -14,14 +11,8 @@ export interface RenderOptions {
   watercolor: WatercolorParams;
   /** Como se traza cada registro: el filamento y su punta. */
   trazo: TrazoParams;
-  /** La rama de cada registro sobre la espiral. */
-  rama: RamaParams;
   /** La pincelada de cada registro sobre las lineas del dibujo. */
   pincelada: PinceladaParams;
-  /** El trazo principal que recorre la espiral. */
-  tronco: TroncoParams;
-  /** Los testimonios escritos dentro del tronco. */
-  testimonios: TestimonioParams;
   /** La red de afinidades: como se reparte la gente y como se une. */
   red: RedParams;
   /** El cartel debajo: que tan en fantasma va y cuanto lo entinta la gente. */

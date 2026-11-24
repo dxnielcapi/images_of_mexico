@@ -166,9 +166,6 @@ export async function cargarMural(render: RenderOptions): Promise<Mural> {
   );
   render.watercolor = medidas.watercolor;
   render.trazo = medidas.trazo;
-  render.rama = medidas.rama;
-  render.tronco = medidas.tronco;
-  render.testimonios = medidas.testimonios;
 
   let espina: Espina | null = null;
   if (espinaText) {

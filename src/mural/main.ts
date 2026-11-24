@@ -26,7 +26,6 @@ import { placeRecords } from '@core/scene';
 import { renderScene } from '@core/render/compose';
 import { CARMIN, ColorRamp } from '@core/render/palette';
 import { PAPER_COLOR } from '@core/render/paper';
-import type { Espina } from '@core/render/espina';
 import type { Boceto } from '@core/render/boceto';
 import { ocupacionDe, tramosDe, type Recorte, type Tramos } from '@core/render/silueta';
 import { dibujarFigura, rasterizarFigura, type Figura } from '@core/render/figura';
@@ -71,7 +70,6 @@ let zones: ZoneMap = new Map();
 /** El campo del dibujo: guia el trazo, no lo recorta. */
 let field: ShapeField | null = null;
 /** La espiral del dibujo: el eje sobre el que se ancla todo lo demas. */
-let espina: Espina | null = null;
 /** Las lineas del dibujo: lo que la red va entintando. */
 let boceto: Boceto | null = null;
 /** El dibujo medido y ordenado: de aqui sale el recorrido de cada tanda. */
@@ -648,7 +646,7 @@ function render(): void {
       // Sin lamina: `renderScene` la sabe componer y el mural no se la da
       // (ver `showLines` en RENDER). Rasterizar dos mil pixeles de lado para
       // no dibujarlos nunca serian quince megas de lienzo de adorno.
-      points: placed, ramp, options: RENDER, lines: null, field, espina, red,
+      points: placed, ramp, options: RENDER, lines: null, field, red,
       tramos, figura: tlacuilo,
       laminaFigura: tlacuilo ? laminaTlacuilo : null,
     },
@@ -1459,7 +1457,6 @@ async function start(): Promise<void> {
   drawing = d;
   zones = cargado.cartel.zones;
   field = cargado.cartel.field;
-  espina = cargado.cartel.espina;
   boceto = cargado.cartel.boceto;
   trama = cargado.cartel.trama;
   tlacuilo = cargado.cartel.tlacuilo;

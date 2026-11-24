@@ -15,10 +15,7 @@
  */
 import { DEFAULT_WATERCOLOR, type WatercolorParams } from './watercolor';
 import { DEFAULT_TRAZO, type TrazoParams } from './trazo';
-import { DEFAULT_RAMA, type RamaParams } from './rama';
 import { DEFAULT_PINCELADA, type PinceladaParams } from './pincelada';
-import { DEFAULT_TRONCO, type TroncoParams } from './tronco';
-import { DEFAULT_TESTIMONIOS, type TestimonioParams } from './testimonios';
 import { DEFAULT_RED, type RedParams } from './red';
 import { DEFAULT_SILUETA, type SiluetaParams } from './silueta';
 
@@ -43,18 +40,6 @@ const ANCHO_HUECO = 2.2;
 const LARGO_TRAZO = 0.08;
 const GROSOR_TRAZO = 0.0026;
 const PUNTA_TRAZO = 0.003;
-
-/**
- * La rama y el tronco se miden contra el dibujo entero, no contra el hueco:
- * no tienen que caber en ningun lado. El largo de la rama esta medido contra
- * la separacion entre dos vueltas de la espiral —una rama fuerte casi toca la
- * vuelta de al lado, y ahi es donde el mural se cierra como figura—, y el
- * ancho del tronco contra el de la banda del cuerpo.
- */
-const LARGO_RAMA = 0.125;
-const ANCHO_RAMA = 0.0105;
-const ANCHO_TRONCO = 0.009;
-const ANCHO_TRONCO_DATO = 0.008;
 
 /**
  * La pincelada tampoco se mide contra el hueco: corre sobre una linea del
@@ -105,10 +90,7 @@ export interface Medidas {
   watercolor: WatercolorParams;
   silueta: SiluetaParams;
   trazo: TrazoParams;
-  rama: RamaParams;
   pincelada: PinceladaParams;
-  tronco: TroncoParams;
-  testimonios: TestimonioParams;
   red: RedParams;
 }
 
@@ -130,11 +112,6 @@ export function medidasParaDibujo(lado: number, hueco: number): Medidas {
       grosor: Math.max(1, lado * GROSOR_TRAZO),
       punta: Math.max(1, lado * PUNTA_TRAZO),
     },
-    rama: {
-      ...DEFAULT_RAMA,
-      largo: Math.round(lado * LARGO_RAMA),
-      ancho: Math.max(2, lado * ANCHO_RAMA),
-    },
     pincelada: {
       ...DEFAULT_PINCELADA,
       tramo: Math.max(24, Math.round(lado * TRAMO_PINCELADA)),
@@ -142,19 +119,11 @@ export function medidasParaDibujo(lado: number, hueco: number): Medidas {
       anchoMin: Math.max(1.5, lado * ANCHO_PINCELADA),
       anchoMax: Math.max(3, lado * ANCHO_PINCELADA_MAX),
     },
-    tronco: {
-      ...DEFAULT_TRONCO,
-      anchoMin: Math.max(2, lado * ANCHO_TRONCO),
-      anchoDato: Math.max(2, lado * ANCHO_TRONCO_DATO),
-    },
     silueta: {
       ...DEFAULT_SILUETA,
       cerca: Math.max(6, lado * CERCA_SILUETA),
       grosorMin: Math.max(0.6, lado * GROSOR_SILUETA),
     },
-    // El texto se mide en pixeles del lienzo (lo que se ve), no del dibujo:
-    // quien lo ajusta es el mural, que sabe a que tamano se esta mirando.
-    testimonios: { ...DEFAULT_TESTIMONIOS },
     red: {
       ...DEFAULT_RED,
       radioMin: Math.max(1.5, lado * RADIO_NODO_MIN),
