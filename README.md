@@ -130,7 +130,7 @@ El sitio son tres páginas y nada más:
 | Ruta | Qué hay | Script |
 | --- | --- | --- |
 | `/` | El Hero, el mural interactivo, la escala de los ánimos, la puerta a la historia, el concepto, cómo participar y las referencias | `src/mural/main.ts` (el motor entero) |
-| `/historia` | «La historia de nuestros símbolos»: la visualización de datos, el mito de Quetzalcóatl y la dieta de la milpa | `src/mural/historia.ts` (ni una línea del motor) |
+| `/historia` | «La historia de nuestros símbolos»: la visualización de datos, la violencia alimentaria estructurada, el mito de Quetzalcóatl, la dieta de la milpa y el tlacuilo | `src/mural/historia.ts` (ni una línea del motor) |
 | `/timelapse` | La película del mural: la red vacía llenándose del primer registro al último | `src/mural/timelapse.ts` (el mismo cartel, sin kiosco) |
 
 Las tres secciones de `/historia` estaban en la portada, una tras otra. Se
@@ -324,22 +324,38 @@ al cargar (ver *El mapeo*).
 
 ## La historia (`/historia`)
 
-El relato de dónde sale la figura, en tres secciones de texto corrido y en el
+El relato de dónde sale la figura, en cinco secciones de texto corrido y en el
 orden del argumento:
 
 1. **Visualización de datos** — la herramienta: qué se está midiendo y por qué.
    Cierra con el botón *Participa*, que aquí no abre nada sino que lleva al
    mural de `/`.
-2. **El mito de Quetzalcóatl** — el centro: él al centro, la sangre y la
+2. **Violencia alimentaria estructurada** — el daño que la sección de arriba
+   deja nombrado. **Falta el texto.**
+3. **El mito de Quetzalcóatl** — el centro: él al centro, la sangre y la
    ciencia, con las dos citas que están en el origen de la pieza.
-3. **La dieta de la milpa** — lo que sostiene al mito, con las tres fotos de
+4. **La dieta de la milpa** — lo que sostiene al mito, con las tres fotos de
    `public/dieta/` relevándose de fondo bajo el velo crema. El relevo es CSS
    puro (`mural.css`): no necesita script.
+5. **Tlacuilo** — el oficio del que viene la forma de contar. **Falta el
+   texto.**
 
-Arriba, el encabezado con el título y el índice de las tres; abajo, el cierre
-que devuelve al mural. La entrada desde la portada es la sección **La historia
-de nuestros símbolos**, y la barra y el pie llevan de vuelta a cada parte de
-`/`.
+Las dos que están pendientes tienen su `<section>` con el título puesto y un
+distintivo *Texto pendiente* en lugar del cuerpo; el comentario de arriba de
+cada una dice cómo entra el texto cuando llegue, y el distintivo se quita al
+ponerlo.
+
+El orden sale de `PARTES`, en el frontmatter de `historia.astro`: de ahí se
+pinta el índice del encabezado. El cuerpo de cada sección está escrito a mano
+en su `<section>` porque cada una tiene su forma —la de los datos lleva fondo
+de red, la de la milpa lleva fotos—, así que **añadir una sección es tocar las
+dos cosas**: la lista y su `<section>`. Si además tiene que salir en el mapa
+del sitio, la lista de `components/Footer.astro`; y si tiene que salir en la
+puerta de la portada, su fila en `#historia` de `index.astro`.
+
+Arriba, el encabezado con el título y el índice; abajo, el cierre que devuelve
+al mural. La entrada desde la portada es la sección **La historia de nuestros
+símbolos**, y la barra y el pie llevan de vuelta a cada parte de `/`.
 
 La página es texto y fotos, así que `src/mural/historia.ts` no carga nada del
 motor de acuarela —ni el dibujo, ni las zonas, ni el CSV, ni el
@@ -362,10 +378,21 @@ primero de los cuatro iconos al pie del mural— lleva a una página donde el
 cartel arranca en blanco y se va llenando, del día del primer registro al del
 último, de corrido y en unos veintiséis segundos.
 
-Abajo, los mandos: reproducir y pausar, una barra que se arrastra para ir a
-cualquier momento, cuántos registros van y la fecha que marca el reloj. La
-barra espaciadora y las flechas hacen lo mismo que en cualquier reproductor;
-`Inicio` y `Fin` van a los extremos.
+Abajo, los mandos: reproducir y pausar, la ilustración, una barra que se
+arrastra para ir a cualquier momento, cuántos registros van y la fecha que
+marca el reloj. La barra espaciadora y las flechas hacen lo mismo que en
+cualquier reproductor; `Inicio` y `Fin` van a los extremos y la `i` apaga la
+ilustración.
+
+**Con y sin ilustración.** El segundo botón apaga el códice. Es la única
+perilla de la página y existe porque el dibujo es todo negro y la red es todo
+carmín: con el códice debajo, un nodo que cayó sobre un nopal se confunde con
+la línea del nopal, y las comunidades, los hilos largos y los huecos entre
+grupos se leen a medias. Apagado queda el grafo solo sobre el papel —las dos
+mitades negras a la vez, el cartel de abajo y el tlacuilo de encima, que son
+el mismo dibujo. El botón va teñido de carmín mientras la ilustración esté
+puesta. Mientras está apagada el cartel se sigue entintando en su lienzo, que
+no se mira: volver a encenderla es inmediato.
 
 Tres decisiones sostienen la película (están en `src/mural/timelapse.ts`):
 
