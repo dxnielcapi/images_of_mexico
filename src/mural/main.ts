@@ -1,7 +1,8 @@
 /**
- * Pantalla de registro: la ilustracion a pantalla completa y dos iconos
- * al pie, uno para buscar y otro para registrar. Cada uno abre su recuadro
- * hacia arriba; mientras tanto solo se ve el mural.
+ * Pantalla de registro: la ilustracion a pantalla completa y cuatro iconos
+ * al pie: ver como se pinto, acercarse, buscar y registrar. Los tres ultimos
+ * abren su recuadro hacia arriba; mientras tanto solo se ve el mural. El
+ * primero no abre nada: lleva al timelapse (ver `./timelapse`).
  *
  * Carga el mural de ejemplo (dibujo + zonas + CSV), le suma las personas que
  * se registraron en este dispositivo y vuelve a pintar con cada alta. No hay
@@ -17,25 +18,21 @@
  * se guardan en localStorage (ver `@data/repo/localRepo`), con copia a archivo para
  * no depender de que el navegador conserve sus datos.
  */
-import { loadDrawingUrl, linesLayer, type LoadedDrawing } from '@io/readers/drawing';
-import { parseCsvText } from '@io/readers/csv';
+import type { LoadedDrawing } from '@io/readers/drawing';
 import { recordsToCsv } from '@io/writers/csv';
-import { parseConfig } from '@io/zonesConfig';
-import {
-  DATOS_EJEMPLO, PLANTILLA_DIBUJO, PLANTILLA_ESPINA, PLANTILLA_TRAZOS, PLANTILLA_ZONAS,
-} from '@io/plantilla';
 import { downloadText } from '@io/writers/download';
-import { clearLocal, loadLocal, mergeById, parseBackup, saveLocal, storageAvailable } from '@data/repo/localRepo';
-import { analyzeDrawing, clamp01, placeRecords, typicalDepth, zonesFromConfig } from '@core/scene';
+import { clearLocal, mergeById, parseBackup, saveLocal, storageAvailable } from '@data/repo/localRepo';
+import { placeRecords } from '@core/scene';
 import { renderScene } from '@core/render/compose';
 import { CARMIN, ColorRamp } from '@core/render/palette';
 import { PAPER_COLOR } from '@core/render/paper';
-import { medidasParaDibujo } from '@core/render/medidas';
-import { espinaDesde, parseEspinaJson, type Espina } from '@core/render/espina';
-import { bocetoDesde, parseBocetoJson } from '@core/render/boceto';
-import { recorridoDe, tramaDe, type Trama } from '@core/render/recorrido';
+import type { Espina } from '@core/render/espina';
+import type { Boceto } from '@core/render/boceto';
+import { ocupacionDe, tramosDe, type Recorte, type Tramos } from '@core/render/silueta';
+import { dibujarFigura, rasterizarFigura, type Figura } from '@core/render/figura';
+import { ordenPorEspiral, type Trama } from '@core/render/recorrido';
 import {
-  dibujarRed, enReposo, evadir, redDe, vivoX, vivoY, type Nodo, type Red,
+  dibujarRed, enReposo, evadir, vivoX, vivoY, type Nodo, type Red,
 } from '@core/render/red';
 import type { ShapeField } from '@core/render/field';
 import { SpatialGrid } from '@core/sampling/grid';
@@ -43,32 +40,24 @@ import {
   PERSON_FIELD_KEYS, PersonIds, SENTIRES, searchByName, todayIso, type Person,
 } from '@data/person';
 import { mapPerson, remapAll, zonasDisponibles, type MappingContext } from '@data/mapping';
-import { FIRMAS, PUESTO_DE_FIRMA, afinidad, firmaDe, rasgosDe, type Rasgos } from '@data/afinidad';
-import { personFromExtra } from '@data/person';
+import { cargarMural, opcionesMural, redDeRegistros } from './cartel';
 import { personSearch, type PersonSearch } from '@ui/personPanel';
 import { registroForm, type RegistroForm, type RegistroResult } from '@ui/registroForm';
 import { paintBlob } from '@ui/blob';
 import { Tooltip } from '@ui/tooltip';
 import { createHeroReveal, type HeroReveal } from './heroReveal';
-import { crearFondoRed, type CapaFondo } from './fondoRed';
+import { crearTrazado } from './trazado';
+import { initRevelados, pintarFondoDatos } from './pagina';
+import { initCitas } from './citas';
 import { el, button, fileButton, row } from '@ui/controls';
 import type { DataRecord, PlacedPoint, RenderOptions, ZoneMap } from '@core/types';
 
-const RENDER: RenderOptions = {
-  width: 0, height: 0,
-  // Provisorias: al cargar el dibujo se recalculan con su lado y su hueco.
-  ...medidasParaDibujo(2000, 0),
-  grain: 0.5,
-  // El dibujo no se muestra. La figura es la red: los nodos caen sobre el
-  // recorrido de la espiral y son sus aristas las que trazan el cuerpo (ver
-  // `@core/render/red`). Con la ilustracion de fondo, aunque fuera tenue, el
-  // mural volveria a ser un dibujo coloreado por los datos en vez de una
-  // figura que arman los datos.
-  globalSeed: 1234, showLines: false, lineAlpha: 0.28,
-  // Sin papel: la ilustracion va a sangre sobre el fondo de la pagina, sin el
-  // recuadro que dibujaba el lienzo opaco.
-  paper: false,
-};
+/**
+ * Como se ve este mural. Las decisiones —sin lamina del SVG debajo, sin papel
+ * y con las medidas que salen del dibujo— viven en `./cartel`, que es de donde
+ * las toma tambien el timelapse: las dos pantallas pintan el mismo mural.
+ */
+const RENDER: RenderOptions = opcionesMural();
 
 const ramp = new ColorRamp(CARMIN);
 const ids = new PersonIds();
@@ -79,13 +68,20 @@ const fmtValue = (v: number) => v.toFixed(3).replace(/\.?0+$/, '');
 
 let drawing: LoadedDrawing | null = null;
 let zones: ZoneMap = new Map();
-let lines: HTMLCanvasElement | null = null;
 /** El campo del dibujo: guia el trazo, no lo recorta. */
 let field: ShapeField | null = null;
 /** La espiral del dibujo: el eje sobre el que se ancla todo lo demas. */
 let espina: Espina | null = null;
+/** Las lineas del dibujo: lo que la red va entintando. */
+let boceto: Boceto | null = null;
 /** El dibujo medido y ordenado: de aqui sale el recorrido de cada tanda. */
 let trama: Trama | null = null;
+/** El cartel partido en tramos, cada uno con la tinta que le dieron los datos. */
+let tramos: Tramos | null = null;
+/** El tlacuilo: la figura que no traza nadie, ubicada en el dibujo. */
+let tlacuilo: Figura | null = null;
+/** Esa figura rasterizada a la escala con la que se esta mirando. */
+const laminaTlacuilo = document.createElement('canvas');
 /** La red de afinidades: lo que se ve. */
 let red: Red | null = null;
 /** El nodo de cada registro, por id: para resaltar al que se busca. */
@@ -151,11 +147,17 @@ const HERO_MAX_SIDE = 900;
 const tooltip = new Tooltip(document.body);
 const ctx = view.getContext('2d')!;
 const scene = document.createElement('canvas');
+/**
+ * El cartel bajo la red: no una lamina sino un lapiz que lo va trazando, y
+ * un lienzo propio donde va quedando lo que lleva dibujado (ver `./trazado`).
+ * El fotograma del mural lo estampa de una sola pasada.
+ */
+const trazado = crearTrazado(RENDER.silueta);
 
 /**
  * El mural se rasteriza al tamano en que se ve, no al del archivo.
  *
- * La plantilla mide ~1918x2000 y en pantalla entra en unos 500 px: rasterizar
+ * La plantilla mide ~1970x2000 y en pantalla entra en unos 500 px: rasterizar
  * a tamano de archivo significaba pintar catorce veces mas pixeles de los que
  * se miran y despues dejar que el navegador los encogiera, que es justo lo
  * que se comia los filamentos —un trazo de 5 px reducido a 1,2 se promedia
@@ -173,6 +175,29 @@ let upx = 1;
 /** Tope de densidad: mas alla de 2x no se nota y cuesta el doble. */
 const DPR_MAX = 2;
 
+/**
+ * Techo de pixeles del lienzo.
+ *
+ * El lienzo llena la caja entera y no solo el rectangulo del cartel, asi que
+ * en una pantalla ancha pide casi el doble de pixeles que antes, y cada
+ * fotograma los recorre tres veces: borrarlos, estamparles el trazado encima
+ * y desvanecer la cola del lapiz. Con el techo puesto, una pantalla muy
+ * grande baja un poco de densidad en vez de perder fotogramas.
+ */
+const PIXELES_MAX = 3.6e6;
+
+/**
+ * Deja el lienzo a la medida de la caja y devuelve la escala base.
+ *
+ * El lienzo llena la caja entera, no el recuadro del cartel. Cuando era del
+ * tamano del cartel, acercarse era acercarse dentro de un recuadro chico: en
+ * una pantalla ancha quedaba media pantalla de papel a cada lado y el
+ * encuadre encerrado en la franja del medio, sin nada que recorrer a lo
+ * ancho. Llenando la caja, el cartel se recorre por toda la pantalla. Con el
+ * cartel entero a la vista se ve igual que antes —lo que sobra del lienzo es
+ * transparente y debajo esta el degradado de la caja—, y la diferencia
+ * aparece en cuanto se acerca.
+ */
 function ajustarLienzo(): number {
   if (!drawing) return escala;
   const caja = mural.getBoundingClientRect();
@@ -181,23 +206,172 @@ function ajustarLienzo(): number {
   const alto = caja.height - parseFloat(css.paddingTop) - parseFloat(css.paddingBottom);
   if (!(ancho > 0) || !(alto > 0)) return escala;
 
-  const encaje = Math.min(ancho / RENDER.width, alto / RENDER.height);
-  const anchoCss = Math.max(1, Math.round(RENDER.width * encaje));
-  const altoCss = Math.max(1, Math.round(RENDER.height * encaje));
-  view.style.width = `${anchoCss}px`;
-  view.style.height = `${altoCss}px`;
+  view.style.width = `${ancho}px`;
+  view.style.height = `${alto}px`;
 
-  const dpr = Math.min(DPR_MAX, window.devicePixelRatio || 1);
-  // Nunca por encima del original: pintar mas fino que el archivo no agrega
-  // informacion, solo trabajo.
-  const nueva = Math.min(1, (anchoCss * dpr) / RENDER.width);
-  upx = (RENDER.width * nueva) / anchoCss;
-  return nueva;
+  // Cuanto encoge el cartel para entrar en la caja, en pixeles de pantalla.
+  const encaje = Math.min(ancho / RENDER.width, alto / RENDER.height);
+  const dpr = Math.min(
+    DPR_MAX,
+    window.devicePixelRatio || 1,
+    // Nunca por encima del original: pintar mas fino que el archivo no agrega
+    // informacion, solo trabajo.
+    1 / encaje,
+    Math.sqrt(PIXELES_MAX / (ancho * alto))
+  );
+  const anchoPx = Math.max(1, Math.round(ancho * dpr));
+  const altoPx = Math.max(1, Math.round(alto * dpr));
+  upx = anchoPx / ancho;
+  // Solo si cambio de verdad: asignarle el tamano a un lienzo lo borra, y
+  // esto tambien se llama para medir (ver `seguirTamano`).
+  if (view.width !== anchoPx || view.height !== altoPx) {
+    view.width = anchoPx;
+    view.height = altoPx;
+  }
+  // El cartel entero encajado en el lienzo: de ahi para arriba manda la lupa.
+  return Math.min(anchoPx / RENDER.width, altoPx / RENDER.height);
+}
+
+// ---------------------------------------------------------------- la lupa
+
+/**
+ * La vista: cuanto se esta acercando el mural y a que parte.
+ *
+ * El cartel entero en una pantalla mide unos quinientos pixeles, y a ese
+ * tamano un nodo son tres pixeles: se ve el remolino pero no se entiende que
+ * cada punto es alguien, ni se lee el nopal que la red acaba de entintar. La
+ * lupa no cambia el mural, cambia la distancia a la que uno se para: `zoom`
+ * es cuantas veces se agranda y `cx`/`cy` es el punto del dibujo que queda en
+ * el medio de la pantalla, en coordenadas de trabajo.
+ *
+ * Nada de esto toca a la red ni a los datos. El acercamiento es una
+ * transformacion del lienzo y punto: los nodos siguen donde los dejo lo que
+ * la gente contesto, y lo que crece es el trazo con el que se los dibuja.
+ */
+const vista = { zoom: 1, cx: 0, cy: 0 };
+
+/** Hasta donde se puede acercar. Mas que esto es mirar la trama del pincel. */
+const ZOOM_MAX = 8;
+/** Cuanto acerca cada toque del boton. */
+const ZOOM_PASO = 1.4;
+
+/** De coordenadas de trabajo a pixeles del lienzo, con la lupa puesta. */
+function escalaViva(): number {
+  return escala * vista.zoom;
+}
+
+/** Donde cae el origen del dibujo en el lienzo, con la lupa puesta. */
+function origenX(): number {
+  return view.width / 2 - vista.cx * escalaViva();
+}
+
+function origenY(): number {
+  return view.height / 2 - vista.cy * escalaViva();
+}
+
+/** El trozo de dibujo que entra en el lienzo, en coordenadas de trabajo. */
+function recorteVista(): Recorte {
+  const k = escalaViva();
+  const anchoMedio = view.width / 2 / k;
+  const altoMedio = view.height / 2 / k;
+  return {
+    x0: vista.cx - anchoMedio, y0: vista.cy - altoMedio,
+    x1: vista.cx + anchoMedio, y1: vista.cy + altoMedio,
+  };
+}
+
+/**
+ * Holgura del recorrido: cuanto se deja pasar de la orilla del cartel, en
+ * fracciones de pantalla.
+ *
+ * Sin ella el encuadre se detiene clavado en el borde y un nodo de la orilla
+ * se queda pegado al canto de la pantalla, que es justo donde lo tapan los
+ * mandos. Con algo de holgura la orilla se puede traer hacia el medio para
+ * mirarla, y el tope sigue estando ahi: el cartel nunca se va de la vista.
+ */
+const HOLGURA = 0.34;
+
+/**
+ * Deja el encuadre donde se pueda mirar: sin perder el dibujo de vista, y
+ * centrado cuando el mural entra entero.
+ */
+function acomodarVista(): void {
+  const k = escalaViva();
+  vista.cx = acomodarEje(vista.cx, view.width / 2 / k, RENDER.width);
+  vista.cy = acomodarEje(vista.cy, view.height / 2 / k, RENDER.height);
+}
+
+/**
+ * Un eje del encuadre: centrado si el cartel entra entero por ese lado, y si
+ * no, dentro del cartel mas la holgura.
+ */
+function acomodarEje(centro: number, medio: number, largo: number): number {
+  if (medio * 2 >= largo) return largo / 2;
+  const holgura = medio * HOLGURA;
+  return Math.min(largo - medio + holgura, Math.max(medio - holgura, centro));
+}
+
+/**
+ * Acerca o aleja dejando quieto un punto del dibujo: el que esta debajo del
+ * cursor, o el del medio si nadie senalo ninguno. Es lo que hace que la lupa
+ * se sienta como una lupa y no como un salto.
+ */
+function acercar(zoom: number, ancla?: { x: number; y: number }): void {
+  const antes = vista.zoom;
+  const nuevo = Math.min(ZOOM_MAX, Math.max(1, zoom));
+  if (Math.abs(nuevo - antes) < 1e-4) return;
+  vista.zoom = nuevo;
+  if (ancla) {
+    vista.cx = ancla.x + (vista.cx - ancla.x) * (antes / nuevo);
+    vista.cy = ancla.y + (vista.cy - ancla.y) * (antes / nuevo);
+  }
+  reencuadrar();
+}
+
+/** Mueve el encuadre, en pixeles de lienzo. */
+function correrVista(dx: number, dy: number): void {
+  const k = escalaViva();
+  vista.cx -= dx / k;
+  vista.cy -= dy / k;
+  reencuadrar();
+}
+
+/** Vuelve a ver el cartel entero. */
+function encuadreEntero(): void {
+  vista.zoom = 1;
+  reencuadrar();
+}
+
+/**
+ * Repinta lo que depende del encuadre y nada mas.
+ *
+ * Se pide por fotograma y no por evento: una rueda de raton o un arrastre
+ * sueltan decenas de eventos seguidos, y rehacer la cola del lapiz cuesta
+ * unas cuantas trazadas. Lo que sigue al dedo es el fotograma, no el evento.
+ */
+let reencuadre = 0;
+function reencuadrar(): void {
+  if (reencuadre) return;
+  reencuadre = requestAnimationFrame(() => {
+    reencuadre = 0;
+    acomodarVista();
+    rasterizarTlacuilo();
+    encuadrarTrazado();
+    paint();
+    mostrarZoom();
+  });
 }
 
 const ICONS = {
   buscar: '<circle cx="11" cy="11" r="6.2"/><line x1="15.6" y1="15.6" x2="21" y2="21"/>',
   registrar: '<circle cx="10" cy="8" r="3.6"/><path d="M3.5 20.5c0-3.6 2.9-6.5 6.5-6.5"/><line x1="17" y1="13.5" x2="17" y2="21.5"/><line x1="13" y1="17.5" x2="21" y2="17.5"/>',
+  // Las cuatro esquinas de un encuadre: acercarse al cartel. No es una lupa
+  // dibujada porque la lupa ya es el icono de buscar, y dos lentes seguidas
+  // en la misma fila no se distinguen.
+  lupa: '<path d="M9.5 3.5H3.5V9.5"/><path d="M14.5 3.5h6v6"/><path d="M9.5 20.5h-6v-6"/><path d="M14.5 20.5h6v-6"/>',
+  // El triangulo de reproducir: lleva al timelapse, que es una pelicula del
+  // mural y se anuncia como tal.
+  pintado: '<circle cx="12" cy="12" r="8.6"/><path d="M10.1 8.3l5.6 3.7-5.6 3.7z"/>',
 };
 
 function iconButton(icon: keyof typeof ICONS, label: string, onClick: () => void): HTMLButtonElement {
@@ -209,11 +383,78 @@ function iconButton(icon: keyof typeof ICONS, label: string, onClick: () => void
   return b;
 }
 
+/**
+ * Un icono que no abre un recuadro sino que lleva a otra pagina.
+ *
+ * Es un enlace y no un boton con `location.href`: asi se puede abrir en otra
+ * pestana, el navegador lo anuncia como enlace y el destino se ve antes de
+ * tocarlo.
+ */
+function iconLink(icon: keyof typeof ICONS, label: string, href: string): HTMLAnchorElement {
+  const a = el('a', { class: 'tool', href, title: label });
+  a.setAttribute('aria-label', label);
+  a.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[icon]}</svg>`;
+  return a;
+}
+
 const btnBuscar = iconButton('buscar', 'Buscar persona', () => toggle('buscar'));
 const btnRegistrar = iconButton('registrar', 'Registrar persona', () => toggle('registrar'));
-tools.append(btnBuscar, btnRegistrar);
+const btnLupa = iconButton('lupa', 'Acercar el cartel', () => toggle('lupa'));
+// El timelapse vive en su propia pagina: el mural de aqui esta vivo —se
+// registra, se busca, se acerca— y el de alla es una pelicula que se mira de
+// principio a fin. Meter las dos cosas en el mismo lienzo seria pelearle los
+// mandos a quien se esta registrando.
+const btnPintado = iconLink(
+  'pintado',
+  'Ver cómo se fue pintando el mural',
+  `${import.meta.env.BASE_URL}timelapse`
+);
+tools.append(btnPintado, btnLupa, btnBuscar, btnRegistrar);
 
-type PanelId = 'buscar' | 'registrar' | null;
+// ---------------------------------------------------------------- recuadros
+
+/**
+ * El recuadro de la lupa: dos botones, el nivel al que se esta mirando y la
+ * vuelta al cartel entero.
+ *
+ * Es una barra y no un panel con formulario porque mientras se usa hay que
+ * seguir viendo el mural: lo que esta pasando esta detras de ella.
+ */
+const nivelLupa = el('span', { class: 'lupa-nivel', text: '1,0×' });
+const lupaPanel = el('div', { class: 'lupa hidden' }, [
+  el('div', { class: 'lupa-mandos' }, [
+    botonLupa('−', 'Alejar', () => acercar(vista.zoom / ZOOM_PASO, { x: vista.cx, y: vista.cy })),
+    nivelLupa,
+    botonLupa('+', 'Acercar', () => acercar(vista.zoom * ZOOM_PASO, { x: vista.cx, y: vista.cy })),
+    el('button', { class: 'lupa-entero', type: 'button', text: 'Ver todo' }),
+  ]),
+  el('p', {
+    class: 'lupa-pista',
+    text: 'Arrastra el cartel para recorrerlo, o muévelo con las flechas. '
+      + 'La rueda, dos dedos o un doble clic acercan.',
+  }),
+]);
+lupaPanel.querySelector('.lupa-entero')?.addEventListener('click', encuadreEntero);
+panels.append(lupaPanel);
+
+function botonLupa(signo: string, label: string, onClick: () => void): HTMLButtonElement {
+  const b = el('button', { class: 'lupa-boton', type: 'button', text: signo });
+  b.setAttribute('aria-label', label);
+  b.title = label;
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+/** Deja el nivel escrito y apaga el boton que ya no puede ir mas lejos. */
+function mostrarZoom(): void {
+  nivelLupa.textContent = `${vista.zoom.toFixed(1).replace('.', ',')}×`;
+  for (const b of lupaPanel.querySelectorAll('.lupa-boton')) {
+    const alejar = b.textContent === '−';
+    b.toggleAttribute('disabled', alejar ? vista.zoom <= 1.001 : vista.zoom >= ZOOM_MAX - 0.001);
+  }
+}
+
+type PanelId = 'buscar' | 'registrar' | 'lupa' | null;
 let open: PanelId = null;
 
 function toggle(which: Exclude<PanelId, null>): void {
@@ -224,10 +465,27 @@ function setOpen(which: PanelId): void {
   open = which;
   searchPanel.classList.toggle('hidden', which !== 'buscar');
   addPanel.classList.toggle('hidden', which !== 'registrar');
-  btnBuscar.classList.toggle('active', which === 'buscar');
-  btnRegistrar.classList.toggle('active', which === 'registrar');
-  btnBuscar.setAttribute('aria-expanded', String(which === 'buscar'));
-  btnRegistrar.setAttribute('aria-expanded', String(which === 'registrar'));
+  lupaPanel.classList.toggle('hidden', which !== 'lupa');
+  for (const [b, id] of [[btnBuscar, 'buscar'], [btnRegistrar, 'registrar'], [btnLupa, 'lupa']] as const) {
+    b.classList.toggle('active', which === id);
+    b.setAttribute('aria-expanded', String(which === id));
+  }
+  // Con la lupa abierta el lienzo se arrastra: el navegador no tiene que
+  // llevarse el gesto para desplazar la pagina.
+  view.classList.toggle('lupa-viva', which === 'lupa');
+  view.style.touchAction = which === 'lupa' ? 'none' : '';
+
+  if (which === 'lupa') {
+    mostrarZoom();
+    // El primer toque ya acerca: abrir la lupa y que no pase nada seria
+    // pedirle a la gente que adivine que ahora la rueda hace otra cosa.
+    if (vista.zoom <= 1.001) acercar(ZOOM_PASO * ZOOM_PASO, { x: vista.cx, y: vista.cy });
+    return;
+  }
+
+  // Al cerrar la lupa se vuelve al cartel entero: si no, el mural se quedaria
+  // recortado sin ningun mando a la vista para devolverlo.
+  if (vista.zoom > 1.001) encuadreEntero();
 
   if (which === null) {
     // Al cerrar se limpia lo que haya quedado marcado por la busqueda.
@@ -239,8 +497,37 @@ function setOpen(which: PanelId): void {
   panel.querySelector('input')?.focus({ preventScroll: true });
 }
 
+/**
+ * El teclado de la lupa: acercar, alejar, volver al cartel entero y recorrerlo
+ * con las flechas.
+ *
+ * Las flechas son la unica forma de recorrer el cartel sin raton ni pantalla
+ * tactil, y de paso la mas precisa: un paso es un sexto de pantalla —con
+ * Mayus, media— asi que se avanza por el dibujo sin perder de vista donde se
+ * estaba. Van con `preventDefault` porque si no la pagina se desplaza debajo.
+ */
+const PASOS = new Map<string, readonly [number, number]>([
+  ['ArrowLeft', [1, 0]],
+  ['ArrowRight', [-1, 0]],
+  ['ArrowUp', [0, 1]],
+  ['ArrowDown', [0, -1]],
+]);
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && open) setOpen(null);
+  if (open !== 'lupa') return;
+  const target = e.target as Element | null;
+  if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+  const centro = { x: vista.cx, y: vista.cy };
+  const paso = PASOS.get(e.key);
+  if (paso) {
+    e.preventDefault();
+    const largo = e.shiftKey ? 0.5 : 0.17;
+    correrVista(paso[0] * view.width * largo, paso[1] * view.height * largo);
+  }
+  else if (e.key === '+' || e.key === '=') acercar(vista.zoom * ZOOM_PASO, centro);
+  else if (e.key === '-' || e.key === '_') acercar(vista.zoom / ZOOM_PASO, centro);
+  else if (e.key === '0') encuadreEntero();
 });
 
 // ---------------------------------------------------------------- la red
@@ -261,49 +548,25 @@ function valueRange(): { min: number; max: number } {
 /**
  * Arma la red con toda la gente que hay ahora.
  *
- * El acomodo lo decide `@core/render/red` a partir de dos numeros por
- * persona que salen de sus respuestas: el grupo —su firma, o sea las cuatro
- * preguntas de opcion— y donde cae a lo ancho de la banda, que aqui es la
- * escala de como se siente con su alimentacion. Quien contesto igual queda
- * junto, y las aristas entre ellos son las que dibujan el cuerpo.
+ * Quien decide donde cae cada quien es `redDeRegistros` (ver `./cartel`), que
+ * es la misma puerta por la que pasa el timelapse: las dos pantallas tienen
+ * que dar el mismo dibujo con la misma gente.
  *
  * Sin espina no hay recorrido sobre el que repartir, asi que se cae al
  * reparto por zonas de antes: el mural abre igual aunque falte el archivo.
  */
 function placeAll(): void {
-  const { min, max } = valueRange();
-  const span = max - min || 1;
   const gente = records();
+  const armada = redDeRegistros(gente, trama, field, RENDER);
 
-  // Los rasgos se calculan una vez por tanda y no por par: el parecido se
-  // consulta miles de veces al armar las aristas, y rehacerlos ahi adentro
-  // seria recorrer el esquema entero en cada consulta.
-  rasgos = new Map(gente.map((r) => [r.id, rasgosDe(personFromExtra(r.extra))]));
-
-  // El recorrido se rearma en cada tanda: de cuanta gente hay depende cuanto
-  // dibujo entra (ver `@core/render/recorrido`). Es cortar una lista ya
-  // ordenada, no volver a medir el dibujo.
-  const recorrido = trama ? recorridoDe(trama, gente.length) : null;
-
-  if (recorrido) {
-    red = redDe(
-      gente.map((record) => {
-        const g = rasgos.get(record.id)!;
-        return {
-          record,
-          grupo: PUESTO_DE_FIRMA[firmaDe(g)],
-          orden: g.escala,
-          t: clamp01((record.valor - min) / span),
-        };
-      }),
-      recorrido, field, RENDER.red,
-      { globalSeed: RENDER.globalSeed, grupos: FIRMAS, parecido: parecidoEntre }
-    );
+  if (armada) {
+    red = armada.red;
     nodoPorId = new Map(red.nodos.map((n) => [n.punto.record.id, n]));
     placed = red.nodos.map((n) => n.punto);
   } else {
     red = null;
     nodoPorId = new Map();
+    const { min, max } = valueRange();
     placed = placeRecords(gente, zones, {
       mode: 'random', minDistFactor: 1, globalSeed: RENDER.globalSeed,
       width: RENDER.width, min, max,
@@ -312,17 +575,25 @@ function placeAll(): void {
 
   grid = new SpatialGrid(Math.max(8, radioToque()), RENDER.width, RENDER.height);
   for (const p of placed) grid.insert(p);
+
+  // Cuanta gente quedo sobre cada linea del dibujo: es lo que decide que
+  // parte del cartel sale entintada y que parte apenas se adivina al pasar
+  // el lapiz. Se mide contra donde descansan los nodos, no contra donde los
+  // corrio el cursor: la tinta del dibujo no tiene por que temblar cuando
+  // pasa el raton.
+  if (boceto) {
+    const ocupacion = ocupacionDe(
+      boceto,
+      red ? red.nodos.map((n) => ({ x: n.bx, y: n.by })) : placed,
+      RENDER.silueta, RENDER.width, RENDER.height
+    );
+    // En el orden de la espiral: asi el lapiz da la vuelta al cartel en vez
+    // de saltar de una punta a la otra (ver `ordenPorEspiral`).
+    tramos = tramosDe(boceto, ocupacion, RENDER.silueta, trama ? ordenPorEspiral(trama) : undefined);
+    trazado.datos(tramos);
+  }
+
   refreshCounts();
-}
-
-/** Los rasgos de cada registro, por id: el insumo del parecido. */
-let rasgos = new Map<string, Rasgos>();
-
-/** Cuanto se parecen dos registros. Es lo que decide si hay arista. */
-function parecidoEntre(a: DataRecord, b: DataRecord): number {
-  const ra = rasgos.get(a.id);
-  const rb = rasgos.get(b.id);
-  return ra && rb ? afinidad(ra, rb) : 0;
 }
 
 /**
@@ -366,11 +637,21 @@ function refreshCounts(): void {
  */
 function render(): void {
   escala = ajustarLienzo();
+  acomodarVista();
+  rasterizarTlacuilo();
+  encuadrarTrazado();
   const corridos = red?.nodos.map((n) => [n.dx, n.dy] as const);
   if (red) enReposo(red);
   renderScene(
     scene,
-    { points: placed, ramp, options: RENDER, lines, field, espina, red },
+    {
+      // Sin lamina: `renderScene` la sabe componer y el mural no se la da
+      // (ver `showLines` en RENDER). Rasterizar dos mil pixeles de lado para
+      // no dibujarlos nunca serian quince megas de lienzo de adorno.
+      points: placed, ramp, options: RENDER, lines: null, field, espina, red,
+      tramos, figura: tlacuilo,
+      laminaFigura: tlacuilo ? laminaTlacuilo : null,
+    },
     escala
   );
   if (red && corridos) {
@@ -378,32 +659,37 @@ function render(): void {
   }
   paint();
   paintHero();
-  pintarFondoDatos();
+  pintarFondoDatos(ramp);
 }
 
 /**
- * El fondo animado de «Visualización de datos» y «La escala de la
- * alimentación»: fragmentos de red decorativos. Las dos secciones comparten
- * una sola red —ver `./fondoRed`—, asi que la animacion cruza de la crema al
- * carmin sin cortarse; en la escala los mismos trazos se leen en claro.
+ * Rasteriza al tlacuilo a la medida en que se lo esta mirando.
+ *
+ * Es la unica parte del cartel que se dibuja tal cual, asi que es la unica
+ * que se nota si se agranda un bitmap en vez de volver a trazarla: con la
+ * lupa cerca, el pintor tiene que seguir siendo una linea y no un escalon.
+ * Por eso vive en su propio SVG y por eso se vuelve a rasterizar en cada
+ * cambio de escala (ver `@core/render/figura`).
  */
-let fondoDatos = false;
-const CAPAS_FONDO = [
-  { seccion: 'datos', lienzo: 'datos-red' },
-  { seccion: 'escala', lienzo: 'escala-red' },
-];
+function rasterizarTlacuilo(): void {
+  if (tlacuilo) rasterizarFigura(tlacuilo, escalaViva(), laminaTlacuilo);
+}
 
-function pintarFondoDatos(): void {
-  if (fondoDatos) return;
-  const capas: CapaFondo[] = [];
-  for (const c of CAPAS_FONDO) {
-    const seccion = document.getElementById(c.seccion);
-    const lienzo = document.getElementById(c.lienzo) as HTMLCanvasElement | null;
-    if (seccion && lienzo) capas.push({ seccion, canvas: lienzo });
-  }
-  if (!capas.length) return;
-  fondoDatos = true;
-  crearFondoRed(capas, { ramp, params: RENDER.red });
+/**
+ * Le dice al lapiz donde esta mirando: el tamano del lienzo y el encuadre de
+ * la lupa. Lo que llevaba dibujado estaba en pixeles de pantalla, asi que al
+ * cambiar cualquiera de los dos se rehace (ver `./trazado`).
+ */
+function encuadrarTrazado(): void {
+  if (!drawing) return;
+  trazado.encuadre({
+    ancho: view.width,
+    alto: view.height,
+    escala: escalaViva(),
+    ox: origenX(),
+    oy: origenY(),
+    recorte: recorteVista(),
+  });
 }
 
 /** Copia el mapeo renderizado al lienzo de fondo del Hero (bajo el efecto cristal). */
@@ -455,27 +741,39 @@ function paintHero(): void {
  */
 function paint(): void {
   if (!drawing) return;
-  if (view.width !== scene.width || view.height !== scene.height) {
-    view.width = scene.width;
-    view.height = scene.height;
-  }
+  const k = escalaViva();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, view.width, view.height);
+  // El cartel viene en el lienzo del lapiz, con la lupa ya puesta: se estampa
+  // tal cual —en multiply, que es como se compone todo el pigmento— y encima
+  // va la red.
   if (red) {
     ctx.globalCompositeOperation = 'multiply';
-    dibujarRed(ctx, red, ramp, RENDER.red, escala);
+    ctx.drawImage(trazado.lienzo, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
-  } else {
-    ctx.drawImage(scene, 0, 0);
   }
-  if (!highlight) return;
+
+  // De aqui en mas se dibuja en coordenadas de trabajo, corridas por la lupa.
+  ctx.setTransform(1, 0, 0, 1, origenX(), origenY());
+  if (red) {
+    ctx.globalCompositeOperation = 'multiply';
+    dibujarRed(ctx, red, ramp, RENDER.red, k);
+    ctx.globalCompositeOperation = 'source-over';
+    // El tlacuilo encima de todo: la red no le pasa por arriba a quien dibuja.
+    if (tlacuilo) dibujarFigura(ctx, tlacuilo, laminaTlacuilo, k);
+  } else {
+    // Sin red, la escena entera ya viene horneada con su cartel y su pintor.
+    ctx.drawImage(scene, 0, 0, RENDER.width * k, RENDER.height * k);
+  }
+  if (!highlight) { ctx.setTransform(1, 0, 0, 1, 0, 0); return; }
 
   // Marca sobre el nodo recien agregado o encontrado: va donde el nodo este
   // ahora, no donde descansa, o al esquivar el cursor se le escaparia de
   // adentro. Las medidas van en pixeles de pantalla: es interfaz, no pigmento.
   const nodo = nodoPorId.get(highlight.record.id);
-  const hx = (nodo ? vivoX(nodo) : highlight.x) * escala;
-  const hy = (nodo ? vivoY(nodo) : highlight.y) * escala;
-  const r = Math.max(14 * upx, radioToque() * 1.6 * escala);
+  const hx = (nodo ? vivoX(nodo) : highlight.x) * k;
+  const hy = (nodo ? vivoY(nodo) : highlight.y) * k;
+  const r = Math.max(14 * upx, radioToque() * 1.6 * k);
   for (const [color, w] of [['rgba(255, 253, 248, 0.95)', 3], ['rgba(28, 24, 18, 0.9)', 1.25]] as const) {
     ctx.strokeStyle = color;
     ctx.lineWidth = w * upx;
@@ -493,15 +791,17 @@ function paint(): void {
   // Onda que se abre y se apaga: en el dibujo lleno de marcas, es lo que
   // hace que la propia se encuentre de un vistazo al cerrar el recuadro.
   const queda = pulseUntil - performance.now();
-  if (queda <= 0) return;
-  const fase = (performance.now() % PULSE_MS) / PULSE_MS;
-  const fin = Math.min(1, queda / 900);   // se desvanece al terminar
-  // Mismo carmin que `--accent` en mural.css.
-  ctx.strokeStyle = `rgba(158, 43, 43, ${(1 - fase) * 0.75 * fin})`;
-  ctx.lineWidth = 2 * upx;
-  ctx.beginPath();
-  ctx.arc(hx, hy, r + fase * r * 2.4, 0, Math.PI * 2);
-  ctx.stroke();
+  if (queda > 0) {
+    const fase = (performance.now() % PULSE_MS) / PULSE_MS;
+    const fin = Math.min(1, queda / 900);   // se desvanece al terminar
+    // Mismo carmin que `--accent` en mural.css.
+    ctx.strokeStyle = `rgba(158, 43, 43, ${(1 - fase) * 0.75 * fin})`;
+    ctx.lineWidth = 2 * upx;
+    ctx.beginPath();
+    ctx.arc(hx, hy, r + fase * r * 2.4, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 const PULSE_MS = 1500;
@@ -525,10 +825,24 @@ let muralVisible = true;
 
 const menosMovimiento = window.matchMedia?.('(prefers-reduced-motion: reduce)');
 
+// Con movimiento reducido no hay lapiz: el cartel se pinta entero y se queda
+// quieto, que es lo mismo que dice la animacion sin nada que se mueva.
+function sincronizarTrazado(): void {
+  trazado.animar(!menosMovimiento?.matches);
+  paint();
+  animar();
+}
+menosMovimiento?.addEventListener?.('change', sincronizarTrazado);
+trazado.animar(!menosMovimiento?.matches);
+
 function quiereAnimar(): boolean {
   if (menosMovimiento?.matches) return false;
   if (document.hidden || !drawing) return false;
   if (!muralVisible) return false;
+  // El lapiz no para mientras el cartel este a la vista: es lo unico que
+  // dibuja el codice, asi que si se detuviera no quedaria dibujo. Lo demas
+  // —la red apartandose, el pulso de una marca— va y viene encima.
+  if (tramos) return true;
   // Con el cursor encima la red se esta apartando; sin el, puede seguir
   // volviendo al reposo, y eso lo sabe `redViva`.
   if (cursor !== null || redViva) return true;
@@ -547,6 +861,7 @@ function animar(): void {
     const dt = Math.min(0.1, (ahora - ultimoFrame) / 1000);
     if (dt >= 1 / FPS) {
       ultimoFrame = ahora;
+      trazado.avanzar(dt);
       if (red) redViva = evadir(red, cursor, RENDER.red, dt);
       paint();
     }
@@ -575,13 +890,8 @@ function startPulse(ms = 6000): void {
 
 /** Ficha de la persona, anclada a su mancha en el lienzo. */
 function showFicha(point: PlacedPoint): void {
-  const rect = view.getBoundingClientRect();
-  tooltip.show(
-    point,
-    rect.left + (point.x / RENDER.width) * rect.width,
-    rect.top + (point.y / RENDER.height) * rect.height,
-    fmtValue
-  );
+  const en = enPantalla(point.x, point.y);
+  tooltip.show(point, en.x, en.y, fmtValue);
 }
 
 function showFlash(text: string): void {
@@ -751,12 +1061,25 @@ function locateRecord(r: DataRecord): void {
 
 // ---------------------------------------------------------------- el cursor
 
-/** El puntero en coordenadas de trabajo, o null si cayo fuera del lienzo. */
+/**
+ * El puntero en coordenadas de trabajo. Deshace la lupa: lo que se señala es
+ * un punto del dibujo, no del vidrio por el que se lo esta mirando.
+ */
 function enLienzo(clientX: number, clientY: number): { x: number; y: number } {
   const rect = view.getBoundingClientRect();
+  const k = escalaViva();
+  const px = ((clientX - rect.left) / rect.width) * view.width;
+  const py = ((clientY - rect.top) / rect.height) * view.height;
+  return { x: (px - origenX()) / k, y: (py - origenY()) / k };
+}
+
+/** El camino de vuelta: un punto del dibujo en la pantalla. */
+function enPantalla(x: number, y: number): { x: number; y: number } {
+  const rect = view.getBoundingClientRect();
+  const k = escalaViva();
   return {
-    x: ((clientX - rect.left) / rect.width) * RENDER.width,
-    y: ((clientY - rect.top) / rect.height) * RENDER.height,
+    x: rect.left + ((x * k + origenX()) / view.width) * rect.width,
+    y: rect.top + ((y * k + origenY()) / view.height) * rect.height,
   };
 }
 
@@ -772,6 +1095,7 @@ function enLienzo(clientX: number, clientY: number): { x: number; y: number } {
  * se aparta sin salirse de donde uno le esta apuntando.
  */
 view.addEventListener('mousemove', (e) => {
+  if (arrastre) return;   // arrastrando se mueve el cartel, no se señala
   cursor = enLienzo(e.clientX, e.clientY);
   animar();
   if (!grid) return;
@@ -787,8 +1111,10 @@ view.addEventListener('mouseleave', () => {
 });
 
 // En un telefono no hay puntero que seguir, pero si dedo: al tocar, la red se
-// aparta un momento del punto tocado y vuelve sola.
+// aparta un momento del punto tocado y vuelve sola. Con la lupa abierta el
+// dedo hace otra cosa —mueve el cartel— y de eso se encarga `gestos`.
 view.addEventListener('touchstart', (e) => {
+  if (open === 'lupa') return;
   const t = e.touches[0];
   if (!t) return;
   cursor = enLienzo(t.clientX, t.clientY);
@@ -796,6 +1122,7 @@ view.addEventListener('touchstart', (e) => {
 }, { passive: true });
 
 view.addEventListener('touchmove', (e) => {
+  if (open === 'lupa') return;
   const t = e.touches[0];
   if (!t) return;
   cursor = enLienzo(t.clientX, t.clientY);
@@ -807,7 +1134,134 @@ for (const fin of ['touchend', 'touchcancel'] as const) {
 }
 window.addEventListener('scroll', () => tooltip.hide(), { passive: true });
 
+// ------------------------------------------------------- mover y acercar
+
+/**
+ * Los gestos de la lupa: arrastrar para recorrer el cartel, rueda o dos
+ * dedos para acercarse.
+ *
+ * Solo escuchan con la lupa abierta, y es a proposito: el mural ocupa la
+ * pantalla entera, asi que si la rueda acercara siempre no habria como
+ * seguir bajando por la pagina, y el dedo no podria desplazarla. Abrir la
+ * lupa es decir "ahora estoy mirando el cartel"; cerrarla devuelve el gesto
+ * a la pagina.
+ */
+let arrastre: { x: number; y: number } | null = null;
+
+/** De pixeles de pantalla a pixeles del lienzo. */
+function porPixel(): number {
+  const rect = view.getBoundingClientRect();
+  return rect.width > 0 ? view.width / rect.width : 1;
+}
+
+view.addEventListener('pointerdown', (e) => {
+  // El tacto tiene su propio camino, con la pinza; aqui van raton y lapiz.
+  if (open !== 'lupa' || e.pointerType === 'touch' || e.button !== 0) return;
+  e.preventDefault();
+  arrastre = { x: e.clientX, y: e.clientY };
+  // Con el lienzo llenando la pantalla, arrastrar hasta la orilla es lo
+  // normal y no un descuido: capturando el puntero el recorrido no se corta
+  // al salirse de la ventana ni al pasar por encima de un recuadro.
+  view.setPointerCapture(e.pointerId);
+  view.classList.add('arrastrando');
+  tooltip.hide();
+});
+
+view.addEventListener('pointermove', (e) => {
+  if (!arrastre) return;
+  // En pixeles del lienzo: con la pantalla densa no son los de pantalla, y el
+  // cartel tiene que seguir al puntero exactamente.
+  const k = porPixel();
+  correrVista((e.clientX - arrastre.x) * k, (e.clientY - arrastre.y) * k);
+  arrastre = { x: e.clientX, y: e.clientY };
+});
+
+for (const fin of ['pointerup', 'pointercancel'] as const) {
+  view.addEventListener(fin, (e) => {
+    if (!arrastre) return;
+    arrastre = null;
+    if (view.hasPointerCapture(e.pointerId)) view.releasePointerCapture(e.pointerId);
+    view.classList.remove('arrastrando');
+  });
+}
+
+view.addEventListener('wheel', (e) => {
+  if (open !== 'lupa') return;
+  e.preventDefault();
+  // Un deslizamiento lateral del trackpad recorre el cartel a lo ancho, que
+  // es lo que el gesto significa en cualquier otra parte; de arriba abajo
+  // acerca, porque es lo que hace una rueda de raton, que no tiene lados.
+  if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+    correrVista(-e.deltaX * porPixel(), 0);
+    return;
+  }
+  // Exponencial: cada muesca multiplica, asi acercarse y alejarse cuestan lo
+  // mismo y el gesto no se acelera al estar ya cerca.
+  acercar(vista.zoom * Math.exp(-e.deltaY * 0.0022), enLienzo(e.clientX, e.clientY));
+}, { passive: false });
+
+/**
+ * Doble clic: un salto de acercamiento al punto senalado, y con Alt o Mayus,
+ * de vuelta. Es como se entra a un detalle en cualquier mapa, y ahorra buscar
+ * los mandos para mirar de cerca el nopal que uno ya tiene bajo el cursor.
+ */
+view.addEventListener('dblclick', (e) => {
+  if (open !== 'lupa') return;
+  e.preventDefault();
+  const salto = ZOOM_PASO * ZOOM_PASO;
+  const atras = e.altKey || e.shiftKey;
+  acercar(atras ? vista.zoom / salto : vista.zoom * salto, enLienzo(e.clientX, e.clientY));
+});
+
+/** Los dos dedos de la pinza: donde estan y cuanto se separan. */
+let pinza: { x: number; y: number; d: number } | null = null;
+
+function medirDedos(toques: TouchList): { x: number; y: number; d: number } | null {
+  const a = toques[0];
+  const b = toques[1];
+  if (!a) return null;
+  if (!b) return { x: a.clientX, y: a.clientY, d: 0 };
+  return {
+    x: (a.clientX + b.clientX) / 2,
+    y: (a.clientY + b.clientY) / 2,
+    d: Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY),
+  };
+}
+
+view.addEventListener('touchstart', (e) => {
+  if (open !== 'lupa') return;
+  e.preventDefault();
+  pinza = medirDedos(e.touches);
+  tooltip.hide();
+}, { passive: false });
+
+view.addEventListener('touchmove', (e) => {
+  if (open !== 'lupa' || !pinza) return;
+  e.preventDefault();
+  const ahora = medirDedos(e.touches);
+  if (!ahora) return;
+  const k = porPixel();
+  // Con dos dedos manda la separacion; con uno, el arrastre. El centro se
+  // sigue en los dos casos, asi que la pinza tambien mueve el cartel.
+  if (pinza.d > 0 && ahora.d > 0) {
+    acercar(vista.zoom * (ahora.d / pinza.d), enLienzo(ahora.x, ahora.y));
+  }
+  correrVista((ahora.x - pinza.x) * k, (ahora.y - pinza.y) * k);
+  pinza = ahora;
+}, { passive: false });
+
+for (const fin of ['touchend', 'touchcancel'] as const) {
+  view.addEventListener(fin, (e) => {
+    pinza = e.touches.length > 0 ? medirDedos(e.touches) : null;
+  }, { passive: true });
+}
+
 // ---------------------------------------------------------------- pagina publica
+
+// De aqui abajo esta lo que es solo de `/`: el Hero y las secciones que
+// acompanan al mural. Lo que las dos rutas comparten —el revelado del texto y
+// el fondo de red— vive en `./pagina`, que es lo que enciende `/historia` sin
+// cargar nada de este motor.
 
 /**
  * Deja la ilustracion del Hero dibujandose sola en bucle. El ciclo solo corre
@@ -838,60 +1292,11 @@ function initHeroReveal(img: ImageData): void {
   });
 }
 
-/**
- * Deja que los bloques marcados con `data-revelar` aparezcan al llegar a la
- * pantalla: el CSS los tiene unos pixeles abajo y en transparente, y aqui
- * solo se les pone la clase `revelado` cuando entran. Es de una sola vez —el
- * bloque se deja de observar al revelarse—, asi que el texto ya leido no se
- * vuelve a desvanecer al subir.
- *
- * Los que entran en la misma tanda se escalonan: el retardo de cada uno es su
- * lugar en la tanda, de modo que un parrafo tras otro en vez de todos juntos.
- */
-function initRevelados(): void {
-  const root = document.documentElement;
-  const bloques = document.querySelectorAll<HTMLElement>('[data-revelar]');
-
-  // El script si corrio: el respaldo en linea de la pagina ya no tiene que
-  // destapar nada. El nombre no es `data-revelar` a proposito: ese es el que
-  // marca los bloques, y en el <html> lo recogeria el mismo selector.
-  root.dataset.revelarListo = 'on';
-
-  if (typeof IntersectionObserver === 'undefined') {
-    root.classList.remove('revelar-activo');
-    return;
-  }
-
-  const observer = new IntersectionObserver((entradas) => {
-    // En orden de pagina, para que el escalonado siga al de la lectura.
-    const entrando = entradas
-      .filter((e) => e.isIntersecting)
-      .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-
-    entrando.forEach((e, i) => {
-      const bloque = e.target as HTMLElement;
-      bloque.style.setProperty('--revelar-retardo', `${i * 90}ms`);
-      bloque.classList.add('revelado');
-      observer.unobserve(bloque);
-    });
-  }, {
-    // Se destapa con el bloque ya bien dentro de la pantalla, no al asomar
-    // el primer pixel; el margen de abajo recorta la zona por ese lado.
-    threshold: 0.15,
-    rootMargin: '0px 0px -12% 0px',
-  });
-
-  for (const bloque of bloques) observer.observe(bloque);
-
-  // Los titulos van y vienen: aparecen al entrar y se desvanecen al salir.
-  const titulos = new IntersectionObserver((entradas) => {
-    for (const e of entradas) e.target.classList.toggle('visible', e.isIntersecting);
-  }, { threshold: 0.6, rootMargin: '-6% 0px -10% 0px' });
-  for (const t of document.querySelectorAll('[data-titulo]')) titulos.observe(t);
-}
-
 function initLanding(): void {
   initRevelados();
+
+  // Los botones «Copiar cita» de las referencias.
+  initCitas();
 
   // Muestras reales de acuarela para las tarjetas de la escala de la pagina.
   // La semilla se queda como estaba (`animo|<nombre>`): es lo que hace que
@@ -1047,78 +1452,23 @@ async function start(): Promise<void> {
   const loading = el('p', { class: 'text-sm text-muted', text: 'Cargando el mural…' });
   mural.append(loading);
 
-  const [d, cfgText, csvText, espinaText, trazosText] = await Promise.all([
-    loadDrawingUrl(PLANTILLA_DIBUJO),
-    fetch(PLANTILLA_ZONAS).then((r) => r.text()),
-    fetch(DATOS_EJEMPLO).then((r) => r.text()),
-    // La espiral es el eje y las lineas son el detalle que se le va sumando
-    // al recorrido. Si faltaran, el mural tiene que abrir igual: sin espiral
-    // se cae al reparto por zonas de antes (ver `placeAll`), y sin lineas la
-    // red se queda en el cuerpo, que es lo que dibujaba hasta ahora.
-    fetch(PLANTILLA_ESPINA).then((r) => (r.ok ? r.text() : '')).catch(() => ''),
-    fetch(PLANTILLA_TRAZOS).then((r) => (r.ok ? r.text() : '')).catch(() => ''),
-  ]);
-
+  // El dibujo, sus horneados y los registros: todo eso lo trae `./cartel`,
+  // que es tambien de donde los toma el timelapse (ver `./timelapse`).
+  const cargado = await cargarMural(RENDER);
+  const d = cargado.cartel.drawing;
   drawing = d;
-  RENDER.width = d.width;
-  RENDER.height = d.height;
-  // Sin fondo: la escena es transparente y un blanco aca volveria a dibujar
-  // el recuadro al componer en multiply.
-  lines = linesLayer(d, d.width, d.height, false);
-
-  const cfg = parseConfig(cfgText);
-  const analysis = analyzeDrawing(d.imageData, d.width, d.height, {
-    threshold: cfg.threshold,
-    dilate: cfg.dilate,
-    // Mientras el boceto no cierre sus regiones, lo pintable es el relleno
-    // del trazo (ver `strokeFill`); el dibujo terminado llegara con 0.
-    close: cfg.close ?? 0,
-    minArea: cfg.minArea ?? 180,
-  });
-  zones = zonesFromConfig(cfg, analysis, cfg.margin ?? 3).zones;
-  field = { width: d.width, height: d.height, dist: analysis.dist };
-  const medidas = medidasParaDibujo(
-    Math.max(d.width, d.height),
-    typicalDepth(zones, analysis.dist)
-  );
-  RENDER.watercolor = medidas.watercolor;
-  RENDER.trazo = medidas.trazo;
-  RENDER.rama = medidas.rama;
-  RENDER.tronco = medidas.tronco;
-  RENDER.testimonios = medidas.testimonios;
-
-  if (espinaText) {
-    try {
-      espina = espinaDesde(parseEspinaJson(espinaText), d.width, d.height);
-    } catch (err) {
-      console.warn('No se pudo leer la espina del dibujo:', err);
-    }
-  }
-
-  // Medir el dibujo y anclar cada linea a la espiral es trabajo de una sola
-  // vez; lo que se rehace en cada alta es solo cuanto de el entra.
-  if (espina && trazosText) {
-    try {
-      const boceto = bocetoDesde(parseBocetoJson(trazosText), d.width, d.height, RENDER.pincelada.tramo);
-      trama = tramaDe(boceto, espina);
-    } catch (err) {
-      console.warn('No se pudieron leer las lineas del dibujo:', err);
-    }
-  }
-
-  // El CSV simulado trae la zona que le toco en una version anterior del
-  // dibujo: eso es cache, no dato. Se remapea con la regla vigente (mapeo 0 =
-  // "de otra version", fuerza el recalculo) para que caiga donde corresponde
-  // en la plantilla de hoy, igual que lo registrado en el dispositivo.
-  base = remapAll(parseCsvText(csvText).records, 0, mapping()).records;
-
+  zones = cargado.cartel.zones;
+  field = cargado.cartel.field;
+  espina = cargado.cartel.espina;
+  boceto = cargado.cartel.boceto;
+  trama = cargado.cartel.trama;
+  tlacuilo = cargado.cartel.tlacuilo;
+  base = cargado.base;
+  propios = cargado.propios;
   // Lo guardado en este dispositivo puede venir de una version anterior del
-  // mapeo: se recalcula con la regla vigente y se vuelve a guardar, asi no
+  // mapeo: `cargarMural` lo devuelve al dia y aqui se vuelve a guardar, asi no
   // quedan dos reglas mezcladas en el mismo mural.
-  const guardado = loadLocal();
-  const { records: propiosAlDia, remapped } = remapAll(guardado.records, guardado.mapeo, mapping());
-  propios = propiosAlDia;
-  if (remapped > 0) saveLocal(propios);
+  if (cargado.remapeados > 0) saveLocal(propios);
   ids.sync(records());
 
   alta = registroForm({ ramp, add: addPerson, onDone: verMancha });
@@ -1174,7 +1524,13 @@ function observarVisibilidad(): void {
  * Al cambiar el tamano de la caja hay que volver a rasterizar: la escena esta
  * pintada a la medida de la anterior. Se espera a que el gesto termine —un
  * arrastre de ventana son decenas de eventos y cada render son decimas— y se
- * re-renderiza solo si la escala cambio de verdad.
+ * re-renderiza solo si cambio algo de verdad.
+ *
+ * Cambio de escala no alcanza para saberlo. El lienzo llena la caja, asi que
+ * puede cambiar de tamano sin cambiar de escala —una ventana mas ancha con la
+ * misma altura deja el cartel encajando igual— y asignarle el tamano a un
+ * lienzo lo borra: habria que repintarlo aunque el cartel se vea del mismo
+ * tamano.
  */
 function seguirTamano(): void {
   let timer = 0;
@@ -1182,7 +1538,10 @@ function seguirTamano(): void {
     clearTimeout(timer);
     timer = window.setTimeout(() => {
       const antes = escala;
-      if (Math.abs(ajustarLienzo() - antes) > 0.01) render();
+      const ancho = view.width;
+      const alto = view.height;
+      const ahora = ajustarLienzo();
+      if (Math.abs(ahora - antes) > 0.01 || view.width !== ancho || view.height !== alto) render();
     }, 180);
   };
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(alCambiar).observe(mural);
