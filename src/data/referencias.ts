@@ -28,18 +28,24 @@ export interface TramoCita {
 
 /** Lo que el JSON-LD necesita de una referencia y la cita no tiene aparte. */
 export interface EsquemaReferencia {
-  /** Los articulos son `ScholarlyArticle`; el documento oficial, `WebPage`. */
-  tipo: 'ScholarlyArticle' | 'WebPage';
+  /** Los articulos son `ScholarlyArticle`; el documento oficial, `WebPage`;
+   *  la investigacion propia, `CreativeWork`. */
+  tipo: 'ScholarlyArticle' | 'WebPage' | 'CreativeWork';
   /** Titulo de la obra, sin el resto de la cita. */
   nombre: string;
   /** Autores en el orden de la cita, con el nombre como lo lleva la firma. */
   autores: string[];
+  /** Quien acompano el trabajo sin firmarlo: sale como `contributor`. */
+  colaboradores?: string[];
   /** True si la autoria es institucional: sale como `Organization`. */
   institucional?: boolean;
   /** `datePublished`: el ano, o la fecha completa si la cita la trae. */
   fecha: string;
-  /** `isPartOf`: la revista del articulo o el sitio del documento. */
+  /** `isPartOf`: la revista del articulo, el sitio del documento o la obra
+   *  de la que forma parte la investigacion propia. */
   parteDe: string;
+  /** `contentLocation`: donde se hizo el trabajo de campo, si lo hubo. */
+  lugar?: string;
 }
 
 export interface Referencia {
@@ -53,17 +59,28 @@ export interface Referencia {
   autorCorto: string;
   anio: string;
   /** La palabra con la que se nombra la obra en los `aria-label`. */
-  obra: 'artículo' | 'documento';
+  obra: 'artículo' | 'documento' | 'investigación';
   /** Donde cae el enlace principal, para decirlo en el `aria-label`. */
   sede: string;
-  /** La cita completa, partida en tramos; cierra con `url`. */
+  /** La cita completa, partida en tramos; cierra con `url` si lo hay. */
   cita: TramoCita[];
   /**
    * El enlace principal, que es tambien el que cierra la cita: el DOI cuando
    * lo hay y la direccion del repositorio cuando no. Se muestra entero y se
    * abre de un clic.
+   *
+   * La investigacion propia no lo lleva: no vive fuera de este sitio, asi que
+   * su cita cierra en el museo —como manda APA para un trabajo inedito— y el
+   * boton principal sale de `interno`.
    */
-  url: string;
+  url?: string;
+  /** El enlace principal cuando la fuente se lee en esta misma pagina. */
+  interno?: {
+    href: string;
+    etiqueta: string;
+    /** Como se nombra el destino en el `aria-label`. */
+    destino: string;
+  };
   /** La descripcion de una linea de la tarjeta. */
   descripcion: string;
   /** La etiqueta de tipo de acceso. */
@@ -116,6 +133,41 @@ export const REFERENCIAS: Referencia[] = [
       ],
       fecha: '2023',
       parteDe: 'Debates en Sociología',
+    },
+  },
+  {
+    id: 'capistran-morales-2026',
+    autorCorto: 'Capistran Morales',
+    anio: '2026',
+    obra: 'investigación',
+    sede: 'la sección El concepto',
+    cita: [
+      { texto: 'Capistran Morales, D. (2026). ' },
+      { texto: 'Los dioses siguen cuidando a sus hijos a través de su fruto', cursiva: true },
+      {
+        texto:
+          ' [Investigación de campo, con el apoyo de M. J. Cruz Morazán]. Museo Nacional de '
+          + 'Antropología (INAH), Ciudad de México.',
+      },
+    ],
+    interno: {
+      href: '#concepto',
+      etiqueta: 'Ver la investigación',
+      destino: 'la sección El concepto',
+    },
+    descripcion:
+      'Investigación de campo propia en las salas del Museo Nacional de Antropología: las piezas, '
+      + 'los códices y la paleta que dieron forma a este mural.',
+    acceso: 'Investigación propia',
+    notas: ['Con el apoyo de María José Cruz Morazán'],
+    esquema: {
+      tipo: 'CreativeWork',
+      nombre: 'Los dioses siguen cuidando a sus hijos a través de su fruto',
+      autores: ['Daniel Capistran Morales'],
+      colaboradores: ['María José Cruz Morazán'],
+      fecha: '2026',
+      parteDe: 'Mural Colectivo de Acuarela',
+      lugar: 'Museo Nacional de Antropología (INAH), Ciudad de México',
     },
   },
   {
@@ -258,11 +310,14 @@ export const REFERENCIAS: Referencia[] = [
  * enlace al final, igual que en la pagina.
  */
 export function citaPlana(ref: Referencia): string {
-  return ref.cita.map((t) => t.texto).join('') + ref.url;
+  return (ref.cita.map((t) => t.texto).join('') + (ref.url ?? '')).trim();
 }
 
 /** El credito de la pieza: va aparte de las referencias, no es una fuente. */
 export const CREDITOS = {
+  /** El titulo de la obra, el mismo con que la investigacion propia entra en
+   *  `REFERENCIAS` (ver `capistran-morales-2026`). */
+  obra: 'Los dioses siguen cuidando a sus hijos a través de su fruto',
   pieza: 'Hacha',
   ubicacion: 'Sala Mexica, Museo Nacional de Antropología (INAH), Ciudad de México',
   por: 'Daniel Capistran Morales',
