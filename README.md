@@ -6,28 +6,36 @@ marca de acuarela que **nace** donde la pone el dibujo y crece libre a partir
 de ahí. Al superponerse en `multiply`, las marcas se oscurecen como pigmento
 real y aparece el mapa de calor.
 
-El boceto no se muestra ni recorta nada: es el guion. La figura la dibujan los
-datos, una pincelada por persona sobre las líneas de la ilustración, y si se ve
-la serpiente es porque hay gente suficiente para haberla trazado (ver *El
-trazo*).
+El dibujo no recorta nada y nunca se muestra entero: lo va trazando un lápiz
+que no para, rápido y apenas marcado, y la línea se apaga detrás de él (ver
+*El cartel debajo*). La figura la dibujan los datos sobre esas líneas, y cada
+línea marca más o menos según la gente que tenga encima: si se ve la
+serpiente es porque hay gente suficiente para haberla trazado.
 
 **El producto es `index`** (`/`): el mural a pantalla completa, con sus datos
-reales en Supabase y dos iconos al pie para sumarse o buscar a alguien.
+reales en Supabase y cuatro iconos al pie para ver cómo se pintó, acercarse al
+cartel, sumarse o buscar a alguien.
 
-**La ilustración es `public/Mural/bocetoactualizado.svg`**, la serpiente
-emplumada en espiral: es la plantilla sobre la que se trabaja todo. La nombra un
-solo módulo (`src/io/plantilla.ts`) del que tiran el mural, el Hero y el studio,
-así que reemplazarla por una versión más trabajada del mismo trazo es cambiar el
-archivo; mientras el trazo pase por donde pasaba, las semillas de su
-`.zones.json` lo vuelven a encontrar. Se carga como SVG y el motor la rasteriza
-al vuelo a un lienzo de 1918×2000.
+**La ilustración es `public/Mural/Final.svg`**, el cartel terminado: un códice
+en espiral que relata el **tlacuilo** sentado en el centro. La serpiente
+emplumada da las vueltas —la cabeza arriba a la izquierda, el cuerpo cerrándose
+hacia adentro— y entre vuelta y vuelta hay nopales, mazorcas y ornamentos. Es
+la plantilla sobre la que se trabaja todo, y la nombra un solo módulo
+(`src/io/plantilla.ts`) del que tiran el mural y el Hero, así que reemplazarla
+es cambiar esas rutas y rehornear los cuatro archivos que la acompañan (ver
+*Cambiar la ilustración*). Se carga como SVG y el motor la rasteriza al vuelo
+a un lienzo de 1970×2000.
 
-Este boceto **todavía no cierra ninguna región**, así que no hay huecos que
-delimitar: su `.zones.json` trae `close: 24` y las zonas salen del **relleno del
-propio trazo** (ver *Dibujo sin cerrar*, más abajo). El boceto anterior sigue en
-la carpeta con su `boceto.zones.json` —22 zonas de verdad, `close: 0`— y no
-depende de nada de esto: apuntar `plantilla.ts` de vuelta a él lo devuelve al
-aire tal como estaba.
+El cartel está partido en dos, y esa división es el centro del mural: **el
+tlacuilo se dibuja tal cual** —es la mano que relata, tiene que estar desde la
+primera visita— y **todo lo demás lo trazan los datos** (ver *El tlacuilo no lo
+pinta nadie*).
+
+El dibujo **no cierra ninguna región**, así que no hay huecos que delimitar: su
+`.zones.json` trae `close: 24` y las zonas salen del **relleno del propio
+trazo** (ver *Dibujo sin cerrar*, más abajo). Los bocetos anteriores siguen en
+la carpeta con sus propios archivos y no dependen de nada de esto: apuntar
+`plantilla.ts` de vuelta a ellos los devuelve al aire tal como estaban.
 
 Todo lo demás es banco de pruebas, y existe para una sola cosa: saber cómo queda
 `index`. El lector de dibujos y de CSV sirve para entrar cualquier dibujo y
@@ -35,9 +43,10 @@ cualquier dataset; y **el studio** (`/studio`) es el laboratorio con los nueve
 bloques de parámetros donde se afina cómo se mapean los datos a la acuarela.
 Ninguno de los dos es la pantalla que se publica.
 
-Los datos que hay hoy son **simulaciones**: `datos_ejemplo.csv` son 295
+Los datos que hay hoy son **simulaciones**: `datos_ejemplo.csv` son 1800
 registros ficticios con el esquema real, ocupando el lugar de lo que vendrá de
-Supabase.
+Supabase. Los arma `tools/registros.mjs`, que importa el esquema de verdad y
+solo agrega al final (ver *El banco simulado*).
 
 ## El stack
 
@@ -57,8 +66,8 @@ Supabase.
 ### Cómo se reparte el CSS
 
 El markup no está en el HTML sino que lo construyen los módulos TS, así que el
-escaneo de Tailwind incluye `@source "../**/*.ts"` además de `pages/` y
-`layouts/`. Las clases se escriben siempre completas: un `bg-${x}` armado a mano
+escaneo de Tailwind incluye `@source "../**/*.ts"` además de `pages/`,
+`layouts/` y `components/`. Las clases se escriben siempre completas: un `bg-${x}` armado a mano
 no lo ve el detector.
 
 Lo estructural —flex, grid, tamaños, espaciado, hovers de un solo elemento— va
@@ -75,15 +84,43 @@ breakpoint `telefono:`.
 `components`, antes de las utilidades, para que lo inline siga pudiendo
 pisarlo.
 
+**Cuidado con `hidden`:** `app.css` la define fuera de toda capa y con
+`!important`, porque el kiosco la conmuta con `classList` sobre cajas que ya
+traen su propio `display`. Eso le gana también a las variantes, así que el par
+`hidden md:flex` no funciona —la caja no aparece en ningún ancho— y hay que
+escribirlo al revés: `flex max-md:hidden`. Es lo que tenía escondida la fila de
+secciones de la barra.
+
 ## Arrancar
 
 ```bash
 npm install
-npm run dev      # http://localhost:4321  (/ el mural, /studio el laboratorio)
+npm run dev      # http://localhost:4321  (/ el mural, /historia el relato)
 npm run build    # astro build -> dist/  (sin /studio)
 npm run preview  # sirve dist/
 npm run check    # astro check (typecheck de .astro y .ts)
 ```
+
+### Cambiar la ilustración
+
+El dibujo no se procesa en el build: sus cuatro archivos están versionados al
+lado del SVG y se rehornean a mano, en este orden, cuando cambia la
+ilustración. Hace falta Python con `numpy`, `scipy`, `scikit-image` y
+`Pillow`.
+
+```bash
+cd tools
+python3 figuras.py ../public/Mural/Final.svg                     # el tlacuilo, aparte
+python3 espina.py  ../public/Mural/Final.svg --sin ../public/Mural/Final.tlacuilo.svg
+python3 trazos.py  ../public/Mural/Final.svg --sin ../public/Mural/Final.tlacuilo.svg
+python3 zonas.py   ../public/Mural/Final.svg                     # semillas y umbrales
+```
+
+`figuras.py` va primero porque los otros dos le descuentan esa figura al
+dibujo. Después hay que apuntar `src/io/plantilla.ts` al SVG nuevo —es el
+único lugar del código que nombra los archivos— y, si el dibujo trae otras
+capas, revisar `CAPA` en `figuras.py` y `CAPAS_ESPIRAL` en `espina.py`, que son
+los dos nombres que el horneado toma del export.
 
 `/studio` existe **solo en `astro dev`**. Su pagina vive en
 `src/studio/page.astro`, fuera de `src/pages/`, y `astro.config.mjs` inyecta la
@@ -91,31 +128,60 @@ ruta unicamente en dev: el build emite `index.html` y nada mas, asi que el
 deploy no publica el laboratorio. La escotilla para compilarlo a proposito es
 `STUDIO=1 npm run build`.
 
+## Las tres rutas
+
+El sitio son tres páginas y nada más:
+
+| Ruta | Qué hay | Script |
+| --- | --- | --- |
+| `/` | El Hero, el mural interactivo, la escala de los ánimos, la puerta a la historia, el concepto, cómo participar y las referencias | `src/mural/main.ts` (el motor entero) |
+| `/historia` | «La historia de nuestros símbolos»: la visualización de datos, el mito de Quetzalcóatl y la dieta de la milpa | `src/mural/historia.ts` (ni una línea del motor) |
+| `/timelapse` | La película del mural: la red vacía llenándose del primer registro al último | `src/mural/timelapse.ts` (el mismo cartel, sin kiosco) |
+
+Las tres secciones de `/historia` estaban en la portada, una tras otra. Se
+mudaron para que `/` abra con el mural y no con media docena de pantallas de
+lectura; la portada entra por la sección **La historia de nuestros símbolos**,
+que es el índice de las tres y lleva a la página.
+
+`/` y `/historia` comparten la cáscara (`layouts/Base.astro`), la barra y el
+pie (`components/Nav.astro` y `components/Footer.astro`) y las dos cosas de
+comportamiento que no son del mural: el revelado del texto con el scroll y el
+fondo de red de las secciones de la visualización, los dos en
+`src/mural/pagina.ts`. `/timelapse` comparte solo la cáscara: es un
+reproductor, así que no lleva barra ni pie —la pantalla es el lienzo y los
+mandos— y su única salida escrita es el enlace de vuelta al mural. Una sección que cambie de ruta se mueve en el `.astro` y
+se le cambia la `ruta` en las listas de la barra y el pie: el `href` —ancla
+suelta o ruta completa— lo resuelve `components/rutas.ts`.
+
 ## El mural (`/`)
 
 La pantalla que se publica: para dejar en un puesto o pasar de mano en mano. No
-tiene controles —esos viven en el studio— y sus parámetros de render quedan
+tiene controles —esos vivían en el studio— y sus parámetros de render quedan
 fijos en el código: semilla global `1234`, grano `0.5`, colocación aleatoria y
-la capa de líneas **apagada** (`showLines: false`) —el boceto no se ve, porque
-quien dibuja el mural son los trazos de los datos; con la ilustración debajo,
-aunque fuera tenue, el mural volvía a ser un dibujo coloreado—. Y **sin papel**: la
-escena se compone transparente (`paper: false`, con la capa de líneas también
-sin fondo) para que la ilustración quede a sangre sobre la página, sin el
-recuadro que dibujaba el lienzo opaco. El papel sigue puesto en el studio —que
-exporta una lámina acabada— y debajo del fondo del Hero, donde el velo de
-cristal necesita algo que desenfocar.
+la capa de líneas **apagada** (`showLines: false`): la lámina del SVG no se
+pega nunca debajo del mural. El cartel aparece de otra manera —un lápiz lo va
+trazando, rápido y apenas marcado, y la línea se apaga detrás de él (ver *El
+cartel debajo: un lápiz que no para*)—. Y **sin papel**: la escena se compone transparente (`paper: false`, con la capa
+de líneas también sin fondo) para que la ilustración quede a sangre sobre la
+página, sin el recuadro que dibujaba el lienzo opaco. El papel sigue puesto
+debajo del fondo del Hero, donde el velo de cristal necesita algo que
+desenfocar.
 
-Hoy arranca sola con la plantilla (`Mural/bocetoactualizado.svg` y su
-`.zones.json`) y los 295 registros simulados de `datos_ejemplo.csv`.
-Ese CSV es el sustituto temporal de la tabla de Supabase; todo lo que sigue en
-esta sección es la pantalla de verdad. El `zona` que trae el CSV es caché de un
-dibujo anterior: al cargarlo se remapea con la regla vigente, así el banco de
-pruebas cae siempre sobre la ilustración que hay puesta.
+Hoy arranca sola con la plantilla (`Mural/Final.svg`, su `.zones.json` y el
+`.tlacuilo.svg` de la figura central) y los 1800 registros simulados de
+`datos_ejemplo.csv`. Ese CSV es el sustituto temporal de la tabla de Supabase;
+todo lo que sigue en esta sección es la pantalla de verdad. El `zona` que trae
+el CSV es caché de un dibujo anterior: al cargarlo se remapea con la regla
+vigente, así el banco de pruebas cae siempre sobre la ilustración que hay
+puesta.
 
 Arriba no hay nada: la ilustración ocupa todo. Al pie, anclados abajo a la
 derecha —y a lo ancho en teléfono, al alcance del pulgar, respetando el área
-segura— hay dos iconos, lupa y persona+, que abren su recuadro **hacia arriba**.
-Se abre uno por vez, el mismo icono lo cierra y `Esc` también.
+segura— hay cuatro iconos: **reproducir** (la película del mural, ver *El
+timelapse*), **encuadre** (la lupa, ver *La lupa: mirar de cerca*), **lupa de
+buscar** y **persona+**. Los tres últimos abren su recuadro **hacia arriba**:
+se abre uno por vez, el mismo icono lo cierra y `Esc` también. El primero no
+abre nada —es un enlace, y lleva a `/timelapse`.
 
 ### Sumarse: tres preguntas
 
@@ -177,6 +243,169 @@ puesto, no de quien se registra—:
 En modo privado, o si el navegador no deja escribir, el mural sigue andando y el
 recuadro avisa que conviene bajar una copia antes de cerrar.
 
+### El banco simulado
+
+`datos_ejemplo.csv` lo arma `tools/registros.mjs`, fuera del build:
+
+```bash
+node tools/registros.mjs        # deja el banco en 1800 registros
+node tools/registros.mjs 4000   # o en los que se le pidan
+node tools/registros.mjs 300    # pedir menos recorta por el final
+```
+
+Tres cosas lo definen:
+
+- **No reescribe lo que ya está.** Lee el CSV, lo deja byte por byte como
+  estaba y solo agrega al final hasta llegar al total. Tiene que ser así
+  porque la posición de una mancha sale del hash de su `id` y su pedazo de
+  dibujo, de su lugar en la lista: regenerar el banco entero repintaría el
+  mural de cero. Agregando, el mural de ayer es el de hoy con unas pinceladas
+  más, igual que cuando se registra alguien de verdad. Pedir menos recorta por
+  el final, que no es destructivo en el sentido que importa: volver a pedirlos
+  los devuelve idénticos.
+- **El esquema no se copia, se importa.** La escala, las cuatro preguntas y el
+  cálculo del valor salen de `@data/person`, `@data/afinidad` y `@data/mapping`
+  cargados de verdad —con el loader SSR de Vite, que es quien resuelve los
+  alias `@`—, así que un cambio en las preguntas no puede dejar el script
+  generando respuestas que la app ya no sabe leer: se detiene y lo dice.
+- **Es determinista.** La semilla de cada registro es su propio número, así que
+  con el mismo total sale el mismo banco, y pedir 1800 después de haber pedido
+  840 agrega exactamente los 960 que faltaban sin tocar los anteriores.
+
+Lo que sí vive en el script es el **vocabulario** —nombres, oficios, lugares y
+las frases de más—, porque la app no necesita conocerlo. Las cuatro frases por
+punto de la escala que trae `SENTIRES` son las que el alta sugiere como chips,
+no las que alcanzan para mil doscientas personas, así que el banco habla
+además con un repertorio propio.
+
+### Cuánta gente hace falta
+
+El banco está en 1800 y no es un número redondo cualquiera: es donde la figura
+**cierra**. El recorrido sobre el que se tiende la red no es fijo —crece con la
+población, para sostener la densidad— y la perilla es
+`GENTE_FIGURA_COMPLETA = 1800` en `src/core/render/recorrido.ts`. La espiral
+entra siempre; las 683 líneas del cartel —las plumas, los nopales, las
+mazorcas, los ornamentos— se anexan de mayor a menor hasta donde alcance el
+presupuesto, que es una fracción del dibujo proporcional a la gente que hay.
+
+Medido sobre la plantilla de hoy:
+
+| Gente | Líneas dentro | Figura | Largo del recorrido | px de línea por persona |
+| ---: | ---: | ---: | ---: | ---: |
+| 294 | 1 / 683 | 0 % | 12 324 px | 41,9 |
+| 840 | 47 / 683 | 7 % | 30 982 px | 36,9 |
+| 1200 | 131 / 683 | 19 % | 44 096 px | 36,7 |
+| 1500 | 268 / 683 | 39 % | 55 123 px | 36,7 |
+| **1800** | **683 / 683** | **100 %** | **66 132 px** | **36,7** |
+| 4000 | 683 / 683 | 100 % | 66 132 px | 16,5 |
+| 10 000 | 683 / 683 | 100 % | 66 132 px | 6,6 |
+
+Tres cosas se leen ahí. Una: hasta 1800 la densidad se mantiene clavada en
+~37 px de línea por persona —ese es el punto de la perilla— y lo que crece es
+el dibujo: primero la serpiente sola, después las plumas grandes, al final los
+nopales y las mazorcas. Dos: **pasado 1800 no entra ni una línea más**, porque
+ya están las 683; lo único que sigue creciendo es el pigmento sobre la misma
+figura. A 10 000 hay cinco veces y media más gente sobre el mismo recorrido y
+el cuerpo se empasta hasta el negro.
+
+Tres: el cartel terminado es un 32 % más largo que el boceto anterior (66 132
+px contra 50 090), así que las mismas 1800 personas caen más espaciadas —37 px
+por persona contra 28—. Por eso el nodo y la arista se achicaron al cambiar de
+ilustración (ver *Las medidas salen del dibujo*): con el nodo de antes, lo que
+se veía de cerca era una mancha continua en vez de la gente que la forma.
+
+Para que la figura aguante más gente sin empastarse hay que **subir
+`GENTE_FIGURA_COMPLETA`**, no agregar registros: eso reparte la misma población
+sobre menos dibujo y la completa más tarde, más cargada. Agregar gente por
+encima del umbral solo oscurece.
+
+Los lugares de origen de los registros nuevos son mexicanos, que es de lo que
+hablan las cinco preguntas. Los 295 primeros son anteriores y traen localidades
+argentinas: quedan como están por la primera regla. Su columna `valor` también
+es de antes —la calculaba la escala sola, no la intensidad de la versión 3 del
+mapeo—, y no importa: el `valor` del CSV es caché y la app lo recalcula entero
+al cargar (ver *El mapeo*).
+
+## La historia (`/historia`)
+
+El relato de dónde sale la figura, en tres secciones de texto corrido y en el
+orden del argumento:
+
+1. **Visualización de datos** — la herramienta: qué se está midiendo y por qué.
+   Cierra con el botón *Participa*, que aquí no abre nada sino que lleva al
+   mural de `/`.
+2. **El mito de Quetzalcóatl** — el centro: él al centro, la sangre y la
+   ciencia, con las dos citas que están en el origen de la pieza.
+3. **La dieta de la milpa** — lo que sostiene al mito, con las tres fotos de
+   `public/dieta/` relevándose de fondo bajo el velo crema. El relevo es CSS
+   puro (`mural.css`): no necesita script.
+
+Arriba, el encabezado con el título y el índice de las tres; abajo, el cierre
+que devuelve al mural. La entrada desde la portada es la sección **La historia
+de nuestros símbolos**, y la barra y el pie llevan de vuelta a cada parte de
+`/`.
+
+La página es texto y fotos, así que `src/mural/historia.ts` no carga nada del
+motor de acuarela —ni el dibujo, ni las zonas, ni el CSV, ni el
+`localStorage`—: solo enciende el revelado y el fondo de red de
+`src/mural/pagina.ts`. El bundle que baja son unos 19 KB contra los 74 KB de la
+portada.
+
+El fondo de red es el mismo andamio de «La escala de la alimentación», que se
+quedó en `/`: `pintarFondoDatos()` lleva la lista de las dos secciones y cada
+ruta aporta el lienzo que tiene. Mientras estuvieron seguidas, la animación
+cruzaba de la crema al carmín sin costura; por eso `fondoRed.ts` sigue
+aceptando varias capas.
+
+## El timelapse (`/timelapse`)
+
+El mural de `/` aparece ya pintado: quien llega quiere ver la figura, no
+esperarla. Pero la figura es el trabajo de dos mil personas a lo largo de dos
+meses, y eso no se cuenta con un número al pie. El botón de reproducir —el
+primero de los cuatro iconos al pie del mural— lleva a una página donde el
+cartel arranca en blanco y se va llenando, del día del primer registro al del
+último, de corrido y en unos veintiséis segundos.
+
+Abajo, los mandos: reproducir y pausar, una barra que se arrastra para ir a
+cualquier momento, cuántos registros van y la fecha que marca el reloj. La
+barra espaciadora y las flechas hacen lo mismo que en cualquier reproductor;
+`Inicio` y `Fin` van a los extremos.
+
+Tres decisiones sostienen la película (están en `src/mural/timelapse.ts`):
+
+- **El acomodo es el final y lo que avanza es cuánta gente se ve.** La red se
+  arma una sola vez con todo el mundo —`redDeRegistros()`, el mismo que usa el
+  kiosco— y los nodos se revelan en el orden en que se registraron; una arista
+  entra con el último de sus dos extremos. Rearmar la red a cada paso sería más
+  fiel al mural de aquel día —el recorrido crece con la población, así que al
+  mural le van saliendo plumas (ver *Cuánta gente hace falta*)— pero cada
+  recálculo corre a todos los nodos un poco, y mil recálculos seguidos no se
+  ven como un dibujo pintándose: se ven como un dibujo temblando.
+- **El reloj es el calendario, no el conteo.** La película va del día del
+  primer registro al del último, y dentro de cada día sus registros se reparten
+  parejos. Así un día de treinta pinta rápido y uno de tres pinta despacio —que
+  es lo que de verdad pasó— sin que la película vaya a saltos de un día al
+  siguiente. La fecha sale de la columna `fecha`; si faltara, de la que el id
+  lleva escrita en el nombre.
+- **La tinta del cartel se vuelve a repartir cada tantos registros.** Las
+  líneas se entintan por donde hay gente encima (ver *El cartel debajo*), y
+  medir eso son diez mil puntos: se hace unas sesenta veces en toda la película
+  y no sesenta veces por segundo. El cartel va quieto en su propio lienzo y el
+  fotograma solo lo estampa, con la red revelada encima y el tlacuilo al final.
+
+Lo que se ve al terminar es exactamente el mural de `/` con la misma gente: el
+pincel, la paleta y el acomodo son los mismos módulos. Lo que las dos páginas
+comparten —bajar la ilustración, medirla, leer sus cuatro horneados y juntar
+los registros— vive en `src/mural/cartel.ts`, que es la única puerta por la que
+se carga el mural; de ahí sale también el `RENDER` con el que pintan las dos.
+`cartel.ts` no escribe: si lo registrado en el dispositivo venía de una versión
+anterior del mapeo lo devuelve al día y avisa cuántos cambiaron, pero volver a
+guardarlo es del kiosco, que es el único que escribe.
+
+Con `prefers-reduced-motion` la película no arranca sola: queda el mural
+entero, que es lo que tendría que mostrar al terminar, y el botón sigue ahí
+para quien quiera verla de todos modos.
+
 ## El studio (`/studio`)
 
 El laboratorio: cualquier dibujo, cualquier dataset, todos los parámetros. No se
@@ -189,7 +418,7 @@ TypeScript vanilla.
    *área mínima* y *margen interno* vuelven a detectar al soltarlos, conservando
    las zonas ya nombradas (se reconstruyen desde sus semillas). El botón
    **Plantilla del mural** carga `Mural/bocetoactualizado.svg` con sus zonas
-   —las mismas que ve `index`— y pinta las 295 personas del
+   —las mismas que ve `index`— y pinta las 1800 personas del
    CSV de un solo clic; los datos de ejemplo son ficticios y están generados al
    azar.
 2. **2 · Zonas** — clic en una región para crear una zona; **shift+clic** la
@@ -258,12 +487,20 @@ El mapeo dice **dónde nace** cada persona. El trazo dice **cómo se dibuja**, y
 es lo que convierte el mural en una visualización en vez de un dibujo
 coloreado.
 
-La figura la trazan los datos. Las **líneas negras del boceto** se hornean como
+La figura la trazan los datos. Las **líneas negras del cartel** se hornean como
 recorridos, se cortan en pedazos del largo de una pincelada y a cada persona le
 toca uno: su trazo corre **sobre** esa línea. Con veinte personas la serpiente
-se insinúa; con las 295 del banco de ejemplo está entera; de ahí en más las
-pinceladas se encabalgan y la línea se carga de pigmento. La ilustración no se
-dibuja nunca: lo que se ve es lo que la gente pintó.
+se insinúa; de ahí en más las pinceladas se encabalgan y la línea se carga de
+pigmento.
+
+El cartel sí se ve, pero apagado: es el lápiz antes de la tinta, y lo que lo
+entinta es la gente (ver *El cartel debajo*). Con una excepción, el tlacuilo,
+que está entero desde la primera visita porque es quien está dibujando.
+
+> Ojo: este es el modelo de **pinceladas**, y hoy no es el que pinta `/`. Desde
+> que el mural es una red, `compose` elige `dibujarRed` y deja `pintarMural` de
+> reserva (ver *Cuánta gente hace falta*). La sección sigue valiendo porque el
+> código está entero y es a donde cae el mural si falta la red.
 
 Y no aparece hecho: **se pinta a la vista**, pincelada por pincelada, en ese
 mismo orden disperso (ver *El mural se pinta solo*). Encima, los **brotes**
@@ -274,6 +511,124 @@ Si faltara el `.trazos.json` del dibujo, el mural cae al modelo anterior, que
 sigue entero en el código: la espiral pintada como **tronco** y una **rama**
 por persona saliendo de ella (ver *El tronco, las ramas y los brotes*).
 
+### El cartel debajo: un lápiz que no para
+
+El mural tenía el dibujo apagado del todo: la figura la armaban los nodos y
+nada más. Eso funcionaba con un boceto que era casi solo la espiral, y dejó de
+funcionar con el cartel terminado: entre vuelta y vuelta hay **nopales,
+mazorcas y ornamentos** que una nube de puntos no alcanza a sugerir —un nopal
+son cuatro pencas de cincuenta píxeles—, así que el mural se leía como un
+remolino rojo sin códice debajo.
+
+El dibujo vuelve, entonces, pero **no como lámina**. Pegar el SVG debajo del
+mural —aunque fuera tenue— lo devuelve a ser una ilustración coloreada por los
+datos, y dejar la silueta quieta es casi lo mismo con menos tinta. Lo que hay
+es un **lápiz que recorre el cartel entero una y otra vez**, rápido, dejando
+el trazo apenas marcado; detrás de él la línea se apaga. En cualquier momento
+se ve un pedazo del códice y no el códice: lo justo para saber que está ahí,
+que alguien lo está dibujando y que la red cae sobre sus líneas.
+
+El lápiz es `src/mural/trazado.ts` y la medida que pinta es
+`src/core/render/silueta.ts`: el cartel partido en **diez mil tramos**, cada
+uno con su grosor y con la opacidad que le dieron los datos.
+
+- **En fantasma** (alfa 0,09) la línea que todavía no tocó nadie. Al pasar el
+  lápiz apenas se insinúa.
+- **Entintada** (alfa 0,45) la que tiene gente encima. Ahí el lápiz marca de
+  verdad, y el nopal o la mazorca de ese tramo se leen como objetos y no como
+  manchas.
+
+Y es **por punto, no por línea entera**: una pluma puede estar entintada en el
+arranque y seguir en fantasma en la punta, que es exactamente lo que está
+pasando con los datos. La medida es cuántos nodos hay a menos de 26 px de ese
+punto de la línea (`ocupacionDe`), suavizada a lo largo del trazo para que la
+tinta no vaya a parches; se recalcula una vez por tanda, no por fotograma,
+porque depende de dónde **descansan** los nodos y no de dónde los corrió el
+ratón.
+
+Cuatro cosas sostienen la animación:
+
+- **Se acumula, no se repinta.** Cada fotograma apaga un poco todo lo que hay
+  en el lienzo del lápiz y estampa los tramos nuevos: unas decenas de trazos
+  por cuadro en vez de los diez mil del cartel. Con la red encima, el mural
+  sigue a 60 fps.
+- **La vuelta dura 4,2 s y el trazo vive 1,5 s**, así que a la vista hay
+  siempre poco más de un tercio del dibujo. Son las dos perillas del efecto
+  (`VUELTA` y `COLA`): acercarlas deja el cartel casi entero, separarlas lo
+  deja en un destello.
+- **El orden es el de la espiral**, no el del horneado (`ordenPorEspiral`). De
+  la cola de la serpiente al centro, desviándose a cada nopal al pasarle al
+  lado: la mano no salta, da la vuelta. Por largo de línea —que es como las
+  deja `trazos.py`— el efecto era un parpadeo de pedazos sueltos por todo el
+  cartel.
+- **Al mover la lupa se rehace la cola.** Lo acumulado está en píxeles de
+  pantalla y un encuadre nuevo lo invalida, así que se vuelve a pintar el
+  último tramo de recorrido con el desvanecido de cada uno: el lápiz no se
+  reinicia, se lo encuentra donde estaba.
+
+Al agrupar la opacidad en seis niveles y el grosor de a 0,5 px, cada tanda de
+tramos sale en un puñado de trazadas —y de paso la ilustración se lee como un
+dibujo entintado a mano, con línea clara y línea oscura, en vez de como un
+degradado donde cada tramo es un poco distinto del de al lado—.
+
+Con `prefers-reduced-motion` no hay lápiz: el cartel se pinta entero y se
+queda quieto, que es la misma información sin nada moviéndose. Es también lo
+que ve el fondo del Hero, que tiene su propio revelado encima.
+
+### El tlacuilo no lo pinta nadie
+
+El cartel es un códice y quien lo está contando es el **pintor sentado en el
+centro de la espiral**. Esa figura no puede aparecer de a poco como el resto:
+es la mano que dibuja, tiene que estar desde la primera visita y con el trazo
+del autor, no con una aproximación hecha de nodos.
+
+Para sostener esa división el SVG se parte en dos, y se parte **por
+geometría**: `tools/figuras.py` agrupa los paths de su capa por contacto —dos
+trazos van juntos si sus puntos caen en celdas vecinas de 8 unidades— y se
+queda con el grupo más grande, que es la figura entera y nada más (en la misma
+capa están las mazorcas, que quedan fuera). Sale
+`public/Mural/Final.tlacuilo.svg`, 135 paths con el viewBox ajustado a la
+figura.
+
+De ahí en más son dos reglas:
+
+- **Los horneados le restan la figura.** `espina.py` y `trazos.py` aceptan
+  `--sin figura.svg` y la descuentan de la tinta antes de medir, así que ni la
+  espiral ni las líneas que la red va trazando le pasan por encima al pintor.
+  La espiral, de hecho, **muere en su mano**: el centro de la espiral es él.
+- **Se dibuja último y entero.** `src/core/render/figura.ts` lo ubica
+  comparando su viewBox con el del dibujo grande —sin coordenadas anotadas a
+  mano— y lo estampa encima de la red, sin pigmento ni transparencia. Como
+  vive en su propio SVG, se rasteriza a la medida en que se lo está mirando:
+  con la lupa cerca el pintor sigue siendo una línea y no un escalón.
+
+### La lupa: mirar de cerca
+
+El cartel entero en una pantalla mide unos quinientos píxeles, y a ese tamaño
+un nodo son tres: se ve el remolino, pero no se entiende que cada punto es
+alguien ni se lee el nopal que la red acaba de entintar. El primero de los tres
+iconos abre la **lupa**, que no cambia el mural sino la distancia a la que uno
+se para.
+
+- **Rueda, pinza o los botones `−` / `+`** acercan hasta 8×, siempre dejando
+  quieto el punto del dibujo que está debajo del cursor o de los dedos.
+- **Arrastrar** recorre el cartel; el encuadre no se sale del dibujo y vuelve
+  al centro en cuanto el mural entra entero.
+- **`Ver todo`** —o cerrar la lupa, o la tecla `0`— devuelve el cartel
+  completo.
+
+Los gestos solo escuchan **con la lupa abierta**, y es a propósito: el mural
+ocupa la pantalla entera, así que si la rueda acercara siempre no habría cómo
+seguir bajando por la página, y en el teléfono el dedo no podría desplazarla.
+
+Acercarse no es agrandar un bitmap. El cartel se vuelve a trazar a la nueva
+escala (los vectores de la silueta y el SVG del tlacuilo, cada uno a su
+resolución), y los nodos y las aristas se dibujan a su tamaño: lo que de lejos
+era una mancha continua, de cerca es una sarta de puntos con sus hilos. El
+lápiz sigue dando vueltas mientras tanto, en su propio lienzo y con la lupa
+puesta, así que al acercarse se lo ve dibujar: un arrastre a 1,2× —el peor
+caso, con casi todo el dibujo a la vista— corre a 60 fps.
+
 ### Las líneas: el dibujo se hornea como recorrido
 
 El export de Concepts no sirve tal cual: cada `<path>` es la **silueta** de una
@@ -281,7 +636,8 @@ pincelada —el contorno de ida y vuelta, relleno de negro— y una línea del
 dibujo suele ser varios paths encimados. El eje hay que sacarlo de la tinta, y
 es una esqueletización sobre cuatro millones de píxeles, así que se hornea
 fuera del navegador: `tools/trazos.py` lo deja versionado al lado del dibujo
-como `<dibujo>.trazos.json` (hoy **335 líneas, 39 467 px de recorrido, 132 KB**).
+como `<dibujo>.trazos.json` (hoy **683 líneas, 55 359 px de recorrido,
+192 KB**, sin contar al tlacuilo, que se descuenta con `--sin`).
 
 El script rasteriza el SVG a la resolución de trabajo del mural, esqueletiza la
 **tinta** —no el cuerpo relleno que usa `espina.py`: aquí se quiere el eje de
@@ -292,7 +648,7 @@ pelos de la esqueletización, suaviza la escalera de un píxel, remuestrea cada
 6 px y mide el semiancho de la línea con la transformada de distancia.
 
 En el navegador, `src/core/render/boceto.ts` lo carga, lo escala al dibujo que
-esté puesto y arma el **reparto de obra**: corta las líneas en ~418 pedazos de
+esté puesto y arma el **reparto de obra**: corta las líneas en ~775 pedazos de
 150 px y los ordena por **vecino más lejano**, de forma que cada pincelada
 nueva cae en el hueco más grande que haya quedado. Por el orden del dibujo, los
 primeros cien registros habrían pintado la espiral entera y ni una pluma; así,
@@ -362,20 +718,28 @@ La espina es la otra lectura del mismo dibujo: no las líneas dibujadas sino el
 vuelve a ser la columna de la que salen las ramas.
 
 El recorrido no se inventa ni se dibuja a mano: es el **esqueleto de la banda
-del cuerpo** de la serpiente. Sacarlo es esqueletizar dos millones de píxeles,
-así que no se hace en el navegador: `tools/espina.py` lo hornea una vez y lo
-deja versionado al lado del dibujo como `<dibujo>.espina.json` (hoy 1064
-puntos, 10 631 px de recorrido). El script rasteriza el SVG a la misma
+del cuerpo** de la serpiente. Sacarlo es esqueletizar cuatro millones de
+píxeles, así que no se hace en el navegador: `tools/espina.py` lo hornea una
+vez y lo deja versionado al lado del dibujo como `<dibujo>.espina.json` (hoy
+1079 puntos, 10 785 px de recorrido). El script rasteriza el SVG a la misma
 resolución de trabajo que usa el mural, reconstruye lo pintable igual que
 `analyzeDrawing` (cierre morfológico de radio 24, ver `strokeFill`),
 esqueletiza tinta + relleno y se queda con el camino más largo que arranca en
 la punta más interior —lo que descarta las plumas y la cabeza, que son ramas
 cortas—. Si cambia la ilustración, hay que volver a correrlo.
 
+Dos recortes lo hacen posible en el cartel terminado. Mide **solo las capas de
+la serpiente** (`CAPAS_ESPIRAL`): con los nopales y las mazorcas adentro, el
+cierre morfológico pega una vuelta de la espiral con la siguiente y el "cuerpo
+sólido" pasa a ser el disco entero —el eje que sale de ahí no es el de ninguna
+serpiente—. Y **descuenta al tlacuilo** (`--sin`), para que el recorrido muera
+al llegar a él en vez de atravesarlo.
+
 En el navegador, `src/core/render/espina.ts` solo lo carga, lo escala al dibujo
 que esté cargado y lo deja consultar por longitud de arco: "a tantos píxeles de
-la cabeza, dónde estoy, hacia dónde voy y cuánto mide el cuerpo". `s` es
-siempre la posición normalizada en `[0,1]`: 0 la cabeza, 1 el centro.
+la cola, dónde estoy, hacia dónde voy y cuánto mide el cuerpo". `s` es siempre
+la posición normalizada en `[0,1]`: 0 la cola, 1 el centro de la espiral, que
+es donde está sentado el pintor.
 
 Si el `.espina.json` falta o no se puede leer, el mural abre igual: sin espiral
 se vuelve al reparto de manchas y mechones dentro de las zonas, que es lo que
@@ -444,7 +808,7 @@ lo que hace que el borde del mural sea del trazo y no del boceto.
 
 ### Las medidas salen del dibujo
 
-El lienzo mide lo que mida el archivo de la plantilla (hoy 1918×2000). Un
+El lienzo mide lo que mida el archivo de la plantilla (hoy 1970×2000). Un
 filamento de 70 px ahí dentro llega a pantalla como una pelusa, y un grosor de
 1 px no llega: largo (8 % del lado mayor), grosor y punta se calculan desde el
 dibujo, igual que el radio de mancha. A diferencia de la mancha, el trazo **no**
@@ -458,6 +822,20 @@ el mural se cierra como figura— y el ancho del tronco contra el de la banda de
 cuerpo. La única medida que **no** sale del dibujo es la de los testimonios:
 esa se mide en píxeles de pantalla, y la pone el mural, que es quien sabe a qué
 tamaño se está mirando.
+
+El **nodo** y la **arista** de la red se miden igual (0,27 % y 0,62 % del lado
+mayor de radio; 5,8 % de alcance), y se achicaron al pasar al cartel
+terminado. No es gusto: con la lupa, el mural dejó de mirarse solo entero. De
+lejos un nodo grande ayudaba a que el remolino se viera; de cerca, con nodos de
+treinta y seis píxeles cada treinta y siete de recorrido, lo que se veía era
+una mancha continua y no la gente que la forma. La arista, acortada, une a
+quien se parece **y** está al lado, en vez de cruzar el dibujo de parte a
+parte. De la silueta se mide lo mismo: a qué distancia un nodo entinta la
+línea que tiene debajo (1,3 % del lado mayor, del orden del nodo, o la tinta
+se adelantaría a la gente) y el grosor mínimo con el que una línea se sigue
+viendo cuando el mural se mira entero. Lo que **no** sale del dibujo es el
+ritmo del lápiz: cuánto tarda una vuelta y cuánto vive un trazo se miden en
+segundos, y viven en `mural/trazado.ts` con el resto de lo que se mueve.
 
 Ese cálculo vive en `src/core/render/medidas.ts` y lo piden los dos: el mural
 al cargar la plantilla y el studio al renderizar. Desde que la marca no tiene
@@ -662,8 +1040,13 @@ Tres capas con dependencias en un solo sentido: `core` no conoce a nadie,
 ```
 astro.config.mjs     sitio estático, sin adapter
 src/
-  pages/             index.astro — la unica ruta del sitio
-  layouts/Base.astro la cáscara HTML compartida (solo <head> y <slot>)
+  pages/             index.astro — la portada: el mural y lo que lo explica
+                     historia.astro — `/historia`: de dónde sale la figura
+  layouts/Base.astro la cáscara HTML compartida (<head>, <body> y el
+                     arranque del revelado, que corre antes del primer pixel)
+  components/        lo que las dos rutas comparten en el servidor
+                     Nav.astro · Footer.astro · rutas.ts (el href de cada
+                     sección, viva en la página que se pinta o en la otra)
 
   core/              EL MOTOR · cero DOM · cero framework · cero fetch
     types/           dataset · zone · placement · render · warning
@@ -672,7 +1055,10 @@ src/
     sampling/        prng · grid · randomInMask · poissonInMask
     render/          watercolor · trazo · field · medidas · paper · palette
                      boceto · pincelada  ← la figura la trazan los datos
-                     espina · tronco · rama · testimonios
+                     red  ← los nodos, las aristas y la evasión del cursor
+                     silueta  ← el cartel en tramos, con la tinta de los datos
+                     figura  ← el tlacuilo: la que no pinta nadie
+                     recorrido · espina · tronco · rama · testimonios
                      compose · legend
     ids/             idCodec
     scene.ts         detectar, reconstruir zonas y colocar registros
@@ -693,17 +1079,31 @@ src/
     registroForm (alta en 3 pasos) · personPanel (form completo + buscador)
     zonePanel · filters                        ← solo el studio
 
-  mural/             la pantalla pública (main.ts + mural.css)
+  mural/             las tres pantallas públicas (main.ts + mural.css)
+                     main.ts: la portada, con el motor entero
+                     historia.ts: `/historia`, sin nada del motor
+                     pagina.ts: lo que encienden las dos —el revelado del
+                       texto con el scroll y el fondo de red
+                     timelapse.ts: `/timelapse`, la película del mural
+                     cartel.ts: bajar el mural —dibujo, horneados y
+                       registros— sin montar interfaz: lo comparten
+                       `main.ts` y `timelapse.ts`
+                     trazado.ts: el lápiz que va dibujando el cartel
                      pintado.ts: el mural se pinta pincelada a pincelada
                      brotes.ts: lo que se mueve · heroReveal.ts: el trazado del Hero
+                     citas.ts: el botón «Copiar cita» de las referencias
   studio/            el laboratorio · page.astro se inyecta solo en dev
   styles/app.css     hoja raíz de Tailwind: tokens y clases de componente
 
 public/Mural/        LA PLANTILLA
-                     bocetoactualizado.svg · su .zones.json (close 24, 1 zona)
-                     bocetoactualizado.trazos.json  ← las líneas que pinta la gente
-                     bocetoactualizado.espina.json  ← el recorrido de la espiral
-                     boceto.svg · boceto.zones.json (cerrado, 22 zonas)
+                     Final.svg  ← el cartel terminado
+                     Final.tlacuilo.svg   ← la figura central, aparte
+                     Final.zones.json     ← close 24, 1 zona, 261 semillas
+                     Final.trazos.json    ← las líneas que entinta la gente
+                     Final.espina.json    ← el recorrido de la espiral
+                     bocetoactualizado.* · boceto.*  ← los bocetos anteriores,
+                     cada uno con sus horneados: apuntar `plantilla.ts` de
+                     vuelta a ellos los devuelve al aire tal como estaban
 
 public/dieta/        EL FONDO DE «LA DIETA DE LA MILPA»
                      maiz.jpg · frijol.jpg · calabza.jpg (se relevan solas)
@@ -717,9 +1117,12 @@ public/Conceptos/    LA MESA DE REFERENCIAS DE «EL CONCEPTO»
 public/samples/      EL BANCO DE PRUEBAS
                      datos_ejemplo.csv (simulado) — la base de datos de hoy
 
+tools/figuras.py     fuera del build · separa al tlacuilo del cartel
 tools/trazos.py      fuera del build · hornea las líneas del dibujo
 tools/espina.py      fuera del build · hornea el recorrido de la espiral
-                     los dos desde el SVG (numpy, scipy, scikit-image, Pillow)
+tools/zonas.py       fuera del build · escribe el .zones.json del dibujo
+                     los cuatro desde el SVG (numpy, scipy, scikit-image, Pillow)
+tools/registros.mjs  fuera del build · agrega gente al banco simulado
 ```
 
 Los imports entre capas van por alias (`@core/*`, `@io/*`, `@data/*`,
