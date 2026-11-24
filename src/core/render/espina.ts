@@ -68,7 +68,7 @@ export function parseEspinaJson(text: string): EspinaJson {
 /**
  * Lleva la espina horneada al dibujo que esta cargado.
  *
- * El JSON se midio sobre una rasterizacion concreta (hoy 1918x2000); si el
+ * El JSON se midio sobre una rasterizacion concreta (hoy 1970x2000); si el
  * mural carga el mismo SVG a otro tamano, las coordenadas se escalan igual
  * que las semillas de las zonas. Un dibujo de otra proporcion no se puede
  * reescalar sin deformar el recorrido: ahi conviene volver a hornear.

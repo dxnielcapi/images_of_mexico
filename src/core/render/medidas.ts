@@ -20,6 +20,7 @@ import { DEFAULT_PINCELADA, type PinceladaParams } from './pincelada';
 import { DEFAULT_TRONCO, type TroncoParams } from './tronco';
 import { DEFAULT_TESTIMONIOS, type TestimonioParams } from './testimonios';
 import { DEFAULT_RED, type RedParams } from './red';
+import { DEFAULT_SILUETA, type SiluetaParams } from './silueta';
 
 /** Radio de la mancha como fraccion del lado mayor del dibujo. */
 const RADIO_MANCHA = 0.019;
@@ -74,16 +75,35 @@ const ANCHO_PINCELADA_MAX = 0.0062;
  * decide si la red se lee como un tejido o como una maraña— y el radio con
  * el que se siente el cursor, que tiene que ser varias veces el nodo o la
  * esquivada no se nota.
+ *
+ * El nodo y la arista se achicaron al pasar al cartel terminado. No es
+ * gusto: con la lupa, el mural dejo de mirarse solo entero. De lejos un nodo
+ * grande ayudaba a que el remolino se viera; de cerca, con nodos de treinta
+ * y seis pixeles cada treinta y siete de recorrido, lo que se ve es una
+ * mancha continua y no la gente que la forma. Mas chico, el mural de lejos
+ * pierde poco —son muchos— y de cerca se entiende: cada punto es alguien.
+ * Lo mismo la arista: acortada, une a quien se parece *y* esta al lado, en
+ * vez de cruzar el dibujo de parte a parte.
  */
-const RADIO_NODO_MIN = 0.0035;
-const RADIO_NODO_MAX = 0.009;
-const LARGO_ARISTA = 0.095;
-const ANCHO_ARISTA = 0.0015;
+/**
+ * La silueta se mide igual: lo que hay que escalar es a que distancia un nodo
+ * entinta la linea que tiene debajo —tiene que ser del orden del nodo, o la
+ * tinta se adelantaria a la gente— y el grosor con el que se ve una linea del
+ * dibujo cuando el mural se mira entero.
+ */
+const CERCA_SILUETA = 0.013;
+const GROSOR_SILUETA = 0.00055;
+
+const RADIO_NODO_MIN = 0.0027;
+const RADIO_NODO_MAX = 0.0062;
+const LARGO_ARISTA = 0.058;
+const ANCHO_ARISTA = 0.0012;
 const ALCANCE_CURSOR = 0.075;
 const EMPUJE_CURSOR = 0.013;
 
 export interface Medidas {
   watercolor: WatercolorParams;
+  silueta: SiluetaParams;
   trazo: TrazoParams;
   rama: RamaParams;
   pincelada: PinceladaParams;
@@ -126,6 +146,11 @@ export function medidasParaDibujo(lado: number, hueco: number): Medidas {
       ...DEFAULT_TRONCO,
       anchoMin: Math.max(2, lado * ANCHO_TRONCO),
       anchoDato: Math.max(2, lado * ANCHO_TRONCO_DATO),
+    },
+    silueta: {
+      ...DEFAULT_SILUETA,
+      cerca: Math.max(6, lado * CERCA_SILUETA),
+      grosorMin: Math.max(0.6, lado * GROSOR_SILUETA),
     },
     // El texto se mide en pixeles del lienzo (lo que se ve), no del dibujo:
     // quien lo ajusta es el mural, que sabe a que tamano se esta mirando.

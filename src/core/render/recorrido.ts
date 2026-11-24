@@ -20,8 +20,14 @@
  * El cuerpo entra siempre —es la figura— y lo demas se anexa de mayor a
  * menor, que es el orden en que `tools/trazos.py` deja las lineas. Asi el
  * mural crece como crece un dibujo: primero la espiral, despues las plumas
- * grandes, al final el detalle fino. Con trescientas personas se ve el cuerpo;
- * con mil y pico, la serpiente emplumada entera.
+ * grandes, al final el detalle fino —los nopales, las mazorcas, los
+ * ornamentos—. Con trescientas personas se ve la serpiente; con mil y pico, el
+ * codice entero.
+ *
+ * Lo que no entro en el recorrido no desaparece: la linea sigue ahi y el
+ * lapiz la dibuja igual al pasar, solo que sin tinta (ver
+ * `@core/render/silueta` y `mural/trazado`). El cartel entero se traza
+ * siempre; lo que la gente decide es que parte de el marca.
  *
  * Las piezas van ordenadas por donde caen sobre la espiral, no por largo:
  * el recorrido es un solo barrido de la cabeza al centro que se desvia a cada
@@ -90,6 +96,13 @@ export interface Trama {
   detalle: Pieza[];
   /** Largo de todo el dibujo, con cuerpo y detalle. */
   largoTotal: number;
+  /**
+   * Donde cae cada linea del boceto sobre la espiral, en [0,1] y por su
+   * indice en el boceto. Es la misma medida con la que se ordena el
+   * recorrido, y sirve ademas para recorrer el cartel como lo recorreria la
+   * mano: dando la vuelta (ver `ordenPorEspiral`).
+   */
+  anclas: Float32Array;
 }
 
 /** Cada cuanto se corta la espina para poder intercalarle las lineas. */
@@ -133,22 +146,45 @@ export function tramaDe(boceto: Boceto, espina: Espina): Trama {
     });
   }
 
+  // Donde cae cada linea sobre la espiral. Se mide una vez y la usan los dos
+  // que la necesitan: el recorrido, para intercalar las plumas por donde
+  // estan, y el lapiz del cartel, para recorrerlo dando la vuelta.
+  const anclas = new Float32Array(boceto.trazas.length);
+  boceto.trazas.forEach((t, i) => {
+    const medio = puntoEn(t, t.largo / 2);
+    anclas[i] = anclaDe(espina, medio.x, medio.y);
+  });
+
   // El detalle, de mayor a menor: es el orden en que le van saliendo las
   // plumas al dibujo. El horneado ya las deja asi, pero no cuesta asegurarlo.
   const detalle = boceto.trazas
     .map((t, i) => ({ t, i }))
     .sort((a, b) => b.t.largo - a.t.largo || a.i - b.i)
-    .map(({ t }) => {
-      const medio = puntoEn(t, t.largo / 2);
-      return piezaDeTraza(t, anclaDe(espina, medio.x, medio.y));
-    });
+    .map(({ t, i }) => piezaDeTraza(t, anclas[i]));
 
   const largoCuerpo = cuerpo.reduce((s, p) => s + p.largo, 0);
   return {
     cuerpo,
     detalle,
+    anclas,
     largoTotal: largoCuerpo + detalle.reduce((s, p) => s + p.largo, 0),
   };
+}
+
+/**
+ * Las lineas del cartel en el orden en que las recorre la espiral: de la
+ * cola de la serpiente al centro, desviandose a cada nopal y a cada mazorca
+ * al pasarle al lado.
+ *
+ * Es el orden en que las dibuja el lapiz del mural (ver `mural/trazado`). El
+ * del horneado —de la linea mas larga a la mas corta— sirve para repartir el
+ * presupuesto, pero visto dibujar seria un parpadeo de pedazos sueltos por
+ * todo el cartel: la mano no salta, da la vuelta.
+ */
+export function ordenPorEspiral(trama: Trama): Int32Array {
+  const orden = new Int32Array(trama.anclas.length);
+  for (let i = 0; i < orden.length; i++) orden[i] = i;
+  return orden.sort((a, b) => trama.anclas[a] - trama.anclas[b] || a - b);
 }
 
 /**

@@ -45,6 +45,15 @@ export interface Traza {
   /** Longitud de arco acumulada hasta cada punto. */
   acum: Float32Array;
   largo: number;
+  /**
+   * Su caja, en coordenadas de trabajo. Se mide al cargar porque con la lupa
+   * cerca hay que descartar de un vistazo las lineas que quedaron fuera de la
+   * vista (ver `@core/render/silueta`), y son cientos por fotograma.
+   */
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
 }
 
 /** El pedazo de linea que le toca a una persona. */
@@ -121,14 +130,19 @@ export function bocetoDesde(
     const ys = new Float32Array(n);
     const ws = new Float32Array(n);
     const acum = new Float32Array(n);
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (let i = 0; i < n; i++) {
       const [x, y, w] = puntos[i];
       xs[i] = x * kx;
       ys[i] = y * ky;
       ws[i] = w * kw;
+      if (xs[i] < minX) minX = xs[i];
+      if (xs[i] > maxX) maxX = xs[i];
+      if (ys[i] < minY) minY = ys[i];
+      if (ys[i] > maxY) maxY = ys[i];
       if (i > 0) acum[i] = acum[i - 1] + Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]);
     }
-    trazas.push({ xs, ys, ws, acum, largo: acum[n - 1] });
+    trazas.push({ xs, ys, ws, acum, largo: acum[n - 1], minX, minY, maxX, maxY });
     largo += acum[n - 1];
   }
 

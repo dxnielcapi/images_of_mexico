@@ -10,6 +10,8 @@ import type { Espina } from './espina';
 import type { Boceto } from './boceto';
 import type { ShapeField } from './field';
 import { dibujarRed, type Red } from './red';
+import { dibujarSilueta, type Tramos } from './silueta';
+import { dibujarFigura, type Figura } from './figura';
 import { mulberry32, seedFor } from '../sampling/prng';
 
 export interface SceneInput {
@@ -45,6 +47,17 @@ export interface SceneInput {
    * (ver `@core/render/red`).
    */
   red?: Red | null;
+  /**
+   * El cartel partido en tramos, cada uno con la tinta que le dio la gente
+   * que tiene encima (ver `@core/render/silueta`). Aqui se pinta entero y
+   * quieto; en el mural lo va trazando un lapiz que no para
+   * (`mural/trazado`), que es la misma medida pintada de a pedazos.
+   */
+  tramos?: Tramos | null;
+  /** La figura que no pinta la gente —el tlacuilo—, ya ubicada. */
+  figura?: Figura | null;
+  /** Esa figura rasterizada a la escala de este render. */
+  laminaFigura?: CanvasImageSource | null;
   /** Las frases que van escritas sobre el tronco, en orden de recorrido. */
   testimonios?: readonly Frase[] | null;
 }
@@ -81,18 +94,23 @@ function perfilDensidad(ramas: readonly Rama[]): (s: number) => number {
  * Se re-renderiza a mayor resolucion, nunca se escala el bitmap final.
  *
  * Todo va a un mismo lienzo en `multiply` y sin recorte por zona: el boceto
- * no es un molde. Con red, la escena son los nodos y sus aristas y no hay
- * nada mas debajo. Sin ella queda el mural anterior: con espina el orden es
- * el de una pintura —primero el cuerpo, despues las ramas, al final la
- * escritura y las lineas—, y las ramas se pintan de la mas lavada a la mas
- * cargada para que las fuertes queden encima.
+ * no es un molde. El orden es el de un codice: primero el cartel en
+ * fantasma, entintado por donde paso la gente (ver `@core/render/silueta`);
+ * encima la red, que es el pigmento; y al final el tlacuilo, que no es ni
+ * una cosa ni la otra —es quien esta dibujando— y por eso va entero y sin
+ * nada por arriba.
+ *
+ * Sin red queda el mural anterior debajo del mismo cartel: con espina el
+ * orden es el de una pintura —primero el cuerpo, despues las ramas, al final
+ * la escritura—, y las ramas se pintan de la mas lavada a la mas cargada
+ * para que las fuertes queden encima.
  */
 export function renderScene(
   target: HTMLCanvasElement,
   scene: SceneInput,
   scale = 1
 ): void {
-  const { points, ramp, options, lines, field, espina } = scene;
+  const { points, ramp, options, field, espina } = scene;
   const W = Math.round(options.width * scale);
   const H = Math.round(options.height * scale);
   target.width = W;
@@ -108,17 +126,46 @@ export function renderScene(
 
   ctx.globalCompositeOperation = 'multiply';
 
+  // El cartel va debajo de todo: es el lapiz sobre el que se pinta.
+  pintarFondoDibujo(ctx, scene, W, H, scale);
+
   if (scene.red) dibujarRed(ctx, scene.red, ramp, options.red, scale);
   else if (espina) pintarMural(ctx, scene, espina, scale);
   else pintarMarcas(ctx, points, ramp, options, field, scale);
 
-  // Lineas del dibujo encima de todo.
+  ctx.globalCompositeOperation = 'source-over';
+  // Y el tlacuilo encima: ni la red ni la tinta le pasan por arriba.
+  if (scene.figura && scene.laminaFigura) {
+    dibujarFigura(ctx, scene.figura, scene.laminaFigura, scale);
+  }
+}
+
+/**
+ * El dibujo debajo de la escena: el cartel con la tinta que le dieron los
+ * datos, entero y quieto.
+ *
+ * Esta es la version sin lapiz —la del fondo del Hero y la del movimiento
+ * reducido—; en el mural, los mismos tramos los va pintando `mural/trazado`
+ * de a pedazos. La lamina del SVG solo entra si alguien enciende
+ * `showLines`, que el mural deja apagado a proposito: con la ilustracion
+ * debajo volveria a ser un dibujo coloreado por los datos.
+ *
+ * Asume `multiply` ya puesto por quien llama.
+ */
+function pintarFondoDibujo(
+  ctx: CanvasRenderingContext2D,
+  scene: SceneInput,
+  W: number,
+  H: number,
+  scale: number
+): void {
+  const { lines, options, tramos } = scene;
   if (lines && options.showLines) {
     ctx.globalAlpha = options.lineAlpha;
     ctx.drawImage(lines, 0, 0, W, H);
     ctx.globalAlpha = 1;
   }
-  ctx.globalCompositeOperation = 'source-over';
+  if (tramos) dibujarSilueta(ctx, tramos, options.silueta, scale);
 }
 
 /**

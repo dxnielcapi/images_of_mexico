@@ -100,7 +100,7 @@ export const DEFAULT_RED: RedParams = {
   parecidoMin: 0.62,
   largoMax: 190,
   aristaAncho: 3,
-  aristaAlpha: 0.52,
+  aristaAlpha: 0.4,
   evasion: 150,
   empuje: 26,
   respuesta: 9,
