@@ -1,0 +1,122 @@
+---
+/**
+ * La barra superior, la misma en las dos rutas.
+ *
+ * Las secciones no viven todas en la misma pagina: el mural y lo que lo
+ * explica estan en `/`, y el relato de donde sale la figura esta en
+ * `/historia`. `SECCIONES` dice en cual vive cada una y `enlace()` —de
+ * `./rutas`— resuelve el destino, asi que mover una seccion de ruta es
+ * cambiar una palabra en esa lista.
+ *
+ * El fundido con el Hero (`glass-nav--hero`) solo arranca en `/`: es la unica
+ * pagina que abre con el mapeo a pantalla completa pasando por debajo de la
+ * barra. Ahi lo conmuta `main.ts` con el scroll; en `/historia` la barra va
+ * opaca desde el primer pixel.
+ */
+import { enlaceDesde, esActual, type Ruta, type Seccion } from './rutas';
+
+interface Props {
+  /** La ruta que se esta pintando: decide los anclas y el fundido del Hero. */
+  pagina?: Ruta;
+}
+
+const { pagina = 'inicio' } = Astro.props;
+const BASE = import.meta.env.BASE_URL;
+const enlace = enlaceDesde(pagina);
+
+/** Las secciones de la barra, en el orden en que se leen. Son seis porque
+ *  tienen que caber en una linea: el mapa completo esta en el pie. */
+const SECCIONES: Seccion[] = [
+  { ruta: 'inicio', ancla: 'inicio', texto: 'Inicio' },
+  { ruta: 'inicio', ancla: 'mural', texto: 'El mural' },
+  { ruta: 'historia', ancla: 'historia', texto: 'La historia' },
+  { ruta: 'inicio', ancla: 'concepto', texto: 'El concepto' },
+  { ruta: 'inicio', ancla: 'como-funciona', texto: 'Participar' },
+  { ruta: 'inicio', ancla: 'referencias', texto: 'Referencias' },
+];
+
+/** El inicio del sitio: en `/` es volver arriba, en `/historia` es salir. */
+const inicio = enlace('inicio', 'inicio');
+---
+
+<header
+  id="nav"
+  class:list={['glass-nav sticky top-0 z-40', pagina === 'inicio' && 'glass-nav--hero']}
+>
+  <div class="mx-auto flex h-[60px] max-w-[1180px] items-center justify-between gap-4 px-5 telefono:px-3.5">
+    <div class="flex items-center gap-3">
+      <a
+        href={inicio}
+        class="text-md font-mid tracking-[-0.01em] text-ink no-underline hover:text-[#9e2b2b] transition-colors"
+      >
+        Mural Colectivo
+      </a>
+    </div>
+
+    <!-- Se esconde en pantalla angosta con `max-md:hidden` y no con el par
+         `hidden md:flex`: `app.css` define `.hidden` con `!important` —ahi
+         hace falta, porque el kiosco la conmuta con `classList` sobre cajas
+         que ya traen su `display`— y ese `!important` le ganaba tambien a
+         `md:flex`, asi que la fila de secciones no aparecia en ningun ancho. -->
+    <nav aria-label="Secciones del sitio" class="flex max-md:hidden items-center gap-6 text-base text-muted">
+      {SECCIONES.map((s) => (
+        <a
+          href={enlace(s.ruta, s.ancla)}
+          aria-current={esActual(pagina, s) ? 'page' : undefined}
+          class="hover:text-ink transition-colors no-underline"
+        >
+          {s.texto}
+        </a>
+      ))}
+    </nav>
+
+    <div class="flex items-center gap-3">
+      <!-- En `/` el boton baja al mural y abre el alta (lo engancha
+           `main.ts` por `data-mural-action`); en `/historia` no hay mural que
+           abrir, asi que el mismo rotulo es un enlace que lleva al de `/`. -->
+      {pagina === 'inicio' ? (
+        <button
+          type="button"
+          data-mural-action="registrar"
+          class="cursor-pointer border-none bg-transparent p-0 text-md font-mid tracking-[-0.01em] text-[#9e2b2b] transition-opacity hover:opacity-75"
+        >
+          Participa
+        </button>
+      ) : (
+        <a
+          href={`${BASE}#mural`}
+          class="text-md font-mid tracking-[-0.01em] text-[#9e2b2b] no-underline transition-opacity hover:opacity-75"
+        >
+          Participa
+        </a>
+      )}
+      <span class="h-4 w-px bg-line" aria-hidden="true"></span>
+      <a
+        href="https://www.imagesofmexico.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Images of Mexico (imagesofmexico.com)"
+        class="flex items-center transition-opacity hover:opacity-75"
+      >
+        <img
+          src={`${BASE}Logos/IoM_icono.svg`}
+          alt="Images of Mexico"
+          class="h-6 w-auto"
+        />
+      </a>
+      <a
+        href="https://syle.studio/"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Syle Studio (syle.studio)"
+        class="flex items-center transition-opacity hover:opacity-75"
+      >
+        <img
+          src={`${BASE}Logos/syle.svg`}
+          alt="Syle Studio"
+          class="h-6 w-auto brightness-[0.12]"
+        />
+      </a>
+    </div>
+  </div>
+</header>

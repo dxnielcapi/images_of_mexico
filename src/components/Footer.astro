@@ -1,0 +1,91 @@
+---
+/**
+ * El pie de pagina, el mismo en las dos rutas.
+ *
+ * A diferencia de la barra de arriba —que lleva seis entradas y tiene que
+ * caber en una linea—, aqui esta el mapa completo: las secciones de `/` y las
+ * tres de `/historia`, con su titulo entero. El destino de cada una lo
+ * resuelve el mismo `enlace()` que la barra (ver `./rutas`): ancla suelta si
+ * la seccion vive en esta pagina, ruta completa si vive en la otra.
+ *
+ * La cuenta de personas la rellena `refreshCounts()` en `main.ts` buscando
+ * `.count`; en `/historia` no corre el mural, asi que ahi el numero no se
+ * escribe y el pie cierra solo con el credito.
+ */
+import { enlaceDesde, type Ruta, type Seccion } from './rutas';
+
+interface Props {
+  /** La ruta que se esta pintando: decide si cada ancla es local o cruzada. */
+  pagina?: Ruta;
+}
+
+const { pagina = 'inicio' } = Astro.props;
+const BASE = import.meta.env.BASE_URL;
+const enlace = enlaceDesde(pagina);
+
+/** El mapa del sitio, en el orden en que se recorre al leerlo de corrido. */
+const SECCIONES: Seccion[] = [
+  { ruta: 'inicio', ancla: 'inicio', texto: 'Inicio' },
+  { ruta: 'inicio', ancla: 'mural', texto: 'Ir al mural' },
+  { ruta: 'inicio', ancla: 'escala', texto: 'La escala de la alimentación' },
+  { ruta: 'historia', ancla: 'historia', texto: 'La historia de nuestros símbolos' },
+  { ruta: 'historia', ancla: 'datos', texto: 'Visualización de datos' },
+  { ruta: 'historia', ancla: 'mito', texto: 'El mito de Quetzalcóatl' },
+  { ruta: 'historia', ancla: 'milpa', texto: 'La dieta de la milpa' },
+  { ruta: 'inicio', ancla: 'concepto', texto: 'El concepto' },
+  { ruta: 'inicio', ancla: 'referencias', texto: 'Referencias y créditos' },
+];
+---
+
+<footer class="border-t border-line bg-paper py-12 px-5 telefono:px-3.5">
+  <div class="mx-auto max-w-[1120px]">
+    <div class="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+      <div class="flex flex-col gap-4">
+        <span class="font-mono text-2xs uppercase tracking-wider text-ink font-mid">Mural Colectivo</span>
+        <div class="flex flex-col items-start gap-4">
+          <a
+            href="https://www.imagesofmexico.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="transition-opacity hover:opacity-75"
+            title="Images of Mexico (imagesofmexico.com)"
+          >
+            <img src={`${BASE}Logos/Images_of_Mexico.svg`} alt="Images of Mexico" class="h-6 w-auto opacity-85" />
+          </a>
+          <a
+            href="https://syle.studio/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="transition-opacity hover:opacity-75"
+            title="Syle Studio (syle.studio)"
+          >
+            <img src={`${BASE}Logos/Syle_Fuente_Negro.svg`} alt="Syle Studio" class="h-5 w-auto opacity-80" />
+          </a>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2 text-sm text-muted">
+        <span class="mb-2 font-mono text-2xs uppercase tracking-wider text-ink font-mid">Secciones</span>
+        {SECCIONES.map((s) => (
+          <a href={enlace(s.ruta, s.ancla)} class="hover:text-ink no-underline">{s.texto}</a>
+        ))}
+      </div>
+
+      <div class="flex flex-col gap-2 text-sm text-muted">
+        <span class="mb-2 font-mono text-2xs uppercase tracking-wider text-ink font-mid">Participación</span>
+        <a href={enlace('inicio', 'como-funciona')} class="hover:text-ink no-underline">Cómo participar</a>
+      </div>
+
+      <div class="flex flex-col gap-2 text-sm text-muted">
+        <span class="mb-2 font-mono text-2xs uppercase tracking-wider text-ink font-mid">Enlaces</span>
+        <a href="https://syle.studio/" target="_blank" rel="noopener noreferrer" class="hover:text-ink no-underline">Syle Studio ↗</a>
+        <a href="https://www.imagesofmexico.com/" target="_blank" rel="noopener noreferrer" class="hover:text-ink no-underline">Images of Mexico ↗</a>
+      </div>
+    </div>
+
+    <div class="mt-10 flex flex-col justify-between gap-2 border-t border-line/70 pt-6 text-xs text-muted sm:flex-row sm:items-center">
+      <span>© {new Date().getFullYear()} Mural Colectivo de Acuarela · Daniel Capistran · Syle Studio.</span>
+      {pagina === 'inicio' && <span class="count">295 personas en el mural</span>}
+    </div>
+  </div>
+</footer>

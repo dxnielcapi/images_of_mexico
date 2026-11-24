@@ -1,0 +1,341 @@
+---
+/**
+ * `/historia` · La historia de nuestros simbolos.
+ *
+ * Donde se cuenta de donde sale lo que se ve en el mural: la herramienta con
+ * la que se mide (la visualizacion de datos), el relato que le da centro (el
+ * mito de Quetzalcoatl) y el sistema alimentario que lo sostiene (la dieta de
+ * la milpa). Las tres estaban en la portada, una tras otra; se mudaron aqui
+ * para que `/` abra con el mural y no con seis pantallas de lectura, y la
+ * portada entra por la seccion «La historia de nuestros símbolos».
+ *
+ * Es texto y fotos: nada de esto necesita el motor de acuarela. El `<script>`
+ * del final carga `src/mural/historia.ts`, que solo enciende el revelado de
+ * los bloques y los fragmentos de red del fondo —el mural, su CSV y el
+ * `localStorage` se quedan en `/`.
+ */
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/app.css';
+
+const BASE = import.meta.env.BASE_URL;
+
+/** Las tres fotos del fondo de `#milpa`, en el orden en que se relevan. El
+ *  archivo del tercero viene con el nombre mal escrito desde el origen; el
+ *  rotulo si lleva el nombre bien. */
+const DIETA_FOTOS = [
+  { archivo: 'maiz.jpg', nombre: 'Maíz' },
+  { archivo: 'frijol.jpg', nombre: 'Frijol' },
+  { archivo: 'calabza.jpg', nombre: 'Calabaza' },
+];
+---
+
+<Base
+  title="La historia de nuestros símbolos · Mural de Acuarela"
+  description="De dónde sale la figura del mural: la visualización de datos como herramienta, el mito de Quetzalcóatl como centro y la dieta de la milpa como sistema alimentario que lo sostiene."
+  bodyClass="bg-[#f9f6f0]"
+>
+  <Nav pagina="historia" />
+
+  <main>
+    <!-- ================================================== 00 · La portada -->
+    <!-- La entrada de la pagina: el titulo con el que se llega desde `/` y el
+         indice de las tres secciones. No es un Hero a pantalla completa —eso
+         es de la portada— sino un encabezado corto: lo que sigue es lectura. -->
+    <section id="historia" class="scroll-mt-[60px] px-5 pt-16 pb-14 telefono:px-3.5 telefono:pt-10 telefono:pb-10">
+      <div class="mx-auto max-w-[760px]">
+        <a
+          href={`${BASE}#mural`}
+          class="font-mono text-xs tracking-[0.16em] uppercase text-[#9e2b2b]/80 no-underline transition-opacity hover:opacity-70"
+        >
+          ← Volver al mural
+        </a>
+
+        <!-- El revelado va en la envoltura y no en el <h1>: el titulo tiene
+             su propia animacion de opacidad (la brasa) y una animacion le
+             gana a la transicion del revelado. -->
+        <div data-titulo class="titulo-revelar mt-6">
+          <h1 class="seccion-titulo text-[46px] font-mid leading-[1.06] tracking-[-0.025em] md:text-[62px] telefono:text-[32px]">
+            La historia de nuestros símbolos
+          </h1>
+        </div>
+
+        <p data-revelar class="dieta-revelar mt-7 text-xl leading-[1.65] text-muted telefono:text-lg">
+          El mural no se inventó de cero: viene de una herramienta, de un relato
+          y de una comida que lleva milenios en la mesa. Aquí están los tres, en
+          el orden en que se necesitan para leer la figura.
+        </p>
+
+        <!-- El indice: las mismas tres secciones de abajo, para quien llega
+             buscando una sola. -->
+        <nav aria-label="Las tres partes de la historia" data-revelar class="dieta-revelar mt-8 flex flex-wrap gap-x-5 gap-y-2 text-md text-muted">
+          <a href="#datos" class="no-underline hover:text-ink transition-colors">01 · Visualización de datos</a>
+          <a href="#mito" class="no-underline hover:text-ink transition-colors">02 · El mito de Quetzalcóatl</a>
+          <a href="#milpa" class="no-underline hover:text-ink transition-colors">03 · La dieta de la milpa</a>
+        </nav>
+      </div>
+    </section>
+
+    <!-- ========================================== 01 · Visualización de datos -->
+    <!-- Las tres secciones de esta pagina son texto corrido: sin tarjetas ni
+         recuadros, el orden es el del argumento. Primero qué se está midiendo
+         (los datos), luego de dónde sale la forma de medirlo (el mito) y qué
+         sostiene a ese mito (la milpa). -->
+    <section id="datos" class="relative isolate scroll-mt-[60px] border-t border-line/80 py-20 px-5 telefono:py-12 telefono:px-3.5">
+      <!-- Fondo: la misma red del mural, tenue y en movimiento. La escena
+           queda clavada en la pantalla y no se mueve en ningun momento. El
+           mismo andamio esta en «La escala de la alimentación», que se quedo
+           en `/` con su propio lienzo: lo arma el mismo codigo
+           (`pintarFondoDatos()` en `src/mural/pagina.ts`) y cada ruta aporta
+           el lienzo que tiene.
+
+           Son tres capas y cada una hace una cosa:
+
+           1. el recorte, al ras de la seccion (`inset-0`), para que la red no
+              se desborde sobre las secciones vecinas. Va con `overflow: clip`
+              y no `hidden`: `hidden` haria de el un contenedor de scroll y el
+              `sticky` dejaria de pegar;
+           2. el riel, que es el bloque que le da recorrido al `sticky`. Se
+              sale una pantalla por arriba y otra por abajo de la seccion, y
+              esa holgura es justo lo que hace que la escena este pegada todo
+              el tiempo: un riel al ras solo empieza a pegar cuando la
+              seccion llega al borde de arriba, asi que mientras la seccion
+              entra o termina de salir la escena todavia viaja con la pagina
+              —y eso es lo que se veia correrse. Lo que el riel asoma fuera
+              de la seccion lo recorta la capa 1, de modo que la holgura no
+              se ve;
+           3. la escena, que es la que se pega bajo la barra. -->
+      <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 overflow-clip select-none">
+        <div class="absolute inset-x-0 top-[-100dvh] bottom-[-100dvh]">
+          <div class="sticky top-[60px] h-[calc(100dvh-60px)] w-full">
+            <canvas id="datos-red" class="h-full w-full opacity-60"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative mx-auto max-w-[760px]">
+        <!-- El revelado va en la envoltura y no en el <h2>: el titulo tiene
+             su propia animacion de opacidad (la brasa) y una animacion le
+             gana a la transicion del revelado. -->
+        <div data-titulo class="titulo-revelar">
+          <h2 class="seccion-titulo text-[42px] font-mid leading-[1.08] tracking-[-0.025em] md:text-[56px] telefono:text-[30px]">
+            Visualización de datos
+          </h2>
+        </div>
+
+        <p data-revelar class="dieta-revelar mt-7 text-lg leading-[1.7] text-muted">
+          La herramienta fundamental para la elaboración de este cartel fue la visualización de datos, aquí hablaremos de nuestro tema principal el sistema  alimentario, este no solo se compone de la estructura general de una dieta, también va cargado de factores sociales, económicos incluso políticos y aquí es donde más peso se le quiere dar. 
+        </p>
+        <p data-revelar class="dieta-revelar mt-3 text-lg leading-[1.7] text-muted">
+          La alimentación promedio de un mexicano se a visto gravemente afectada a traves de los últimos años, tener una alimentación sana y de calidad debe ser un derecho garantizado por parte de nuestros gobernantes y se ha visto más como un privilegio, la idea de acceder de manera más fácil y  a alimentos súper procesados parece ridícula e imposible a comparación de alimentos que llevan siglos en nuestra cultura que son mucho más beneficiosos para nuestra población en general.
+        </p>
+        <p data-revelar class="dieta-revelar mt-3 text-lg leading-[1.7] text-muted">
+          Para ser mas específicos esta población de la que hablamos es toda esa gente que las produce, las transporta o incluso las comercializa, en cambio  se está beneficiando a compañías transnacionales que solo se preocupan por producir y producir y que al mismo pueblo que día tras día se despierta y sostiene este país no se le pueda brindar ni un alimento de calidad. Todo este tipo de circunstancias también es un tipo de violencia y se llama violencia alimentaria estructurada.
+        </p>
+
+        <blockquote data-revelar class="dieta-revelar mt-6 border-l-2 border-[#9e2b2b]/70 pl-5">
+          <p class="text-md italic leading-[1.6] text-ink">
+            “Cuando se ejerce esta violencia no solo se pierde una alimentación: se pierde toda una
+            cultura que ha resistido por siglos.”
+          </p>
+        </blockquote>
+
+
+        <!-- En `/` este boton abre el alta sobre el mural; aqui no hay mural
+             que abrir, asi que el mismo rotulo lleva al de la portada. -->
+        <a
+          href={`${BASE}#mural`}
+          class="glass-btn mt-7 inline-block rounded-full px-5 py-2.5 text-sm font-mid no-underline"
+        >
+          Participa
+        </a>
+      </div>
+    </section>
+
+    <!-- ===================================== 02 · El mito de Quetzalcóatl -->
+    <section id="mito" class="scroll-mt-[60px] border-t border-line/80 py-20 px-5 telefono:py-12 telefono:px-3.5">
+      <div class="mx-auto max-w-[760px]">
+        <!-- El revelado va en la envoltura y no en el <h2>: el titulo tiene
+             su propia animacion de opacidad (la brasa) y una animacion le
+             gana a la transicion del revelado. -->
+        <div data-titulo class="titulo-revelar">
+          <h2 class="seccion-titulo text-[42px] font-mid leading-[1.08] tracking-[-0.025em] md:text-[56px] telefono:text-[30px]">
+            El mito de Quetzalcóatl
+          </h2>
+        </div>
+
+        <p data-revelar class="dieta-revelar mt-7 text-lg leading-[1.7] text-muted">
+          Dentro de las lecturas que dejaron nuestros antepasados se encuentra lo que hoy conocemos
+          como “El mito de Quetzalcóatl”. En él se nos explica cuál era la representación de este
+          Dios-Hombre, creador de la humanidad, y algo de su significado. De sus citas tomamos dos
+          partes como referente.
+        </p>
+
+        <blockquote data-revelar class="dieta-revelar mt-6 border-l-2 border-[#9e2b2b]/70 pl-5">
+          <p class="text-md italic leading-[1.6] text-ink">
+            “Quetzalcóatl… después de haber creado al hombre con su propia sangre, busca la manera de
+            alimentarlo y descubre el maíz.”
+          </p>
+          <p class="mt-3 text-md italic leading-[1.6] text-ink">
+            “Pero sobre todo enseñó al hombre la ciencia, dándole el medio de medir el tiempo y estudiar las revoluciones de los astros;.”
+          </p>
+        </blockquote>
+
+        <p data-revelar class="dieta-revelar mt-6 text-lg leading-[1.7] text-muted">
+          <strong class="font-mid text-ink">Él al centro.</strong> En los relatos también se habla de
+          él como una estrella, el padre del sol. Por eso lo ocupamos como pieza central de la
+          ilustración: símbolo protector de nuestro pueblo. Desprendemos de él, y él cuida a todos
+          sus hijos a través de estos alimentos, de este maíz que se nos heredó y que por
+          generaciones sigue acompañándonos.
+        </p>
+        <p data-revelar class="dieta-revelar mt-3 text-lg leading-[1.7] text-muted">
+          <strong class="font-mid text-ink">La sangre.</strong> La creación a partir de su misma
+          sangre se resuelve con elementos de la milpa. Del nopal tomamos la cochinilla, que nos da un
+          pigmento rojizo: esa mancha representa la sangre de Quetzalcóatl, la misma de la que
+          desprendemos nosotros, hecha con alimentos que siguen intactos desde hace miles de años.
+        </p>
+        <p data-revelar class="dieta-revelar mt-3 text-lg leading-[1.7] text-muted">
+          <strong class="font-mid text-ink">La ciencia.</strong> La parte donde Quetzalcóatl enseñó
+          al hombre la ciencia aquí está demostrada y aplicada: esta ciencia, que es la computación,
+          nos ayuda a dar visibilidad a un pueblo que se siente lastimado y a dar un mensaje.
+        </p>
+        <p data-revelar class="dieta-revelar mt-3 text-lg leading-[1.7] text-muted">
+          Así, la mancha está acompañada de una herramienta tecnológica que conocemos como
+          visualización de datos, con un compendio de testimonios: cientos de mexicanos que se
+          sienten lastimados y reprimidos ante dirigentes que no pueden darles una alimentación
+          digna. Cuando esa responsabilidad se abandona y se ejerce violencia, se pierden también los
+          símbolos que han mantenido su arraigo con la tierra original.
+        </p>
+        <p data-revelar class="dieta-revelar mt-3 text-lg leading-[1.7] text-muted">
+          El mito, sin embargo, no se sostiene solo: toma fuerza en lo que ese fruto sigue haciendo
+          todos los días. Eso es la dieta de la milpa.
+        </p>
+      </div>
+    </section>
+
+    <!-- ========================================== 03 · La dieta de la milpa -->
+    <!-- La unica seccion con fondo propio: las tres fotos de la milpa se
+         relevan detras del texto, desenfocadas y bajo un velo crema para que
+         los parrafos se sigan leyendo. El rotulo al pie, a la derecha, dice
+         cual de las tres esta a la vista. -->
+    <section id="milpa" class="relative isolate min-h-[100dvh] scroll-mt-[60px] border-t border-line/80 py-20 px-5 telefono:py-12 telefono:px-3.5">
+      <!-- El fondo cubre la seccion entera; la escena de adentro se pega al
+           viewport para acompanar el scroll de todos los parrafos. -->
+      <div class="dieta-fondo pointer-events-none absolute inset-0 -z-10 overflow-clip select-none">
+        <div class="dieta-escena">
+          {DIETA_FOTOS.map((foto) => (
+            <img
+              src={`${BASE}dieta/${foto.archivo}`}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              decoding="async"
+              class="dieta-foto"
+            />
+          ))}
+
+          <div aria-hidden="true" class="dieta-velo"></div>
+
+          <!-- El cuerpo de la seccion ya nombra los tres cultivos: el rotulo
+               repite el dato para la foto, asi que no se anuncia. -->
+          <div aria-hidden="true" class="dieta-rotulo telefono:right-3.5 telefono:bottom-5">
+            <span class="block font-mono text-xs tracking-[0.18em] uppercase text-[#9e2b2b]/70">
+              Dieta de la Milpa
+            </span>
+            <span class="dieta-nombre mt-1 text-[26px] font-mid leading-[1.1] tracking-[-0.02em] telefono:text-2xl">
+              {DIETA_FOTOS.map((foto) => <span>{foto.nombre}</span>)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dieta-cuerpo relative mx-auto max-w-[760px]">
+        <!-- El revelado va en la envoltura y no en el <h2>: el titulo tiene
+             su propia animacion de opacidad (la brasa) y una animacion le
+             gana a la transicion del revelado. -->
+        <div data-titulo class="titulo-revelar">
+          <h2 class="seccion-titulo text-[42px] font-mid leading-[1.08] tracking-[-0.025em] md:text-[56px] telefono:text-[30px]">
+            La dieta de la milpa
+          </h2>
+        </div>
+
+        <p data-revelar class="dieta-revelar mt-7 text-lg leading-[1.7]">
+          Nuestro tema central son los sistemas alimentarios y, de manera específica, la dieta de la
+          milpa: un sistema agroalimentario que viene relatándose desde las culturas mesoamericanas.
+          Fue pieza fundamental para todas y cada una de ellas, desde los mazahuas hasta los mayas.
+        </p>
+        <p data-revelar class="dieta-revelar mt-3 text-lg leading-[1.7]">
+          Esta dieta reúne una composición de distintos alimentos: el maíz, la calabaza y el frijol
+          son los más representativos, pero también la acompañan el nopal, el chile, algunos insectos
+          y muchos más. Su consumo era indispensable, porque era la base de la alimentación y se
+          ocupaba en distintos rituales; no era un simple alimento, era sinónimo de vida.
+        </p>
+        <p data-revelar class="dieta-revelar mt-3 text-lg leading-[1.7]">
+          En la época mesoamericana estos alimentos no se quedaban en el plato: sostenían la
+          ceremonia, el calendario y la palabra. Comer era una forma de pertenecer.
+        </p>
+        <p data-revelar class="dieta-revelar mt-3 text-lg leading-[1.7]">
+          Hasta la fecha el sistema sigue vigente. Aunque no tiene la misma repercusión que antes,
+          existen estudios científicos que relatan su importancia en algunas poblaciones: sigue
+          siendo el mayor beneficio para muchas comunidades y es innegable que hoy son símbolo de
+          nuestra identidad, en estrecha relación con nuestra cultura. Es herencia viva, no pieza de
+          museo.
+        </p>
+        <p data-revelar class="dieta-revelar mt-3 text-lg leading-[1.7]">
+          Ahí es donde el mito deja de ser un relato antiguo: el fruto que descubrió Quetzalcóatl es
+          el que todavía está en la mesa.
+        </p>
+
+        <blockquote data-revelar class="dieta-revelar dieta-cita mt-10 border-l-[3px] pl-6">
+          <p class="dieta-cartel text-[28px] font-mid italic leading-[1.3] tracking-[-0.02em] md:text-[34px] telefono:text-[21px]">
+            “Los dioses siguen cuidando a sus hijos a través de su fruto.”
+          </p>
+          <footer class="mt-3 font-mono text-xs tracking-[0.14em] uppercase text-[#9e2b2b]/70">
+            Frase y título del cartel
+          </footer>
+        </blockquote>
+      </div>
+    </section>
+
+    <!-- ============================================== 04 · Volver al mural -->
+    <!-- El cierre de la lectura devuelve a donde empezo: el mural es la
+         pieza, esto es su contexto. -->
+    <section class="border-t border-line/80 py-16 px-5 telefono:py-12 telefono:px-3.5">
+      <div class="mx-auto max-w-[760px]">
+        <p data-revelar class="dieta-revelar text-lg leading-[1.7] text-muted">
+          Hasta aquí el relato. Lo que falta es lo que no se puede contar sin
+          la gente: cada mancha del mural es una persona que contestó.
+        </p>
+
+        <div data-revelar class="dieta-revelar mt-7 flex flex-wrap items-center gap-3">
+          <a
+            href={`${BASE}#mural`}
+            class="glass-btn inline-block rounded-full px-5 py-2.5 text-sm font-mid no-underline"
+          >
+            Ir al mural
+          </a>
+          <a
+            href={`${BASE}#concepto`}
+            class="text-sm text-muted no-underline transition-colors hover:text-ink"
+          >
+            El concepto →
+          </a>
+          <a
+            href={`${BASE}#referencias`}
+            class="text-sm text-muted no-underline transition-colors hover:text-ink"
+          >
+            Referencias y créditos →
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <Footer pagina="historia" />
+
+  <script>
+    import '../mural/historia';
+  </script>
+</Base>

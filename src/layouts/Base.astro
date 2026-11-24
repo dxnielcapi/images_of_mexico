@@ -1,7 +1,8 @@
 ---
 /**
- * El esqueleto compartido. Solo la cascara: ninguna de las dos pantallas
- * renderiza contenido en el servidor, lo arma su script de cliente.
+ * El esqueleto compartido de las dos rutas (`/` y `/historia`): el `<head>`,
+ * el `<body>` y el arranque del revelado, que tiene que correr antes de que
+ * el navegador pinte el primer parrafo.
  */
 interface Props {
   title: string;
@@ -21,6 +22,25 @@ const { title, description, bodyClass } = Astro.props;
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body class={bodyClass}>
+    <!-- El estado de partida del revelado se marca aqui, antes de que el
+         navegador llegue al primer parrafo: si se dejara al script de la
+         pagina (que es `type="module"` y corre al final) los textos
+         asomarian un instante antes de esconderse. El respaldo de 4s lo
+         quita si ese script no llega a arrancar, para que nada se quede
+         invisible.
+
+         Va en la cascara y no en cada ruta porque las dos revelan su texto
+         igual —`initRevelados()` en `src/mural/pagina.ts`— y el momento en
+         que esto corre es justo lo que hace que funcione. -->
+    <script is:inline>
+      document.documentElement.classList.add('revelar-activo');
+      setTimeout(() => {
+        if (!document.documentElement.dataset.revelarListo) {
+          document.documentElement.classList.remove('revelar-activo');
+        }
+      }, 4000);
+    </script>
+
     <slot />
   </body>
 </html>
