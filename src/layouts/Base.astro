@@ -12,11 +12,15 @@ interface Props {
    * La imagen de la tarjeta cuando el link se comparte, relativa a `public/`.
    * Tiene que ser raster —1200x630 va bien—: ni WhatsApp ni Twitter rasterizan
    * un SVG, y los logos del proyecto son todos SVG.
+   *
+   * Por defecto, `og.jpg`: el mural con los registros de hoy y el nombre de la
+   * pieza. No es una ilustracion aparte, es una captura de lo que hay en `/`,
+   * asi que envejece con el mural; rehacerla es volver a capturarlo.
    */
   imagen?: string;
 }
 
-const { title, description, bodyClass, imagen } = Astro.props;
+const { title, description, bodyClass, imagen = 'og.jpg' } = Astro.props;
 
 const BASE = import.meta.env.BASE_URL;
 
