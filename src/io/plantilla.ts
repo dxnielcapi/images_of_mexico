@@ -19,10 +19,12 @@
  * horneados de `tools/` le restan esa figura al dibujo para que la red no le
  * pase por encima.
  *
- * El boceto anterior sigue en la carpeta con sus propios archivos, que no
- * dependen de nada de esto: apuntar las rutas de vuelta a
- * `bocetoactualizado.svg` lo devuelve al aire tal como estaba (sin tlacuilo,
- * que esa figura es de este cartel).
+ * Los bocetos anteriores siguen versionados en `bocetos-anteriores/`, con sus
+ * propios horneados, que no dependen de nada de esto. Estan fuera de `public/`
+ * porque ahi cada build los publicaba: tres megas de dibujo viejo viajando al
+ * sitio para que nadie los pidiera. Para volver a uno hay que copiarlo a
+ * `public/Mural/` y apuntar estas rutas (sin tlacuilo, que esa figura es de
+ * este cartel).
  */
 const BASE = import.meta.env.BASE_URL;
 

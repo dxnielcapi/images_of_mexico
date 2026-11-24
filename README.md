@@ -33,9 +33,10 @@ pinta nadie*).
 
 El dibujo **no cierra ninguna región**, así que no hay huecos que delimitar: su
 `.zones.json` trae `close: 24` y las zonas salen del **relleno del propio
-trazo** (ver *Dibujo sin cerrar*, más abajo). Los bocetos anteriores siguen en
-la carpeta con sus propios archivos y no dependen de nada de esto: apuntar
-`plantilla.ts` de vuelta a ellos los devuelve al aire tal como estaban.
+trazo** (ver *Dibujo sin cerrar*, más abajo). Los bocetos anteriores siguen
+versionados en `bocetos-anteriores/`, con sus propios horneados y sin depender
+de nada de esto; están fuera de `public/` porque ahí cada build los publicaba.
+Para volver a uno: copiarlo a `public/Mural/` y apuntar `plantilla.ts`.
 
 Los parámetros del render no se tocan por sesión: el pincel y el trazo están
 afinados y sus valores son parte del diseño (ver *Las medidas salen del

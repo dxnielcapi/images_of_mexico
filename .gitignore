@@ -3,8 +3,10 @@ dist
 .astro
 .DS_Store
 
-# Excluir referencias y documentos
-/public/references/
+# Excluir referencias y documentos. Las referencias vivian en
+# `public/references/`, donde cada build las publicaba; estan fuera de `public/`
+# justo para que no salgan al sitio.
+/referencias-de-trabajo/
 *.md
 !README.md
 __pycache__/
