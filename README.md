@@ -37,11 +37,11 @@ trazo** (ver *Dibujo sin cerrar*, más abajo). Los bocetos anteriores siguen en
 la carpeta con sus propios archivos y no dependen de nada de esto: apuntar
 `plantilla.ts` de vuelta a ellos los devuelve al aire tal como estaban.
 
-Todo lo demás es banco de pruebas, y existe para una sola cosa: saber cómo queda
-`index`. El lector de dibujos y de CSV sirve para entrar cualquier dibujo y
-cualquier dataset; y **el studio** (`/studio`) es el laboratorio con los nueve
-bloques de parámetros donde se afina cómo se mapean los datos a la acuarela.
-Ninguno de los dos es la pantalla que se publica.
+Los parámetros del render no se tocan por sesión: el pincel y el trazo están
+afinados y sus valores son parte del diseño (ver *Las medidas salen del
+dibujo*). Donde hacía falta afinarlos había un laboratorio con nueve bloques de
+sliders; se borró cuando la figura dejó de salir de las zonas del dibujo y pasó
+a armarla la red, porque ya no quedaba nada que mover.
 
 Los datos que hay hoy son **simulaciones**: `datos_ejemplo.csv` son 1800
 registros ficticios con el esquema real, ocupando el lugar de lo que vendrá de
@@ -96,7 +96,7 @@ secciones de la barra.
 ```bash
 npm install
 npm run dev      # http://localhost:4321  (/ el mural, /historia el relato)
-npm run build    # astro build -> dist/  (sin /studio)
+npm run build    # astro build -> dist/
 npm run preview  # sirve dist/
 npm run check    # astro check (typecheck de .astro y .ts)
 ```
@@ -121,12 +121,6 @@ dibujo. Después hay que apuntar `src/io/plantilla.ts` al SVG nuevo —es el
 único lugar del código que nombra los archivos— y, si el dibujo trae otras
 capas, revisar `CAPA` en `figuras.py` y `CAPAS_ESPIRAL` en `espina.py`, que son
 los dos nombres que el horneado toma del export.
-
-`/studio` existe **solo en `astro dev`**. Su pagina vive en
-`src/studio/page.astro`, fuera de `src/pages/`, y `astro.config.mjs` inyecta la
-ruta unicamente en dev: el build emite `index.html` y nada mas, asi que el
-deploy no publica el laboratorio. La escotilla para compilarlo a proposito es
-`STUDIO=1 npm run build`.
 
 ## Las tres rutas
 
@@ -156,7 +150,7 @@ suelta o ruta completa— lo resuelve `components/rutas.ts`.
 ## El mural (`/`)
 
 La pantalla que se publica: para dejar en un puesto o pasar de mano en mano. No
-tiene controles —esos vivían en el studio— y sus parámetros de render quedan
+tiene controles y sus parámetros de render quedan
 fijos en el código: semilla global `1234`, grano `0.5`, colocación aleatoria y
 la capa de líneas **apagada** (`showLines: false`): la lámina del SVG no se
 pega nunca debajo del mural. El cartel aparece de otra manera —un lápiz lo va
@@ -405,50 +399,6 @@ guardarlo es del kiosco, que es el único que escribe.
 Con `prefers-reduced-motion` la película no arranca sola: queda el mural
 entero, que es lo que tendría que mostrar al terminar, y el botón sigue ahí
 para quien quiera verla de todos modos.
-
-## El studio (`/studio`)
-
-El laboratorio: cualquier dibujo, cualquier dataset, todos los parámetros. No se
-publica y no es parte del producto; es el banco donde se comprueba el mapeo de
-zonas y se afina el render hasta ver cómo va a quedar `index`. Se queda en
-TypeScript vanilla.
-
-1. **1 · Dibujo** — carga PNG/JPG/SVG. Se rasteriza a un canvas de trabajo
-   (lado mayor ≤ 2000 px). Los sliders de *umbral*, *engrosar líneas*,
-   *área mínima* y *margen interno* vuelven a detectar al soltarlos, conservando
-   las zonas ya nombradas (se reconstruyen desde sus semillas). El botón
-   **Plantilla del mural** carga `Mural/bocetoactualizado.svg` con sus zonas
-   —las mismas que ve `index`— y pinta las 1800 personas del
-   CSV de un solo clic; los datos de ejemplo son ficticios y están generados al
-   azar.
-2. **2 · Zonas** — clic en una región para crear una zona; **shift+clic** la
-   agrega a la zona seleccionada (y shift+clic de nuevo la quita). *Auto-zonas*
-   toma las N regiones más grandes. Exporta/importa `<dibujo>.zones.json`.
-3. **3 · Datos** — CSV con `id`, `zona`, `valor` y los campos de la persona:
-   `nombre`, `edad`, `ocupacion`, `lugar_origen`, `estado_animo`, `mensaje`
-   ("qué te gustaría decir") y `fecha`. Cualquier columna extra también aparece
-   en el tooltip. El `valor` se normaliza con el mín/máx del dataset o con un
-   rango fijo configurable.
-4. **4 · Personas** — formulario completo con los siete campos y la zona
-   elegible (*Al azar* los completa, *Generar N* agrega varias personas
-   sorteadas), buscador por nombre —al elegir un resultado la vista salta al
-   render, marca su mancha y muestra su ficha— y el enlace para abrir la
-   pantalla de registro.
-5. **5 · Colocación** — *aleatorio puro* u *Poisson disk*, con semilla global y
-   botón de re-sembrar.
-6. **6 · Lámina** — grano del papel y la capa de líneas, que cambian según
-   para qué se exporte. Ya no hay sliders de la marca: el pincel y el trazo
-   están afinados y sus valores son parte del diseño, no algo que se toque por
-   sesión (ver *Las medidas salen del dibujo*). Tampoco hay selector de paleta:
-   la tinta es una sola (ver *El carmín es la tinta*).
-7. **7 · Filtros** — por zona, por rango de valor y por prefijo de ID.
-8. **8 · Advertencias** — agrupadas por tipo (zona inexistente, checksum
-   inválido, zona del ID que no coincide, valor no numérico, id generado).
-9. **9 · Exportar** — PNG 1x/2x/4x (re-renderizado real, no escalado) y CSV con
-   las coordenadas finales (`id, zona, valor, x, y`).
-
-En el studio, `window.__heatmap` expone el estado y las funciones principales
-para inspeccionar o automatizar desde la consola.
 
 ## El mapeo: de persona a mancha
 
@@ -742,8 +692,8 @@ la posición normalizada en `[0,1]`: 0 la cola, 1 el centro de la espiral, que
 es donde está sentado el pintor.
 
 Si el `.espina.json` falta o no se puede leer, el mural abre igual: sin espiral
-se vuelve al reparto de manchas y mechones dentro de las zonas, que es lo que
-sigue viendo el studio con un dibujo cualquiera.
+se vuelve al reparto de manchas y mechones dentro de las zonas, que es el
+camino anterior y sigue vivo justo para eso.
 
 ### El tronco, las ramas y los brotes
 
@@ -784,9 +734,8 @@ le pasa ninguna frase.
 ### El campo, no el molde
 
 Antes de la espiral, el dibujo entero entraba al mural de una sola forma: como
-**campo**. Sigue vivo —es lo que pinta el studio con un dibujo cualquiera
-cargado, y lo que ve el mural si falta el `.espina.json`— y es la otra manera
-de que la silueta la haga el trazo y no un contorno.
+**campo**. Sigue vivo —es lo que ve el mural si falta el `.espina.json`— y es
+la otra manera de que la silueta la haga el trazo y no un contorno.
 
 Del boceto se conserva una sola cosa: la **profundidad** de cada píxel, o sea
 cuánto dista del borde de lo pintable, que es justo lo que ya calculaba la
@@ -837,11 +786,10 @@ viendo cuando el mural se mira entero. Lo que **no** sale del dibujo es el
 ritmo del lápiz: cuánto tarda una vuelta y cuánto vive un trazo se miden en
 segundos, y viven en `mural/trazado.ts` con el resto de lo que se mueve.
 
-Ese cálculo vive en `src/core/render/medidas.ts` y lo piden los dos: el mural
-al cargar la plantilla y el studio al renderizar. Desde que la marca no tiene
-sliders, es la única forma de que el banco de pruebas muestre lo que se va a
-publicar. El studio las recalcula al renderizar y no al detectar zonas, porque
-las zonas llegan después de la detección y sin zonas el hueco da 0.
+Ese cálculo vive en `src/core/render/medidas.ts` y lo pide `mural/cartel.ts` al
+bajar la plantilla, así que las dos pantallas que lo comparten —`/` y
+`/timelapse`— miden igual sin acordar nada. Se piden después de detectar las
+zonas y no antes, porque el hueco típico sale de ellas y sin zonas da 0.
 
 ### El lienzo se rasteriza al tamaño en que se ve
 
@@ -938,7 +886,7 @@ no trae `id`, se genera uno y se reporta en advertencias.
   exacta (Felzenszwalb–Huttenlocher) → etiquetado de componentes conexos por
   flood fill de scanline sobre el fondo. Se descarta la región exterior (la que
   toca el borde) y las menores al área mínima.
-- **Dibujo sin cerrar** (`close`, *cerrar trazo* en el studio) — un boceto que
+- **Dibujo sin cerrar** (`close` en el `.zones.json`) — un boceto que
   no encierra ninguna región no tiene huecos que delimitar: todo su fondo es
   "el exterior" y se descarta entero. Con `close: r` se pinta sobre el **relleno
   del trazo**: un cierre morfológico de radio `r` (dilatar y volver a erosionar
@@ -1000,7 +948,6 @@ Del mapeo se comprobó, en el navegador:
 | Zona borrada del dibujo → rescatada | cae en una zona vigente y se persiste |
 | El alta sobrevive a recargar y nada se mueve | `toDataURL()` idéntico antes y después |
 | Lo guardado por el formato 1 | migra solo, conserva su zona |
-| Studio: el selector de zona manda | 10 al azar repartidas por el mapeo, 1 forzada a `zona_09` |
 | El reparto sigue al espacio de cada zona | 84,2 % real contra 85,2 % de espacio en `zona_01` |
 
 Y de la tinta y el pincel:
@@ -1027,7 +974,6 @@ Y de la limpieza, el lienzo y el pulso:
 | Criterio | Resultado |
 |---|---|
 | El lienzo rasteriza a lo que se ve | 1208×1260 para una caja de 604×630 a dpr 2 |
-| El studio mide igual que el mural | radio 15, largo 160, grosor 5,2, punta 6 en los dos |
 | El pulso no cuesta | 0 *long tasks* en 4 s; el estampado no llega a medirse |
 | Se apaga fuera de vista | el lienzo queda congelado al salir y vuelve al entrar |
 | El alta tras la limpieza | 296 personas, sin errores en consola |
@@ -1076,8 +1022,7 @@ src/
 
   ui/                widgets vanilla, DOM armado a mano con utilidades
     controls · tooltip · blob                  ← las dos pantallas
-    registroForm (alta en 3 pasos) · personPanel (form completo + buscador)
-    zonePanel · filters                        ← solo el studio
+    registroForm (el alta, en 5 pasos) · personPanel (buscador por nombre)
 
   mural/             las tres pantallas públicas (main.ts + mural.css)
                      main.ts: la portada, con el motor entero
@@ -1092,7 +1037,6 @@ src/
                      pintado.ts: el mural se pinta pincelada a pincelada
                      brotes.ts: lo que se mueve · heroReveal.ts: el trazado del Hero
                      citas.ts: el botón «Copiar cita» de las referencias
-  studio/            el laboratorio · page.astro se inyecta solo en dev
   styles/app.css     hoja raíz de Tailwind: tokens y clases de componente
 
 public/Mural/        LA PLANTILLA
@@ -1146,13 +1090,15 @@ Tailwind dentro de strings de TypeScript. `core/`, `io/` y `data/` no se tocan.
   el dibujo siga sin cerrar, todo cae en una sola `zona_01` repartida por los
   121 trozos del relleno del trazo: el mapeo tiene una sola casilla donde
   mandar a la gente. Cuando llegue el dibujo con sus regiones delimitadas hay
-  que volver `close` a 0, nombrar las zonas en el studio y exportar su
-  `.zones.json`; ahí `dondeQuedo()` puede decir algo mejor que "en la
+  que volver `close` a 0 y nombrar las zonas en el `.zones.json` que escribe
+  `tools/zonas.py`; ahí `dondeQuedo()` puede decir algo mejor que "en la
   serpiente" y el mapeo puede repartir por tramos.
-- **No hay archivo de preset.** Los parámetros de render están duplicados como
-  literal en `src/studio/main.ts` y `src/mural/main.ts` (hoy idénticos), y el
-  `.zones.json` solo lleva umbral, dilatación, área mínima y margen. Afinar la
-  acuarela en el studio todavía no llega al mural sin editar código.
+- **No hay archivo de preset.** Los parámetros de render son un literal en
+  `src/mural/main.ts` y el `.zones.json` solo lleva umbral, dilatación, área
+  mínima y margen, así que afinar la acuarela pasa por editar código. Dejó de
+  doler cuando se borró el laboratorio —antes el mismo literal estaba en dos
+  archivos que había que mantener idénticos a mano—, pero sigue sin haber dónde
+  guardar una variante.
 - **La ficha solo se abre con mouse.** El hover escucha `mousemove`; en teléfono
   —el dispositivo para el que está diseñada la pantalla— la única forma de ver a
   alguien es el buscador.
