@@ -9,8 +9,8 @@
  * le pone borde a la red— y las semillas de las regiones.
  *
  * Si manana cambia la ilustracion hay que rehacer ese archivo, y ya no hay
- * editor: habria que volver a escribir uno, o medir las semillas con un
- * script al lado de `tools/`.
+ * editor: lo escribe `tools/zonas.py`, que mide las semillas sobre el dibujo
+ * nuevo con las mismas cuentas que hace aqui el navegador.
  */
 import type { ZonesConfig } from '@core/types';
 

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Extrae las lineas del boceto: el eje de cada trazo negro del dibujo.
+Extrae las lineas del dibujo: el eje de cada trazo negro del cartel.
 
-El mural lo dibujan los datos. No hay boceto de fondo que mirar: cada persona
-que se registra pinta una pincelada, y esas pinceladas van *sobre* las lineas
-del dibujo, de modo que la figura aparece porque la gente la traza. Para eso
-hace falta saber por donde pasan esas lineas, y saberlo como recorrido —"de
-aqui hasta aca, con este grosor"—, no como mancha de pixeles.
+El mural lo dibujan los datos. El cartel esta ahi desde el principio pero en
+fantasma, y lo que lo vuelve tinta es la gente: donde la red se junta, la
+linea del dibujo sale negra y firme (ver `@core/render/silueta`); donde no
+llego nadie, apenas se adivina. Para eso hace falta saber por donde pasa cada
+linea, y saberlo como recorrido —"de aqui hasta aca, con este grosor"—, no
+como mancha de pixeles.
 
 El export de Concepts no sirve tal cual: cada `<path>` es la *silueta* de una
 pincelada (contorno de ida y vuelta relleno de negro), no su eje, y una linea
@@ -33,7 +34,10 @@ Como se saca:
      de un pixel, se remuestrea por longitud de arco y se mide el semiancho de
      la linea en cada punto con la transformada de distancia.
 
-Uso:  python3 tools/trazos.py [public/Mural/bocetoactualizado.svg]
+Uso:  python3 tools/trazos.py [dibujo.svg] [--sin figura.svg]
+
+`--sin` descuenta una figura del dibujo antes de esqueletizarlo: hoy el
+tlacuilo, que se dibuja tal cual y no se traza (ver `tools/figuras.py`).
 
 Requiere numpy, scipy, scikit-image y Pillow. No corre en el build: su salida
 esta versionada. Hay que volver a correrlo solo si cambia la ilustracion.
@@ -48,7 +52,7 @@ import numpy as np
 from scipy import ndimage as ndi
 from skimage.morphology import skeletonize
 
-from espina import MAX_SIDE, rasterizar
+from espina import MAX_SIDE, argumentos, rasterizar
 
 # Separacion entre puntos de un trazo, en px de trabajo. Mas fino no agrega
 # dibujo: la linea ya viene suavizada y el pincel la vuelve a temblar.
@@ -233,8 +237,8 @@ def remuestrear(c: np.ndarray, dist: np.ndarray) -> list[list[float]]:
 
 
 def main() -> None:
-    svg = sys.argv[1] if len(sys.argv) > 1 else 'public/Mural/bocetoactualizado.svg'
-    ink = rasterizar(svg, MAX_SIDE)
+    svg, sin, capas = argumentos('public/Mural/Final.svg')
+    ink = rasterizar(svg, MAX_SIDE, sin=sin, capas=capas)
     h, w = ink.shape
     print(f'{svg}: {w}x{h}, tinta {ink.sum()} px')
 
