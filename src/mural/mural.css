@@ -474,6 +474,99 @@
     }
   }
 
+  /* ================================ la puerta a «la historia»
+
+     El indice de `#historia` en la portada: tres filas —numero, nombre y
+     pie— dentro de un solo enlace que lleva a `/historia`. Es una sola
+     zona de clic y no tres: al otro lado la pagina se lee de corrido, asi
+     que mandar a cada ancla por separado solo serviria para partirla.
+
+     Por eso las filas son `<span>` y no una lista: dentro de un `<a>` no
+     puede ir un `<ul>`, y lo que esto es de verdad es un boton grande con
+     el contenido escrito encima.
+     ------------------------------------------------------------------ */
+
+  .historia-indice {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .historia-fila {
+    display: grid;
+    /* El numero en su columna fija y el resto en la que sobra: asi los tres
+       nombres arrancan alineados por mas que el numero cambie de ancho. */
+    grid-template-columns: 2.6rem 1fr;
+    align-items: baseline;
+    gap: 2px 12px;
+    padding: 18px 2px;
+    border-bottom: 1px solid var(--color-line);
+    transition: padding-left 0.18s ease, border-color 0.18s ease;
+  }
+
+  .historia-numero {
+    grid-row: 1 / span 2;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    color: rgb(158 43 43 / 0.7);
+  }
+
+  .historia-nombre {
+    font-size: 1.22rem;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--color-ink);
+    transition: color 0.18s ease;
+  }
+
+  .historia-pie {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--color-muted);
+  }
+
+  /* El hover es del enlace entero, no de la fila que esta debajo del
+     cursor: lo que se abre es la pagina, no esa seccion. */
+  .historia-puerta:hover .historia-fila {
+    padding-left: 8px;
+    border-color: var(--color-wash-line);
+  }
+  .historia-puerta:hover .historia-nombre { color: #9e2b2b; }
+
+  .historia-entrar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 22px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #9e2b2b;
+  }
+
+  .historia-entrar > svg {
+    transition: transform 0.18s ease;
+  }
+  .historia-puerta:hover .historia-entrar > svg {
+    transform: translateX(4px);
+  }
+
+  .historia-puerta:focus-visible {
+    outline: 2px solid #9e2b2b;
+    outline-offset: 6px;
+    border-radius: 6px;
+  }
+
+  @media (width < 560px) {
+    .historia-fila {
+      grid-template-columns: 2.1rem 1fr;
+      padding: 15px 2px;
+    }
+    .historia-nombre { font-size: 1.08rem; }
+    .historia-pie { font-size: 0.9rem; }
+  }
+
   /* ==================================== la mesa de referencias
 
      La galeria de `#concepto`: tres grupos, uno por carpeta de
@@ -591,6 +684,206 @@
     color: rgb(158 43 43 / 0.8);
   }
 
+  /* ==================================== referencias y creditos
+
+     La seccion `#referencias`: una ficha por fuente con la cita en APA, su
+     descripcion, la etiqueta de acceso y los enlaces al texto. Cierra el
+     bloque de creditos de la pieza, que no es una fuente y por eso va con
+     panel propio.
+
+     Las fichas van en bajo relieve a proposito: un hilo de borde, el fondo
+     del papel y nada de sombra. Lo que tiene que pesar en esta seccion es la
+     cita, no el recuadro que la rodea —son cinco seguidas, y cinco cajas
+     elevadas se leerian como cinco tarjetas de producto.
+
+     Lo que no se encoge es la letra: 16px o mas en toda la seccion, mientras
+     el resto de la pagina lee a 15px. Aqui hay citas largas, direcciones y
+     nombres propios que se copian a ojo. Lo que se recorta para que la ficha
+     sea mas chica es el aire y el adorno.
+     ------------------------------------------------------------------ */
+
+  /* En pantalla ancha van de a dos por renglon: la rejilla la pone el
+     `.astro`, que ademas las estira a la misma altura. El sobrante de la
+     mas corta queda al pie, debajo de sus enlaces, y no como un hueco entre
+     el texto y los botones: la cita y su pie tienen que viajar juntos. */
+  .ref-tarjeta {
+    border: 1px solid var(--color-line);
+    border-radius: 10px;
+    background: rgb(255 253 248 / 0.5);
+    padding: 17px 19px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .ref-tarjeta:hover {
+    border-color: var(--color-wash-line);
+    background: var(--color-panel);
+  }
+
+  /* La sangria francesa de la cita: la primera linea al ras y el resto
+     adentro, como en una lista de referencias impresa. */
+  .ref-cita {
+    padding-left: 1.8em;
+    text-indent: -1.8em;
+    font-size: var(--text-xl);
+    line-height: 1.55;
+    color: var(--color-ink);
+  }
+
+  /* El DOI se muestra entero, asi que tiene que poder partirse: en el
+     telefono una direccion de ochenta caracteres desbordaria la ficha. */
+  .ref-doi {
+    color: #9e2b2b;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: rgb(158 43 43 / 0.3);
+    overflow-wrap: anywhere;
+    transition: text-decoration-color 0.15s;
+  }
+  .ref-doi:hover { text-decoration-color: #9e2b2b; }
+
+  .ref-descripcion {
+    margin-top: 8px;
+    font-size: var(--text-xl);
+    line-height: 1.5;
+    color: var(--color-muted);
+  }
+
+  /* El acceso en un solo renglon: el tipo en carmin y lo que lo acompana
+     —licencia, idioma, repositorio— detras, separado por puntos medios, que
+     es como venia escrito. Antes eran pildoras; de ese tamano competian con
+     los botones por la atencion. */
+  .ref-acceso {
+    margin-top: 10px;
+    font-size: var(--text-xl);
+    line-height: 1.45;
+    color: var(--color-muted);
+  }
+
+  /* La etiqueta en hilo, no en pildora rellena: marca de que es el tipo de
+     acceso y no una nota mas, sin ganarle peso a la cita. */
+  .ref-etiqueta {
+    display: inline-block;
+    border: 1px solid rgb(158 43 43 / 0.3);
+    border-radius: 999px;
+    padding: 1px 10px;
+    margin-right: 2px;
+    color: #8a2525;
+    font-weight: var(--font-weight-mid);
+  }
+
+  .ref-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    margin-top: 14px;
+  }
+
+  /* Los enlaces de la ficha. El principal lleva el carmin y los otros van en
+     hilo, sin relleno: la fila tiene que leerse como un pie de ficha y no
+     como una botonera. */
+  .ref-btn {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 6px 14px;
+    border: 1px solid var(--color-line);
+    background: transparent;
+    color: var(--color-muted);
+    font: inherit;
+    font-size: var(--text-xl);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .ref-btn:hover {
+    border-color: var(--color-wash-line);
+    background: var(--color-wash);
+    color: var(--color-ink);
+  }
+
+  .ref-btn-principal {
+    border-color: #9e2b2b;
+    background: #9e2b2b;
+    color: #fff;
+    font-weight: var(--font-weight-mid);
+  }
+  .ref-btn-principal:hover {
+    background: #8a2525;
+    border-color: #8a2525;
+    color: #fff;
+  }
+
+  /* Confirmado: el boton se queda dos segundos en verde con el rotulo
+     cambiado (ver `mural/citas.ts`). */
+  .ref-btn.copiado {
+    border-color: var(--color-ok);
+    color: var(--color-ok);
+    background: rgb(47 111 95 / 0.08);
+  }
+
+  /* El foco de teclado se ve en toda la seccion, botones y enlaces: el
+     anillo del navegador se pierde sobre el papel crema. */
+  .ref-btn:focus-visible,
+  .ref-doi:focus-visible {
+    outline: 2px solid #9e2b2b;
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  /* ------------------------------------------------ creditos de la pieza */
+
+  /* Aparte de las referencias y con panel propio: lo de arriba son fuentes
+     que se consultan, esto es la autoria de la pieza. Con las fichas en bajo
+     relieve, es el unico bloque de la seccion con fondo propio —y por eso
+     mismo no necesita mas que un lavado de carmin. */
+  .creditos {
+    border: 1px solid rgb(158 43 43 / 0.22);
+    border-radius: 12px;
+    background: rgb(158 43 43 / 0.04);
+    padding: 24px 26px;
+  }
+
+  .creditos-titulo {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-mid);
+    letter-spacing: -0.015em;
+    color: #9e2b2b;
+  }
+
+  /* Clave y valor en dos columnas mientras quepan; en el telefono el valor
+     pasa debajo de su clave. */
+  .creditos-datos {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 20px;
+    margin-top: 14px;
+    font-size: var(--text-xl);
+    line-height: 1.5;
+  }
+  .creditos-datos dt { color: var(--color-muted); }
+  .creditos-datos dd { margin: 0; color: var(--color-ink); }
+
+  /* La linea de cita de la pieza, para quien la reproduzca. */
+  .creditos-linea {
+    margin-top: 18px;
+    border-left: 2px solid #9e2b2b;
+    padding-left: 15px;
+    font-size: var(--text-xl);
+    font-style: italic;
+    line-height: 1.55;
+    color: var(--color-ink);
+  }
+
+  @media (width < 560px) {
+    .ref-tarjeta { padding: 15px 14px; }
+    /* Con la ficha angosta la sangria francesa se come media linea. */
+    .ref-cita { padding-left: 1.2em; text-indent: -1.2em; }
+    .ref-btn { padding: 6px 12px; }
+    .creditos { padding: 20px 18px; }
+    .creditos-datos { grid-template-columns: 1fr; gap: 2px; }
+    .creditos-datos dd { margin-bottom: 9px; }
+  }
+
   /* ============================================================== kiosco */
 
   .kiosk {
@@ -683,6 +976,90 @@
     stroke-linecap: round;
     stroke-linejoin: round;
   }
+
+  /* ----------------------------------------------------------- la lupa */
+
+  /* La barra de la lupa no es un recuadro como los otros: mientras se usa
+     hay que seguir viendo el cartel, asi que ocupa lo minimo y se queda al
+     costado. Las medidas son las de `.panel` en chico. */
+  .lupa {
+    align-self: flex-end;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 330px;
+    padding: 10px 12px 11px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xl);
+    background: var(--color-panel);
+    box-shadow: 0 12px 34px rgb(60 48 30 / 0.22);
+  }
+
+  .lupa-mandos {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .lupa-boton {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--color-line);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-ink);
+    font-size: 19px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @media (hover: hover) {
+    .lupa-boton:hover:not([disabled]) { background: var(--color-accent-soft); }
+  }
+  .lupa-boton[disabled] { opacity: 0.35; cursor: default; }
+
+  /* Ancho fijo: el numero cambia a cada rueda y no tiene que mover a los
+     botones de los costados. */
+  .lupa-nivel {
+    min-width: 54px;
+    text-align: center;
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-muted);
+  }
+
+  .lupa-entero {
+    margin-left: auto;
+    padding: 7px 12px;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-ink);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    touch-action: manipulation;
+  }
+  @media (hover: hover) {
+    .lupa-entero:hover { background: var(--color-accent-soft); border-color: var(--color-accent); }
+  }
+
+  .lupa-pista {
+    margin: 0;
+    font-size: var(--text-xs);
+    line-height: 1.35;
+    color: var(--color-muted);
+  }
+
+  /* El lienzo avisa de que se puede agarrar solo cuando de verdad se puede. */
+  .lienzo canvas.lupa-viva { cursor: grab; }
+  .lienzo canvas.arrastrando { cursor: grabbing; }
 
   /* ------------------------------------------------------- recuadros */
 
@@ -895,10 +1272,81 @@
   .backup .hint { margin: 0 0 8px; }
   .backup .row { margin-bottom: 6px; }
 
+  /* ============================================================ timelapse
+
+     `/timelapse`: la pelicula del mural, del primer registro al ultimo. La
+     pagina es el lienzo y una barra de mandos al pie, asi que de CSS propio
+     solo necesita eso: la barra de avance y los dos tokens que hacen que el
+     boton redondo y el pigmento sean los mismos que en el kiosco.
+     ------------------------------------------------------------------ */
+
+  .timelapse {
+    /* Los dos que `.tool` da por puestos: el lado del boton y el carmin.
+       Viven en este scope por lo mismo que en `.kiosk` —para no tenir la app
+       de autor— y con el mismo valor, que es el pigmento del mural. */
+    --tool: 48px;
+    --color-accent: #9e2b2b;
+  }
+
+  /* La barra de avance. El riel se dibuja con un pseudo-elemento y no con el
+     fondo de la caja porque la caja es mas alta que la linea: en un telefono
+     hay que poder agarrarla con el dedo sin apuntarle a cuatro pixeles. */
+  .tl-barra {
+    position: relative;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    height: 22px;
+    cursor: pointer;
+    /* El arrastre es nuestro: el navegador no tiene que llevarselo para
+       desplazar la pagina. */
+    touch-action: none;
+  }
+
+  .tl-barra::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-line);
+  }
+
+  .tl-relleno {
+    position: relative;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-accent);
+    /* Los eventos son de la barra: el relleno queda debajo del dedo todo el
+       tiempo y robaria el `pointermove`. */
+    pointer-events: none;
+  }
+
+  /* La cabeza del relleno: donde esta parada la pelicula. */
+  .tl-relleno::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    transform: translate(50%, -50%);
+    border-radius: 50%;
+    background: var(--color-accent);
+    box-shadow: 0 1px 6px rgb(60 48 30 / 0.3);
+  }
+
+  .tl-barra:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
+    border-radius: 3px;
+  }
+
   /* ----------------------------------------------------------- telefono */
 
   @media (width < 560px) {
     .kiosk { --tool: 54px; --edge: 18px; }
+    .timelapse { --tool: 54px; }
 
     .tool svg { width: 24px; height: 24px; }
 
@@ -914,6 +1362,9 @@
       -webkit-overflow-scrolling: touch;
     }
     .panel .results { max-height: 34dvh; }
+
+    .lupa { max-width: none; border-radius: 14px; box-shadow: 0 -8px 28px rgb(60 48 30 / 0.22); }
+    .lupa-boton { width: 40px; height: 40px; font-size: 21px; }
   }
 
   /* Apaisado en telefono: queda poco alto, el recuadro no puede ocupar 74dvh. */
@@ -943,6 +1394,10 @@
     .concepto-marco > img,
     .concepto-marco { transition: none; }
     .concepto-figura:hover .concepto-marco > img { transform: none; }
+
+    .ref-tarjeta,
+    .ref-btn,
+    .ref-doi { transition: none; }
 
     /* Sin movimiento no hay entrada: el texto esta puesto desde el inicio. */
     .revelar-activo .dieta-revelar,

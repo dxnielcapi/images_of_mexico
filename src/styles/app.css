@@ -26,6 +26,7 @@
 @source "../**/*.ts";
 @source "../pages/**/*.astro";
 @source "../layouts/**/*.astro";
+@source "../components/**/*.astro";
 
 /* El ancho al que el kiosco pasa a telefono, en un solo lugar: lo usan las
    utilidades (`telefono:justify-center`) y el bloque de componentes de
