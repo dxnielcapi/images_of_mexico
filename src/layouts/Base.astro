@@ -8,9 +8,27 @@ interface Props {
   title: string;
   description?: string;
   bodyClass?: string;
+  /**
+   * La imagen de la tarjeta cuando el link se comparte, relativa a `public/`.
+   * Tiene que ser raster —1200x630 va bien—: ni WhatsApp ni Twitter rasterizan
+   * un SVG, y los logos del proyecto son todos SVG.
+   */
+  imagen?: string;
 }
 
-const { title, description, bodyClass } = Astro.props;
+const { title, description, bodyClass, imagen } = Astro.props;
+
+const BASE = import.meta.env.BASE_URL;
+
+/*
+ * Las etiquetas de compartir necesitan URLs absolutas, y una URL absoluta sale
+ * de `site` en `astro.config.mjs`. Si no esta puesto, `Astro.site` es
+ * undefined: en vez de emitir un `canonical` roto o un `og:url` relativo —que
+ * es peor que no tenerlos, porque los validadores los cuentan como error— no
+ * se emite ninguna. El dia que `site` entre, aparecen las tres solas.
+ */
+const canonica = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : null;
+const portada = Astro.site && imagen ? new URL(`${BASE}${imagen}`, Astro.site).href : null;
 ---
 
 <html lang="es">
@@ -19,7 +37,19 @@ const { title, description, bodyClass } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href={`${BASE}favicon.svg`} type="image/svg+xml" />
+
+    {canonica && <link rel="canonical" href={canonica} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mural Colectivo" />
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    {canonica && <meta property="og:url" content={canonica} />}
+    {portada && <meta property="og:image" content={portada} />}
+    <meta name="twitter:card" content={portada ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={title} />
+    {description && <meta name="twitter:description" content={description} />}
+    {portada && <meta name="twitter:image" content={portada} />}
   </head>
   <body class={bodyClass}>
     <!-- El estado de partida del revelado se marca aqui, antes de que el
