@@ -108,7 +108,7 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
   const botones = new Map<string, HTMLButtonElement>();
 
   for (const s of SENTIRES) {
-    const b = el('button', { class: 'animo', type: 'button', title: s.name });
+    const b = el('button', { class: 'sentir', type: 'button', title: s.name });
     b.setAttribute('aria-pressed', 'false');
     const canvas = document.createElement('canvas');
     canvas.className = 'blob';

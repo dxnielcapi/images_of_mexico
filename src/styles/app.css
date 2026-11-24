@@ -7,7 +7,7 @@
  * no pueden cubrir:
  *
  *   - estado conmutado con `classList` o reasignando `className`
- *     (`.btn.primary`, `.hint.ok`, `.status.warn`, `.animo.sel`);
+ *     (`.btn.primary`, `.hint.ok`, `.status.warn`, `.sentir.sel`);
  *   - pseudo-elementos y pseudo-clases de navegador (marcadores de
  *     `<details>`, spinners del `number`, `box-decoration-break`);
  *   - clases que se repiten decenas de veces con el mismo sentido

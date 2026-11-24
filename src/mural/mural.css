@@ -1100,7 +1100,7 @@
 
      Un formulario largo no entra en un telefono sin scrollear, y pedir diez
      datos de golpe espanta. Se parte en tres preguntas, y la del medio se
-     contesta tocando una mancha: el animo se elige por color, no por lista.
+     contesta tocando una mancha: se elige por color, no por lista.
      ------------------------------------------------------------------ */
 
   /* Una de las tres gotas que se van llenando. */
@@ -1154,7 +1154,7 @@
 
   /* --------------------------------- la escala de alimentacion = color */
 
-  .animo {
+  .sentir {
     display: grid;
     justify-items: center;
     gap: 1px;
@@ -1172,13 +1172,13 @@
   }
 
   /* Las no elegidas quedan aguadas; la elegida sube el pigmento. */
-  .animo .blob { display: block; opacity: 0.5; transition: opacity 0.18s, transform 0.18s; }
+  .sentir .blob { display: block; opacity: 0.5; transition: opacity 0.18s, transform 0.18s; }
   @media (hover: hover) {
-    .animo:hover .blob { opacity: 0.8; }
-    .animo:hover { color: var(--color-ink); }
+    .sentir:hover .blob { opacity: 0.8; }
+    .sentir:hover { color: var(--color-ink); }
   }
-  .animo.sel { background: var(--color-accent-soft); color: var(--color-ink); font-weight: var(--font-weight-mid); }
-  .animo.sel .blob { opacity: 1; transform: scale(1.08); }
+  .sentir.sel { background: var(--color-accent-soft); color: var(--color-ink); font-weight: var(--font-weight-mid); }
+  .sentir.sel .blob { opacity: 1; transform: scale(1.08); }
 
   /* ------------------------------------------ preguntas de opcion */
 
@@ -1377,7 +1377,7 @@
     .hero-title { animation: none; }
     .hero-hint-arrow { animation: none; }
     .paso:not(.hidden) { animation: none; }
-    .punto, .animo .blob { transition: none; }
+    .punto, .sentir .blob { transition: none; }
 
     /* Sin relevo queda la primera foto fija, con su nombre: si solo se
        apagara la animacion, todo se quedaria en `opacity: 0`. */

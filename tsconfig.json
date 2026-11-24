@@ -6,7 +6,8 @@
       "@core/*": ["src/core/*"],
       "@io/*": ["src/io/*"],
       "@data/*": ["src/data/*"],
-      "@ui/*": ["src/ui/*"]
+      "@ui/*": ["src/ui/*"],
+      "@components/*": ["src/components/*"]
     },
     "noUnusedLocals": true,
     "noUnusedParameters": true,
