@@ -476,10 +476,11 @@
 
   /* ================================ la puerta a «la historia»
 
-     El indice de `#historia` en la portada: tres filas —numero, nombre y
-     pie— dentro de un solo enlace que lleva a `/historia`. Es una sola
-     zona de clic y no tres: al otro lado la pagina se lee de corrido, asi
-     que mandar a cada ancla por separado solo serviria para partirla.
+     El indice de `#historia` en la portada: una fila por seccion —numero,
+     nombre y pie— dentro de un solo enlace que lleva a `/historia`. Es una
+     sola zona de clic y no una por fila: al otro lado la pagina se lee de
+     corrido, asi que mandar a cada ancla por separado solo serviria para
+     partirla. El hover, en cambio, si es de cada fila (mas abajo).
 
      Por eso las filas son `<span>` y no una lista: dentro de un `<a>` no
      puede ir un `<ul>`, y lo que esto es de verdad es un boton grande con
@@ -527,13 +528,20 @@
     color: var(--color-muted);
   }
 
-  /* El hover es del enlace entero, no de la fila que esta debajo del
-     cursor: lo que se abre es la pagina, no esa seccion. */
-  .historia-puerta:hover .historia-fila {
-    padding-left: 8px;
-    border-color: var(--color-wash-line);
+  /* El hover va fila por fila: se enciende la que esta debajo del cursor y
+     no las cinco a la vez. El clic sigue siendo del enlace entero —lo que
+     se abre es la pagina, no esa seccion—, asi que esto es solo el dedo
+     recorriendo el indice.
+
+     Acotado a `hover: hover` para que en pantalla tactil no se quede una
+     fila encendida despues del toque. */
+  @media (hover: hover) {
+    .historia-fila:hover {
+      padding-left: 8px;
+      border-color: var(--color-wash-line);
+    }
+    .historia-fila:hover .historia-nombre { color: #9e2b2b; }
   }
-  .historia-puerta:hover .historia-nombre { color: #9e2b2b; }
 
   .historia-entrar {
     display: inline-flex;
@@ -545,11 +553,14 @@
     color: #9e2b2b;
   }
 
+  /* La flecha si es del enlace entero: es la que anuncia el clic. */
   .historia-entrar > svg {
     transition: transform 0.18s ease;
   }
-  .historia-puerta:hover .historia-entrar > svg {
-    transform: translateX(4px);
+  @media (hover: hover) {
+    .historia-puerta:hover .historia-entrar > svg {
+      transform: translateX(4px);
+    }
   }
 
   .historia-puerta:focus-visible {

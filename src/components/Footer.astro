@@ -3,8 +3,8 @@
  * El pie de pagina, el mismo en las dos rutas.
  *
  * A diferencia de la barra de arriba —que lleva seis entradas y tiene que
- * caber en una linea—, aqui esta el mapa completo: las secciones de `/` y las
- * tres de `/historia`, con su titulo entero. El destino de cada una lo
+ * caber en una linea—, aqui esta el mapa completo: las secciones de `/` y
+ * todas las de `/historia`, con su titulo entero. El destino de cada una lo
  * resuelve el mismo `enlace()` que la barra (ver `./rutas`): ancla suelta si
  * la seccion vive en esta pagina, ruta completa si vive en la otra.
  *
@@ -30,8 +30,10 @@ const SECCIONES: Seccion[] = [
   { ruta: 'inicio', ancla: 'escala', texto: 'La escala de la alimentación' },
   { ruta: 'historia', ancla: 'historia', texto: 'La historia de nuestros símbolos' },
   { ruta: 'historia', ancla: 'datos', texto: 'Visualización de datos' },
+  { ruta: 'historia', ancla: 'violencia', texto: 'Violencia alimentaria estructurada' },
   { ruta: 'historia', ancla: 'mito', texto: 'El mito de Quetzalcóatl' },
   { ruta: 'historia', ancla: 'milpa', texto: 'La dieta de la milpa' },
+  { ruta: 'historia', ancla: 'tlacuilo', texto: 'Tlacuilo' },
   { ruta: 'inicio', ancla: 'concepto', texto: 'El concepto' },
   { ruta: 'inicio', ancla: 'referencias', texto: 'Referencias y créditos' },
 ];

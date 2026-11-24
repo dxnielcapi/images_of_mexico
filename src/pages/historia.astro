@@ -21,6 +21,25 @@ import '../styles/app.css';
 
 const BASE = import.meta.env.BASE_URL;
 
+/**
+ * Las secciones de la pagina, en el orden en que se leen. De aqui sale el
+ * indice del encabezado; el cuerpo de cada una esta escrito mas abajo, en su
+ * `<section>`, porque cada una tiene su propia forma —la de los datos lleva
+ * fondo de red, la de la milpa lleva fotos— y meterlas todas en un `map()`
+ * costaria mas de lo que ahorra.
+ *
+ * Al anadir o mover una seccion hay que tocar las dos cosas: esta lista y su
+ * `<section>`. Y, si se quiere en el mapa del sitio, la lista de
+ * `src/components/Footer.astro`.
+ */
+const PARTES = [
+  { ancla: 'datos', titulo: 'Visualización de datos' },
+  { ancla: 'violencia', titulo: 'Violencia alimentaria estructurada' },
+  { ancla: 'mito', titulo: 'El mito de Quetzalcóatl' },
+  { ancla: 'milpa', titulo: 'La dieta de la milpa' },
+  { ancla: 'tlacuilo', titulo: 'Tlacuilo' },
+];
+
 /** Las tres fotos del fondo de `#milpa`, en el orden en que se relevan. El
  *  archivo del tercero viene con el nombre mal escrito desde el origen; el
  *  rotulo si lleva el nombre bien. */
@@ -62,17 +81,21 @@ const DIETA_FOTOS = [
         </div>
 
         <p data-revelar class="dieta-revelar mt-7 text-xl leading-[1.65] text-muted telefono:text-lg">
-          El mural no se inventó de cero: viene de una herramienta, de un relato
-          y de una comida que lleva milenios en la mesa. Aquí están los tres, en
-          el orden en que se necesitan para leer la figura.
+          El mural no se inventó de cero: viene de una herramienta, de un daño
+          que medir, de un relato, de una comida que lleva milenios en la mesa y
+          de un oficio que ya contaba por imágenes. Aquí están los cinco, en el
+          orden en que se necesitan para leer la figura.
         </p>
 
-        <!-- El indice: las mismas tres secciones de abajo, para quien llega
-             buscando una sola. -->
-        <nav aria-label="Las tres partes de la historia" data-revelar class="dieta-revelar mt-8 flex flex-wrap gap-x-5 gap-y-2 text-md text-muted">
-          <a href="#datos" class="no-underline hover:text-ink transition-colors">01 · Visualización de datos</a>
-          <a href="#mito" class="no-underline hover:text-ink transition-colors">02 · El mito de Quetzalcóatl</a>
-          <a href="#milpa" class="no-underline hover:text-ink transition-colors">03 · La dieta de la milpa</a>
+        <!-- El indice: las mismas secciones de abajo, para quien llega
+             buscando una sola. Sale de `PARTES`, arriba, que es tambien la
+             lista que ordena la pagina. -->
+        <nav aria-label="Las partes de la historia" data-revelar class="dieta-revelar mt-8 flex flex-wrap gap-x-5 gap-y-2 text-md text-muted">
+          {PARTES.map((parte, i) => (
+            <a href={`#${parte.ancla}`} class="no-underline hover:text-ink transition-colors">
+              {String(i + 1).padStart(2, '0')} · {parte.titulo}
+            </a>
+          ))}
         </nav>
       </div>
     </section>
@@ -153,7 +176,34 @@ const DIETA_FOTOS = [
       </div>
     </section>
 
-    <!-- ===================================== 02 · El mito de Quetzalcóatl -->
+    <!-- ============== 02 · Violencia alimentaria estructurada -->
+    <!-- Lo que la seccion de arriba deja nombrado y esta desarrolla: la
+         violencia que no se ve porque esta en la estructura —quien produce
+         la comida y no la puede comer.
+
+         Falta el texto: llega de quien escribe la pieza y entra tal cual
+         debajo del titulo, un `<p data-revelar class="dieta-revelar mt-3
+         text-lg leading-[1.7] text-muted">` por parrafo —el primero con
+         `mt-7`— igual que en las secciones de arriba. El distintivo de
+         «texto pendiente» se quita al ponerlo. -->
+    <section id="violencia" class="scroll-mt-[60px] border-t border-line/80 py-20 px-5 telefono:py-12 telefono:px-3.5">
+      <div class="mx-auto max-w-[760px]">
+        <!-- El revelado va en la envoltura y no en el <h2>: el titulo tiene
+             su propia animacion de opacidad (la brasa) y una animacion le
+             gana a la transicion del revelado. -->
+        <div data-titulo class="titulo-revelar">
+          <h2 class="seccion-titulo text-[42px] font-mid leading-[1.08] tracking-[-0.025em] md:text-[56px] telefono:text-[30px]">
+            Violencia alimentaria estructurada
+          </h2>
+        </div>
+
+        <p data-revelar class="dieta-revelar mt-7">
+          <span class="concepto-pendiente">Texto pendiente</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- ===================================== 03 · El mito de Quetzalcóatl -->
     <section id="mito" class="scroll-mt-[60px] border-t border-line/80 py-20 px-5 telefono:py-12 telefono:px-3.5">
       <div class="mx-auto max-w-[760px]">
         <!-- El revelado va en la envoltura y no en el <h2>: el titulo tiene
@@ -214,7 +264,7 @@ const DIETA_FOTOS = [
       </div>
     </section>
 
-    <!-- ========================================== 03 · La dieta de la milpa -->
+    <!-- ========================================== 04 · La dieta de la milpa -->
     <!-- La unica seccion con fondo propio: las tres fotos de la milpa se
          relevan detras del texto, desenfocadas y bajo un velo crema para que
          los parrafos se sigan leyendo. El rotulo al pie, a la derecha, dice
@@ -298,7 +348,33 @@ const DIETA_FOTOS = [
       </div>
     </section>
 
-    <!-- ============================================== 04 · Volver al mural -->
+    <!-- ==================================================== 05 · Tlacuilo -->
+    <!-- Quien pintaba los codices: el oficio del que viene la forma de
+         contar del mural —por imagenes y no por renglones.
+
+         Falta el texto: llega de quien escribe la pieza y entra tal cual
+         debajo del titulo, un `<p data-revelar class="dieta-revelar mt-3
+         text-lg leading-[1.7] text-muted">` por parrafo —el primero con
+         `mt-7`— igual que en las secciones de arriba. El distintivo de
+         «texto pendiente» se quita al ponerlo. -->
+    <section id="tlacuilo" class="scroll-mt-[60px] border-t border-line/80 py-20 px-5 telefono:py-12 telefono:px-3.5">
+      <div class="mx-auto max-w-[760px]">
+        <!-- El revelado va en la envoltura y no en el <h2>: el titulo tiene
+             su propia animacion de opacidad (la brasa) y una animacion le
+             gana a la transicion del revelado. -->
+        <div data-titulo class="titulo-revelar">
+          <h2 class="seccion-titulo text-[42px] font-mid leading-[1.08] tracking-[-0.025em] md:text-[56px] telefono:text-[30px]">
+            Tlacuilo
+          </h2>
+        </div>
+
+        <p data-revelar class="dieta-revelar mt-7">
+          <span class="concepto-pendiente">Texto pendiente</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================== 06 · Volver al mural -->
     <!-- El cierre de la lectura devuelve a donde empezo: el mural es la
          pieza, esto es su contexto. -->
     <section class="border-t border-line/80 py-16 px-5 telefono:py-12 telefono:px-3.5">
