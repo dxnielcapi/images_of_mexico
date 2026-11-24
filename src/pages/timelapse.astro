@@ -1,0 +1,93 @@
+---
+/**
+ * `/timelapse` · Como se pinto el mural.
+ *
+ * La misma red del mural, pero vacia y llenandose: del dia del primer
+ * registro al del ultimo, de corrido. Se entra por el boton de reproducir que
+ * esta al pie del mural de `/`.
+ *
+ * Es un reproductor y no una seccion de lectura: por eso no lleva la barra
+ * superior ni el pie del sitio —la pantalla es el lienzo y los mandos— y la
+ * unica salida escrita es el enlace de vuelta al mural. El `<script>` del
+ * final carga `src/mural/timelapse.ts`, que baja el mismo cartel y los mismos
+ * registros que el kiosco (ver `src/mural/cartel.ts`) sin montar nada de su
+ * interfaz: aqui no se registra ni se busca a nadie.
+ */
+import Base from '../layouts/Base.astro';
+import '../styles/app.css';
+
+const BASE = import.meta.env.BASE_URL;
+---
+
+<Base
+  title="Cómo se pintó el mural · Mural de Acuarela"
+  description="Timelapse del mural de acuarela: cada registro apareciendo en el orden en que se hizo, desde el primero hasta el último."
+  bodyClass="bg-[#f9f6f0]"
+>
+  <main class="timelapse flex min-h-[100svh] flex-col">
+    <!-- Encabezado corto: de quien llega aquí ya sabemos que viene del mural,
+         así que lo único que hace falta decir es qué está mirando y entre qué
+         fechas. El rango lo escribe el script, que es quien conoce los datos. -->
+    <header class="flex-none px-5 pt-5 pb-3 telefono:px-3.5 telefono:pt-4">
+      <div class="mx-auto flex max-w-[1180px] flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        <div>
+          <a
+            href={`${BASE}#mural`}
+            class="font-mono text-xs tracking-[0.16em] uppercase text-[#9e2b2b]/80 no-underline transition-opacity hover:opacity-70"
+          >
+            ← Volver al mural
+          </a>
+          <h1 class="mt-2 text-3xl font-mid leading-[1.1] tracking-[-0.02em] telefono:text-2xl">
+            Cómo se pintó el mural
+          </h1>
+        </div>
+        <p class="max-w-[420px] text-sm leading-[1.5] text-muted">
+          Cada mancha es una persona, y aparece cuando se registró.
+          <span id="tl-rango" class="block text-ink"></span>
+        </p>
+      </div>
+    </header>
+
+    <!-- El lienzo al medio, con todo el alto que sobre: lo mide el script
+         contra esta caja (`tl-caja`) y le descuenta su relleno. -->
+    <div
+      id="tl-caja"
+      class="relative flex min-h-0 flex-auto items-center justify-center p-4 telefono:p-2"
+    >
+      <canvas id="tl-lienzo" class="opacity-0 transition-opacity duration-500"></canvas>
+      <p id="tl-aviso" class="absolute text-sm text-muted">Cargando el mural…</p>
+    </div>
+
+    <!-- Los mandos al pie: reproducir, la barra para ir a cualquier momento y
+         por dónde va. Nada más; la película se mira, no se configura. -->
+    <div class="flex-none border-t border-line bg-[#fffdf8] px-5 py-3 telefono:px-3.5">
+      <div class="mx-auto flex max-w-[1180px] items-center gap-5 telefono:gap-3">
+        <!-- El icono y el rótulo los pone el script: cambian con lo que se
+             puede hacer ahora (pausar, reproducir, volver a verlo). -->
+        <button id="tl-play" class="tool" type="button" aria-label="Reproducir"></button>
+
+        <div
+          id="tl-barra"
+          class="tl-barra"
+          role="slider"
+          tabindex="0"
+          aria-label="Avance del timelapse"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+        >
+          <div id="tl-relleno" class="tl-relleno" style="width: 0%"></div>
+        </div>
+
+        <p class="flex-none text-right text-sm leading-[1.35] text-muted">
+          <span id="tl-cuenta" class="block tabular-nums text-ink">…</span>
+          <span id="tl-reloj" class="block tabular-nums"></span>
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    import '../mural/timelapse';
+  </script>
+</Base>
