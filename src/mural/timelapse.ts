@@ -32,6 +32,12 @@
  *
  * Lo que se ve al final es exactamente el mural de `/` con la misma gente: el
  * pincel, la paleta y el acomodo son los mismos modulos.
+ *
+ * Y una perilla, la unica de la pagina: la ilustracion se apaga. El codice es
+ * todo negro y la red es todo carmin, asi que con el dibujo debajo un nodo
+ * que cayo sobre un nopal se confunde con la linea del nopal; apagado queda el
+ * grafo solo y se leen sus nudos, sus hilos y los huecos entre comunidades
+ * (ver `verCartel`).
  */
 import { parseId } from '@core/ids/idCodec';
 import { CARMIN, ColorRamp } from '@core/render/palette';
@@ -67,6 +73,8 @@ const caja = document.getElementById('tl-caja') as HTMLElement;
 const lienzo = document.getElementById('tl-lienzo') as HTMLCanvasElement;
 const aviso = document.getElementById('tl-aviso') as HTMLElement;
 const btnPlay = document.getElementById('tl-play') as HTMLButtonElement;
+const btnCartel = document.getElementById('tl-cartel') as HTMLButtonElement;
+const fila = document.getElementById('tl-mandos') as HTMLElement;
 const barra = document.getElementById('tl-barra') as HTMLElement;
 const relleno = document.getElementById('tl-relleno') as HTMLElement;
 const cuenta = document.getElementById('tl-cuenta') as HTMLElement;
@@ -88,6 +96,15 @@ const MANDOS = {
   volver: '<line x1="7.4" y1="7.2" x2="7.4" y2="16.8" stroke-width="2.4"/>'
     + '<path d="M19 7.4v9.2l-8-4.6z"/>',
 };
+
+/**
+ * El icono de la ilustracion: una lamina con su dibujo adentro. Es el mismo
+ * encendido y apagado —lo que cambia es el boton, que se tine de carmin
+ * mientras el codice este puesto (`.tool.active`).
+ */
+const ILUSTRACION = '<rect x="3.4" y="4.8" width="17.2" height="14.4" rx="2.4"/>'
+  + '<path d="M4.2 16.3l4.1-3.9a2 2 0 0 1 2.8 0l5 4.7"/>'
+  + '<circle cx="15.1" cy="9.4" r="1.45"/>';
 
 /** La fecha como se escribe: «16 de septiembre de 2026». */
 const FECHA = new Intl.DateTimeFormat('es-MX', {
@@ -156,6 +173,11 @@ function relojDe(gente: readonly DataRecord[]): Reloj {
   const porId = new Map<string, number>();
   let primero = Infinity;
   let ultimo = -Infinity;
+  // Sin nadie no hay pelicula, pero la pagina tiene que abrir igual (el banco
+  // simulado puede estar apagado y el dispositivo no haber registrado a
+  // nadie): un dia de largo deja el reloj dando fechas validas.
+  if (gente.length === 0) return { porId, desde: temprano, largo: 1 };
+
   for (const [dia, lista] of porDia) {
     lista.sort((a, b) => (a.id < b.id ? -1 : 1));
     lista.forEach((r, k) => {
@@ -205,6 +227,9 @@ let iArista = 0;
 let tramos: Tramos | null = null;
 let tintados = -1;
 let pasoTinta = 1;
+
+/** Si el codice negro acompana a la red o se queda apagado. */
+let conCartel = true;
 
 /** De coordenadas de trabajo a pixeles del lienzo. */
 let escala = 1;
@@ -302,16 +327,49 @@ function pintarCartel(): void {
  *
  * Es el mismo orden y el mismo pincel que el render completo del mural (ver
  * `@core/render/compose`), solo que con la red recortada a lo que ya se
- * registro.
+ * registro —y con la ilustracion apagable, que es lo unico que esta pantalla
+ * hace distinto (ver `verCartel`).
  */
 function dibujar(): void {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, lienzo.width, lienzo.height);
   ctx.globalCompositeOperation = 'multiply';
-  ctx.drawImage(cartelLienzo, 0, 0);
+  if (conCartel) ctx.drawImage(cartelLienzo, 0, 0);
   dibujarRed(ctx, vivos, ramp, RENDER.red, escala);
   ctx.globalCompositeOperation = 'source-over';
-  if (cartel?.tlacuilo) dibujarFigura(ctx, cartel.tlacuilo, laminaTlacuilo, escala);
+  // El tlacuilo es la otra mitad del mismo codice en negro: si se apaga la
+  // ilustracion, se apagan los dos o quedaria el dibujo a medias.
+  if (conCartel && cartel?.tlacuilo) {
+    dibujarFigura(ctx, cartel.tlacuilo, laminaTlacuilo, escala);
+  }
+}
+
+/**
+ * Enciende o apaga la ilustracion.
+ *
+ * El codice es todo negro y la red es el carmin que le pusieron encima, asi
+ * que con el dibujo debajo un nodo que cayo sobre un nopal se confunde con la
+ * linea del nopal: apagarlo es la unica forma de leer el grafo —sus nudos,
+ * sus hilos y los huecos entre comunidades— como lo que es.
+ *
+ * Mientras esta apagado el cartel se sigue entintando en su lienzo, que no se
+ * mira: volver a encenderlo es inmediato y no hay que esperar a la proxima
+ * tanda de tinta.
+ */
+function verCartel(si: boolean): void {
+  conCartel = si;
+  rotularCartel();
+  dibujar();
+}
+
+/** Deja el boton de la ilustracion diciendo en que estado esta. */
+function rotularCartel(): void {
+  const label = conCartel ? 'Ocultar la ilustración' : 'Mostrar la ilustración';
+  btnCartel.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${ILUSTRACION}</svg>`;
+  btnCartel.classList.toggle('active', conCartel);
+  btnCartel.setAttribute('aria-pressed', String(conCartel));
+  btnCartel.setAttribute('aria-label', label);
+  btnCartel.title = label;
 }
 
 /** Lleva la pelicula a `donde` y repinta lo que haga falta. */
@@ -381,6 +439,7 @@ function avanzar(ahora: number): void {
 // ---------------------------------------------------------------- los mandos
 
 btnPlay.addEventListener('click', () => correr(!corriendo));
+btnCartel.addEventListener('click', () => verCartel(!conCartel));
 
 /**
  * La barra se arrastra para ir a cualquier momento de la pelicula, y al
@@ -423,8 +482,14 @@ document.addEventListener('keydown', (e) => {
   if (target?.closest('input, textarea, select, a, [contenteditable="true"]')) return;
 
   if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'k') {
+    // Con un boton enfocado la barra espaciadora es suya: el navegador ya lo
+    // activa, y tomarla aqui ademas haria dos cosas de un toque.
+    if (target?.closest('button')) return;
     e.preventDefault();
     correr(!corriendo);
+  } else if (e.key === 'i') {
+    e.preventDefault();
+    verCartel(!conCartel);
   } else if (e.key === 'ArrowLeft') {
     e.preventDefault();
     correr(false);
@@ -482,7 +547,11 @@ async function start(): Promise<void> {
   const gente = [...cargado.base, ...cargado.propios];
   const armada = redDeRegistros(gente, cartel.trama, cartel.field, RENDER);
   if (!armada) {
-    aviso.textContent = 'No se pudo armar la red del mural: falta la espiral del dibujo.';
+    sinPelicula('No se pudo armar la red del mural: falta la espiral del dibujo.');
+    return;
+  }
+  if (armada.red.nodos.length === 0) {
+    sinPelicula('Todavía no hay registros: el mural se pinta en cuanto alguien se suma.');
     return;
   }
 
@@ -514,9 +583,16 @@ async function start(): Promise<void> {
   const quieto = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
   ponerEn(quieto ? 1 : 0);
   mandos();
+  rotularCartel();
   if (!quieto) correr(true);
 }
 
+/** Lo que queda en pantalla cuando no hay nada que reproducir. */
+function sinPelicula(texto: string): void {
+  aviso.textContent = texto;
+  fila.classList.add('hidden');
+}
+
 start().catch((err) => {
-  aviso.textContent = `No se pudo cargar el mural: ${err}`;
+  sinPelicula(`No se pudo cargar el mural: ${err}`);
 });

@@ -41,8 +41,9 @@ const BASE = import.meta.env.BASE_URL;
             Cómo se pintó el mural
           </h1>
         </div>
-        <p class="max-w-[420px] text-sm leading-[1.5] text-muted">
-          Cada mancha es una persona, y aparece cuando se registró.
+        <p class="max-w-[460px] text-sm leading-[1.5] text-muted">
+          Cada mancha es una persona, y aparece cuando se registró. Puedes apagar
+          la ilustración y dejar sola la red.
           <span id="tl-rango" class="block text-ink"></span>
         </p>
       </div>
@@ -60,11 +61,22 @@ const BASE = import.meta.env.BASE_URL;
 
     <!-- Los mandos al pie: reproducir, la barra para ir a cualquier momento y
          por dónde va. Nada más; la película se mira, no se configura. -->
-    <div class="flex-none border-t border-line bg-[#fffdf8] px-5 py-3 telefono:px-3.5">
-      <div class="mx-auto flex max-w-[1180px] items-center gap-5 telefono:gap-3">
+    <div id="tl-mandos" class="flex-none border-t border-line bg-[#fffdf8] px-5 py-3 telefono:px-3.5">
+      <div class="mx-auto flex max-w-[1180px] items-center gap-5 telefono:gap-2.5">
         <!-- El icono y el rótulo los pone el script: cambian con lo que se
              puede hacer ahora (pausar, reproducir, volver a verlo). -->
         <button id="tl-play" class="tool" type="button" aria-label="Reproducir"></button>
+
+        <!-- Con y sin el códice debajo. El dibujo es todo negro y la red es
+             carmín, así que apagarlo es la manera de mirar la red sola; va
+             encendido (`aria-pressed`) mientras la ilustración esté puesta. -->
+        <button
+          id="tl-cartel"
+          class="tool active"
+          type="button"
+          aria-pressed="true"
+          aria-label="Ocultar la ilustración"
+        ></button>
 
         <div
           id="tl-barra"
