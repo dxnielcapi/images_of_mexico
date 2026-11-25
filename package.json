@@ -10,6 +10,7 @@
     "dev": "astro dev",
     "tunnel": "cloudflared tunnel --url http://127.0.0.1:4321",
     "build": "astro build",
+    "build:ci": "sh scripts/build-ci.sh",
     "preview": "astro preview",
     "check": "astro check"
   },

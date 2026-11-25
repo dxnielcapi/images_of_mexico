@@ -98,9 +98,44 @@ secciones de la barra.
 npm install
 npm run dev      # http://localhost:4321  (/ el mural, /historia el relato)
 npm run build    # astro build -> dist/
+npm run build:ci # el build del deploy: elige los datos segun la rama
 npm run preview  # sirve dist/
 npm run check    # astro check (typecheck de .astro y .ts)
 ```
+
+### El deploy (Cloudflare Workers)
+
+El sitio se publica como assets estáticos en un Worker. En el panel, el
+**Build command** es `npm run build:ci` y no `npm run build`: ese script
+(`scripts/build-ci.sh`) mira `WORKERS_CI_BRANCH` y decide qué datos lleva el
+bundle.
+
+| Rama | Qué compila |
+| --- | --- |
+| `master` | solo registros reales |
+| cualquier otra | con el banco simulado |
+
+Producción es la excepción explícita y todo lo demás lleva simulados, no al
+revés: si aparece una rama nueva, lo peor que pasa es que su preview salga con
+gente ficticia. Al revés —producción estrenando 1800 personas inventadas— no
+se nota y es mentira. El script además **desactiva** la variable en `master`,
+así que dejarla puesta en el panel por error no contamina producción.
+
+Esto no se puede resolver con los entornos de Workers Builds: sus variables de
+preview son de *runtime*, y `PUBLIC_DATOS_SIMULADOS` la hornea Vite al
+compilar. Una casilla del panel no puede dar dos bundles distintos; la rama
+sí.
+
+**Lo que sí va en el panel**, como variables de *build* (no de runtime, o el
+bundle sale sin ellas):
+
+```
+PUBLIC_SUPABASE_URL
+PUBLIC_SUPABASE_ANON_KEY
+```
+
+En local nada de esto estorba: el valor sale del `.env`, que Vite lee por su
+cuenta y gana sobre el script.
 
 ### Cambiar la ilustración
 
