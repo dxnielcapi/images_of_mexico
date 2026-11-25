@@ -18,7 +18,7 @@ import Nav from '@components/Nav.astro';
 import Footer from '@components/Footer.astro';
 import '../styles/app.css';
 import { SENTIRES } from '../data/person';
-import { CREDITOS, REFERENCIAS, citaPlana } from '../data/referencias';
+import { REFERENCIAS, citaPlana } from '../data/referencias';
 import { PLANTILLA_DIBUJO } from '../io/plantilla';
 
 const BASE = import.meta.env.BASE_URL;
@@ -588,8 +588,9 @@ const REFERENCIAS_JSONLD = {
             </summary>
             <div class="px-5 pb-5">
               <p class="text-lg leading-[1.7] text-muted">
-                Tu nombre es el único dato indispensable; la edad, la ocupación y el lugar de origen
-                son opcionales y solo acompañan tu ficha dentro del mural.
+                Tu nombre y el estado de México del que eres son indispensables (solo se permiten
+                ubicaciones de México); la edad y la ocupación son opcionales y solo acompañan tu
+                ficha dentro del mural.
               </p>
             </div>
           </details>
@@ -671,17 +672,19 @@ const REFERENCIAS_JSONLD = {
       </div>
     </section>
 
-    <!-- ========================================= 06 · Referencias y créditos -->
-    <!-- La ultima seccion: una tarjeta por fuente con su cita en APA, el
+    <!-- ===================================================== 06 · Referencias -->
+    <!-- La ultima seccion: una ficha por fuente con su cita en APA, el
          enlace directo al texto y el boton que se lleva la cita al
-         portapapeles. Las citas y sus datos salen de `REFERENCIAS`
-         (`src/data/referencias.ts`), de donde sale tambien el JSON-LD del
-         final, asi que la pagina y los datos estructurados no se pueden
-         desfasar. El plegado de la cursiva va por tramos: el titulo de la
-         revista y su volumen son los unicos que la llevan.
+         portapapeles, todas en una tira que se recorre de lado. Las citas y
+         sus datos salen de `REFERENCIAS` (`src/data/referencias.ts`), de
+         donde sale tambien el JSON-LD del final, asi que la pagina y los
+         datos estructurados no se pueden desfasar. El plegado de la cursiva
+         va por tramos: el titulo de la revista y su volumen son los unicos
+         que la llevan.
 
-         Cierra con los creditos de la pieza, en panel propio: eso no es una
-         fuente que se consulte sino la autoria de la obra. -->
+         La investigacion propia es una fuente mas y entra en su lugar
+         alfabetico; lo unico que la distingue es que su boton principal no
+         sale del sitio. -->
     <section id="referencias" class="scroll-mt-[60px] border-t border-line/80 py-20 px-5 telefono:py-12 telefono:px-3.5">
       <div class="mx-auto max-w-[1120px]">
         <!-- El revelado va en la envoltura y no en el <h2>: el titulo tiene
@@ -690,7 +693,7 @@ const REFERENCIAS_JSONLD = {
         <div class="max-w-[760px]">
           <div data-titulo class="titulo-revelar">
             <h2 class="seccion-titulo text-[42px] font-mid leading-[1.08] tracking-[-0.025em] md:text-[56px] telefono:text-[30px]">
-              Referencias y créditos
+              Referencias
             </h2>
           </div>
 
@@ -699,121 +702,115 @@ const REFERENCIAS_JSONLD = {
             completa en APA (7.ª edición), el enlace directo al texto y el botón para copiar la
             cita tal cual: lo que se lee en esta página es obra de quien la firma.
           </p>
+
+          <p data-revelar class="dieta-revelar ref-pista">
+            {REFERENCIAS.length} referencias · desliza de lado para recorrerlas
+          </p>
         </div>
 
-        <ul class="mt-9 grid gap-3 lg:grid-cols-2 telefono:mt-7 telefono:gap-2.5">
-          {REFERENCIAS.map((ref) => (
-            <li id={ref.id} data-revelar class="dieta-revelar ref-tarjeta">
-              <p class="ref-cita">
-                {ref.cita.map((tramo) => (tramo.cursiva ? <em>{tramo.texto}</em> : tramo.texto))}{ref.url && (
-                  <a
-                    href={ref.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="ref-doi"
-                    aria-label={`${ref.url.startsWith('https://doi.org/') ? 'Abrir el DOI' : 'Abrir el enlace'} de ${ref.autorCorto} (${ref.anio})`}
-                  >{ref.url}</a>
-                )}
-              </p>
+        <!-- Las fichas no se apilan: van en una tira que se recorre de lado.
+             El que se desplaza es el `div` y no la `<ul>`, para que la lista
+             conserve sus roles; lleva `tabindex` y `role="region"` porque un
+             contenedor desplazable tiene que poder recorrerse con el teclado
+             (las flechas, una vez enfocado). -->
+        <div
+          class="ref-carrusel mt-9 telefono:mt-7"
+          tabindex="0"
+          role="region"
+          aria-label="Referencias, tira que se desplaza de lado"
+        >
+          <ul class="ref-tira">
+            {REFERENCIAS.map((ref) => (
+              <li id={ref.id} data-revelar class="dieta-revelar ref-tarjeta">
+                <p class="ref-cita">
+                  {ref.cita.map((tramo) => (tramo.cursiva ? <em>{tramo.texto}</em> : tramo.texto))}{ref.url && (
+                    <a
+                      href={ref.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="ref-doi"
+                      aria-label={`${ref.url.startsWith('https://doi.org/') ? 'Abrir el DOI' : 'Abrir el enlace'} de ${ref.autorCorto} (${ref.anio})`}
+                    >{ref.url}</a>
+                  )}
+                </p>
 
-              <p class="ref-descripcion">{ref.descripcion}</p>
+                <p class="ref-descripcion">{ref.descripcion}</p>
 
-              <p class="ref-acceso">
-                <span class="ref-etiqueta">{ref.acceso}</span>{ref.notas.map((nota) => ` · ${nota}`)}
-              </p>
+                <p class="ref-acceso">
+                  <span class="ref-etiqueta">{ref.acceso}</span>{ref.notas.map((nota) => ` · ${nota}`)}
+                </p>
 
-              <!-- El boton principal lleva fuera del sitio salvo en la
-                   investigacion propia, que no sale de esta pagina: ahi baja
-                   a la seccion donde esta y no necesita `target` ni `rel`. -->
-              <div class="ref-acciones">
-                {ref.url ? (
-                  <a
-                    href={ref.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="ref-btn ref-btn-principal"
-                    aria-label={`Leer ${ref.obra} de ${ref.autorCorto} (${ref.anio}) en ${ref.sede}`}
-                  >
-                    Leer la investigación
-                  </a>
-                ) : ref.interno && (
-                  <a
-                    href={ref.interno.href}
-                    class="ref-btn ref-btn-principal"
-                    aria-label={`Ver la ${ref.obra} de ${ref.autorCorto} (${ref.anio}) en ${ref.interno.destino}`}
-                  >
-                    {ref.interno.etiqueta}
-                  </a>
-                )}
+                <!-- El boton principal lleva fuera del sitio salvo en la
+                     investigacion propia, que no sale de esta pagina: ahi baja
+                     a la seccion donde esta y no necesita `target` ni `rel`. -->
+                <div class="ref-acciones">
+                  {ref.url ? (
+                    <a
+                      href={ref.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="ref-btn ref-btn-principal"
+                      aria-label={`Leer ${ref.obra} de ${ref.autorCorto} (${ref.anio}) en ${ref.sede}`}
+                    >
+                      Leer la investigación
+                    </a>
+                  ) : ref.interno && (
+                    <a
+                      href={ref.interno.href}
+                      class="ref-btn ref-btn-principal"
+                      aria-label={`Ver la ${ref.obra} de ${ref.autorCorto} (${ref.anio}) en ${ref.interno.destino}`}
+                    >
+                      {ref.interno.etiqueta}
+                    </a>
+                  )}
 
-                {ref.pdf && (
-                  <a
-                    href={ref.pdf}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  {ref.pdf && (
+                    <a
+                      href={ref.pdf}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="ref-btn"
+                      aria-label={`Abrir el PDF del ${ref.obra} de ${ref.autorCorto} (${ref.anio})`}
+                    >
+                      PDF
+                    </a>
+                  )}
+
+                  {ref.pagina && (
+                    <a
+                      href={ref.pagina}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="ref-btn"
+                      aria-label={`Abrir la página del ${ref.obra} de ${ref.autorCorto} (${ref.anio}) en ${ref.sede}`}
+                    >
+                      Página del artículo
+                    </a>
+                  )}
+
+                  <!-- La cita en texto plano viaja en `data-cita` y la copia
+                       `mural/citas.ts`, que ademas deja el boton en «Copiado ✓»
+                       dos segundos. El aviso para lector de pantalla va en el
+                       `role="status"` de al lado: el `aria-label` del boton tapa
+                       el cambio de su propio rotulo. -->
+                  <button
+                    type="button"
+                    data-cita={citaPlana(ref)}
                     class="ref-btn"
-                    aria-label={`Abrir el PDF del ${ref.obra} de ${ref.autorCorto} (${ref.anio})`}
+                    aria-label={`Copiar la cita de ${ref.autorCorto} (${ref.anio}) en formato APA`}
                   >
-                    PDF
-                  </a>
-                )}
+                    <span data-rotulo>Copiar cita</span>
+                  </button>
 
-                {ref.pagina && (
-                  <a
-                    href={ref.pagina}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="ref-btn"
-                    aria-label={`Abrir la página del ${ref.obra} de ${ref.autorCorto} (${ref.anio}) en ${ref.sede}`}
-                  >
-                    Página del artículo
-                  </a>
-                )}
-
-                <!-- La cita en texto plano viaja en `data-cita` y la copia
-                     `mural/citas.ts`, que ademas deja el boton en «Copiado ✓»
-                     dos segundos. El aviso para lector de pantalla va en el
-                     `role="status"` de al lado: el `aria-label` del boton tapa
-                     el cambio de su propio rotulo. -->
-                <button
-                  type="button"
-                  data-cita={citaPlana(ref)}
-                  class="ref-btn"
-                  aria-label={`Copiar la cita de ${ref.autorCorto} (${ref.anio}) en formato APA`}
-                >
-                  <span data-rotulo>Copiar cita</span>
-                </button>
-
-                <span data-estado-cita role="status" class="sr-only"></span>
-              </div>
-            </li>
-          ))}
-        </ul>
-
-        <!-- ------------------------------------------ Créditos de la pieza -->
-        <div data-revelar class="dieta-revelar creditos mx-auto mt-12 max-w-[840px] telefono:mt-10">
-          <h3 class="creditos-titulo">Créditos de la pieza</h3>
-
-          <dl class="creditos-datos">
-            <dt>Obra</dt>
-            <dd>{CREDITOS.obra}</dd>
-            <dt>Pieza</dt>
-            <dd>{CREDITOS.pieza}</dd>
-            <dt>Ubicación</dt>
-            <dd>{CREDITOS.ubicacion}</dd>
-            <dt>Por</dt>
-            <dd>{CREDITOS.por}</dd>
-            <dt>Con el apoyo de</dt>
-            <dd>{CREDITOS.apoyo}</dd>
-            <dt>Año</dt>
-            <dd>{CREDITOS.anio}</dd>
-          </dl>
-
-          <p class="creditos-linea">“{CREDITOS.linea}”</p>
+                  <span data-estado-cita role="status" class="sr-only"></span>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
-      <!-- Datos estructurados de las cinco fuentes (ver `REFERENCIAS_JSONLD`).
+      <!-- Datos estructurados de las fuentes (ver `REFERENCIAS_JSONLD`).
            Va `is:inline` para que Astro lo deje pasar tal cual y no lo trate
            como un modulo de JavaScript. -->
       <script type="application/ld+json" is:inline set:html={JSON.stringify(REFERENCIAS_JSONLD)} />

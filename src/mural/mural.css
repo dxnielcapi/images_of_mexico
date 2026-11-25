@@ -695,17 +695,16 @@
     color: rgb(158 43 43 / 0.8);
   }
 
-  /* ==================================== referencias y creditos
+  /* ============================================== referencias
 
      La seccion `#referencias`: una ficha por fuente con la cita en APA, su
-     descripcion, la etiqueta de acceso y los enlaces al texto. Cierra el
-     bloque de creditos de la pieza, que no es una fuente y por eso va con
-     panel propio.
+     descripcion, la etiqueta de acceso y los enlaces al texto, todas en una
+     tira que se recorre de lado.
 
      Las fichas van en bajo relieve a proposito: un hilo de borde, el fondo
      del papel y nada de sombra. Lo que tiene que pesar en esta seccion es la
-     cita, no el recuadro que la rodea —son cinco seguidas, y cinco cajas
-     elevadas se leerian como cinco tarjetas de producto.
+     cita, no el recuadro que la rodea —son seis en fila, y seis cajas
+     elevadas se leerian como seis tarjetas de producto.
 
      Lo que no se encoge es la letra: 16px o mas en toda la seccion, mientras
      el resto de la pagina lee a 15px. Aqui hay citas largas, direcciones y
@@ -713,10 +712,67 @@
      sea mas chica es el aire y el adorno.
      ------------------------------------------------------------------ */
 
-  /* En pantalla ancha van de a dos por renglon: la rejilla la pone el
-     `.astro`, que ademas las estira a la misma altura. El sobrante de la
-     mas corta queda al pie, debajo de sus enlaces, y no como un hueco entre
-     el texto y los botones: la cita y su pie tienen que viajar juntos. */
+  /* La pista de la entrada: dice cuantas son y que la tira se recorre de
+     lado, que es lo unico que no se adivina mirando. */
+  .ref-pista {
+    margin-top: 14px;
+    font-size: var(--text-xl);
+    line-height: 1.5;
+    color: rgb(158 43 43 / 0.75);
+  }
+
+  /* La tira. Se desplaza el contenedor, no la pagina: `overflow-x` aqui y
+     nada que se desborde hacia afuera. El `scroll-snap` deja cada ficha
+     enganchada al borde izquierdo al soltar, para que no queden dos medias
+     fichas a la vista. */
+  .ref-carrusel {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    scroll-padding-left: 1px;
+    /* Aire entre la ultima linea de las fichas y la barra de desplazamiento. */
+    padding-bottom: 14px;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(158 43 43 / 0.35) rgb(226 217 201 / 0.5);
+  }
+
+  /* Enfocada con el teclado se recorre con las flechas, asi que tiene que
+     verse que esta enfocada. */
+  .ref-carrusel:focus-visible {
+    outline: 2px solid #9e2b2b;
+    outline-offset: 4px;
+    border-radius: 12px;
+  }
+
+  /* La barra, del grosor de un hilo y en el carmin de la seccion: la que
+     trae el navegador por defecto es una banda gris que parte la seccion. */
+  .ref-carrusel::-webkit-scrollbar { height: 8px; }
+  .ref-carrusel::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: rgb(226 217 201 / 0.5);
+  }
+  .ref-carrusel::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgb(158 43 43 / 0.35);
+  }
+  .ref-carrusel::-webkit-scrollbar-thumb:hover { background: rgb(158 43 43 / 0.55); }
+
+  .ref-tira {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  /* Cada ficha mide lo mismo y no se encoge: en pantalla ancha se ven dos y
+     el borde de la tercera, que es lo que anuncia que la tira sigue. En el
+     telefono entra una y asoma la siguiente; el 84vw no es capricho: con
+     menos, la cita mas larga se parte en tantos renglones que la tira
+     entera crece (a 76vw medía 118px mas de alto). */
+  .ref-tira > .ref-tarjeta {
+    flex: 0 0 clamp(282px, 84vw, 470px);
+    scroll-snap-align: start;
+  }
+
   .ref-tarjeta {
     border: 1px solid var(--color-line);
     border-radius: 10px;
@@ -841,58 +897,11 @@
     border-radius: 6px;
   }
 
-  /* ------------------------------------------------ creditos de la pieza */
-
-  /* Aparte de las referencias y con panel propio: lo de arriba son fuentes
-     que se consultan, esto es la autoria de la pieza. Con las fichas en bajo
-     relieve, es el unico bloque de la seccion con fondo propio —y por eso
-     mismo no necesita mas que un lavado de carmin. */
-  .creditos {
-    border: 1px solid rgb(158 43 43 / 0.22);
-    border-radius: 12px;
-    background: rgb(158 43 43 / 0.04);
-    padding: 24px 26px;
-  }
-
-  .creditos-titulo {
-    font-size: var(--text-2xl);
-    font-weight: var(--font-weight-mid);
-    letter-spacing: -0.015em;
-    color: #9e2b2b;
-  }
-
-  /* Clave y valor en dos columnas mientras quepan; en el telefono el valor
-     pasa debajo de su clave. */
-  .creditos-datos {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: 6px 20px;
-    margin-top: 14px;
-    font-size: var(--text-xl);
-    line-height: 1.5;
-  }
-  .creditos-datos dt { color: var(--color-muted); }
-  .creditos-datos dd { margin: 0; color: var(--color-ink); }
-
-  /* La linea de cita de la pieza, para quien la reproduzca. */
-  .creditos-linea {
-    margin-top: 18px;
-    border-left: 2px solid #9e2b2b;
-    padding-left: 15px;
-    font-size: var(--text-xl);
-    font-style: italic;
-    line-height: 1.55;
-    color: var(--color-ink);
-  }
-
   @media (width < 560px) {
     .ref-tarjeta { padding: 15px 14px; }
     /* Con la ficha angosta la sangria francesa se come media linea. */
     .ref-cita { padding-left: 1.2em; text-indent: -1.2em; }
     .ref-btn { padding: 6px 12px; }
-    .creditos { padding: 20px 18px; }
-    .creditos-datos { grid-template-columns: 1fr; gap: 2px; }
-    .creditos-datos dd { margin-bottom: 9px; }
   }
 
   /* ============================================================== kiosco */
@@ -1162,6 +1171,26 @@
     resize: none;
   }
   .campo-area:focus { border-color: var(--color-accent); }
+
+  /* Selector de estado de Mexico: mismo renglon que los inputs, con flecha sutil. */
+  .campo-select {
+    cursor: pointer;
+    padding-right: 26px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%236f6558' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 2px center;
+    background-size: 16px 16px;
+  }
+
+  /* Honeypot anti-bot: fuera de la vista para personas, accesible para bots simples. */
+  .campo-trampa {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
 
   /* --------------------------------- la escala de alimentacion = color */
 

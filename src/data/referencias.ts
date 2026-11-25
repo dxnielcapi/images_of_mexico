@@ -1,6 +1,6 @@
 /**
  * Las fuentes del proyecto: las investigaciones que sostienen lo que cuenta la
- * pagina y el credito de la pieza.
+ * pagina, la propia incluida.
  *
  * Van aqui y no en el `.astro` por lo mismo que `SENTIRES` vive en
  * `@data/person`: son datos, los lee mas de un sitio —la seccion
@@ -312,18 +312,3 @@ export const REFERENCIAS: Referencia[] = [
 export function citaPlana(ref: Referencia): string {
   return (ref.cita.map((t) => t.texto).join('') + (ref.url ?? '')).trim();
 }
-
-/** El credito de la pieza: va aparte de las referencias, no es una fuente. */
-export const CREDITOS = {
-  /** El titulo de la obra, el mismo con que la investigacion propia entra en
-   *  `REFERENCIAS` (ver `capistran-morales-2026`). */
-  obra: 'Los dioses siguen cuidando a sus hijos a través de su fruto',
-  pieza: 'Hacha',
-  ubicacion: 'Sala Mexica, Museo Nacional de Antropología (INAH), Ciudad de México',
-  por: 'Daniel Capistran Morales',
-  apoyo: 'María José Cruz Morazán',
-  anio: '2026',
-  linea:
-    'Hacha. Sala Mexica, Museo Nacional de Antropología, INAH. Por Daniel Capistran Morales, '
-    + 'con el apoyo de María José Cruz Morazán (2026).',
-};
