@@ -175,8 +175,8 @@ El sitio son tres páginas y nada más:
 
 | Ruta | Qué hay | Script |
 | --- | --- | --- |
-| `/` | El Hero, el mural interactivo, la escala de los ánimos, la puerta a la historia, el concepto, cómo participar y las referencias | `src/mural/main.ts` (el motor entero) |
-| `/historia` | «La historia de nuestros símbolos»: la visualización de datos, la violencia alimentaria estructurada, el mito de Quetzalcóatl, la dieta de la milpa y el tlacuilo | `src/mural/historia.ts` (ni una línea del motor) |
+| `/` | El Hero, el mural interactivo, el significado de la pieza, la puerta a la historia, el concepto, cómo participar y las referencias | `src/mural/main.ts` (el motor entero) |
+| `/historia` | «La historia de nuestros símbolos»: la visualización de datos —con las nueve muestras de la escala—, la violencia alimentaria estructurada, el mito de Quetzalcóatl, la dieta de la milpa y el tlacuilo | `src/mural/historia.ts` (del motor, solo el pincel de las muestras) |
 | `/timelapse` | La película del mural: la red vacía llenándose del primer registro al último | `src/mural/timelapse.ts` (el mismo cartel, sin kiosco) |
 
 Las tres secciones de `/historia` estaban en la portada, una tras otra. Se
@@ -185,10 +185,11 @@ lectura; la portada entra por la sección **La historia de nuestros símbolos**,
 que es el índice de las tres y lleva a la página.
 
 `/` y `/historia` comparten la cáscara (`layouts/Base.astro`), la barra y el
-pie (`components/Nav.astro` y `components/Footer.astro`) y las dos cosas de
-comportamiento que no son del mural: el revelado del texto con el scroll y el
-fondo de red de las secciones de la visualización, los dos en
-`src/mural/pagina.ts`. `/timelapse` comparte solo la cáscara: es un
+pie (`components/Nav.astro` y `components/Footer.astro`) y lo que una página de
+lectura le pide al mural sin ser el mural: el revelado del texto con el scroll,
+el fondo de red de las secciones de la visualización y las muestras de acuarela
+de la escala, los tres en `src/mural/pagina.ts`. Cada función pinta si
+encuentra su markup, así que cada ruta llama lo que le toca. `/timelapse` comparte solo la cáscara: es un
 reproductor, así que no lleva barra ni pie —la pantalla es el lienzo y los
 mandos— y su única salida escrita es el enlace de vuelta al mural. Una sección que cambie de ruta se mueve en el `.astro` y
 se le cambia la `ruta` en las listas de la barra y el pie: el `href` —ancla
@@ -394,9 +395,14 @@ al cargar (ver *El mapeo*).
 El relato de dónde sale la figura, en cinco secciones de texto corrido y en el
 orden del argumento:
 
-1. **Visualización de datos** — la herramienta: qué se está midiendo y por qué.
-   Cierra con el botón *Participa*, que aquí no abre nada sino que lleva al
-   mural de `/`.
+1. **Visualización de datos** — la herramienta: qué se está midiendo, con qué
+   y por qué. Debajo del texto van las nueve muestras de la escala, una por
+   tarjeta de cristal: la mancha de acuarela real del paso y su medidor de
+   pigmento. Estaban en «El significado de esta pieza», en la portada, sobre
+   el carmín; son el instrumento de medición, así que viven donde se explica
+   la herramienta —y el fondo de red que corre detrás es la misma red que
+   miden. Cierra con el botón *Participa*, que aquí no abre nada sino que
+   lleva al mural de `/`.
 2. **Violencia alimentaria estructurada** — el daño que la sección de arriba
    deja nombrado. **Falta el texto.**
 3. **El mito de Quetzalcóatl** — el centro: él al centro, la sangre y la
@@ -407,10 +413,9 @@ orden del argumento:
 5. **Tlacuilo** — el oficio del que viene la forma de contar. **Falta el
    texto.**
 
-Las dos que están pendientes tienen su `<section>` con el título puesto y un
-distintivo *Texto pendiente* en lugar del cuerpo; el comentario de arriba de
-cada una dice cómo entra el texto cuando llegue, y el distintivo se quita al
-ponerlo.
+Las dos que están pendientes tienen su `<section>` con el título puesto y nada
+debajo; el comentario de arriba de cada una dice cómo entra el texto cuando
+llegue.
 
 El orden sale de `PARTES`, en el frontmatter de `historia.astro`: de ahí se
 pinta el índice del encabezado. El cuerpo de cada sección está escrito a mano
@@ -424,15 +429,17 @@ Arriba, el encabezado con el título y el índice; abajo, el cierre que devuelve
 al mural. La entrada desde la portada es la sección **La historia de nuestros
 símbolos**, y la barra y el pie llevan de vuelta a cada parte de `/`.
 
-La página es texto y fotos, así que `src/mural/historia.ts` no carga nada del
-motor de acuarela —ni el dibujo, ni las zonas, ni el CSV, ni el
-`localStorage`—: solo enciende el revelado y el fondo de red de
-`src/mural/pagina.ts`. El bundle que baja son unos 19 KB contra los 74 KB de la
-portada.
+La página es texto, fotos y las nueve muestras, así que `src/mural/historia.ts`
+no carga el motor de acuarela —ni el dibujo, ni las zonas, ni el CSV, ni el
+`localStorage`—: enciende el revelado, el fondo de red y el pincel de las
+muestras, los tres de `src/mural/pagina.ts`. El JS que baja son unos 23 KB sin
+comprimir contra los 330 KB de la portada. Las muestras cuestan unos 7 KB de
+esos 23: el pincel (`src/ui/blob.ts`) y, con él, el esquema de persona, que es
+de donde sale `SENTIRES`.
 
-El fondo de red es el mismo andamio de «La escala de la alimentación», que se
-quedó en `/`: `pintarFondoDatos()` lleva la lista de las dos secciones y cada
-ruta aporta el lienzo que tiene. Mientras estuvieron seguidas, la animación
+El fondo de red es el mismo andamio de la sección del carmín de `/` (`#escala`,
+«El significado de esta pieza»): `pintarFondoDatos()` lleva la lista de las dos
+secciones y cada ruta aporta el lienzo que tiene. Mientras estuvieron seguidas, la animación
 cruzaba de la crema al carmín sin costura; por eso `fondoRed.ts` sigue
 aceptando varias capas.
 
@@ -1169,7 +1176,8 @@ public/Conceptos/    LA MESA DE REFERENCIAS DE «EL CONCEPTO»
                      una carpeta por grupo de la galería; los títulos y pies
                      viven en CONCEPTO_GRUPOS, arriba de src/pages/index.astro
                      Dieta_Milpa/ · Inspiracion_antepasados/
-                     Visualizacion_mito/  ← provisional, marcadores de sitio
+                     el grupo de la visualización va sin carpeta: sus piezas
+                     llevan archivo: null y se pintan como hueco gris
 
 public/samples/      EL BANCO DE PRUEBAS
                      datos_ejemplo.csv — gente simulada, solo si

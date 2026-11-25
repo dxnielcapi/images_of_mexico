@@ -37,7 +37,7 @@ import {
 import type { ShapeField } from '@core/render/field';
 import { SpatialGrid } from '@core/sampling/grid';
 import {
-  PERSON_FIELD_KEYS, PersonIds, SENTIRES, searchByName, todayIso, type Person,
+  PERSON_FIELD_KEYS, PersonIds, searchByName, todayIso, type Person,
 } from '@data/person';
 import { mapPerson, remapAll, zonasDisponibles, type MappingContext } from '@data/mapping';
 import { esUbicacionMexico } from '@data/mexico';
@@ -47,7 +47,6 @@ import {
 import { cargarMural, opcionesMural, redDeRegistros } from './cartel';
 import { personSearch, type PersonSearch } from '@ui/personPanel';
 import { registroForm, type RegistroAddResult, type RegistroForm } from '@ui/registroForm';
-import { paintBlob } from '@ui/blob';
 import { Tooltip } from '@ui/tooltip';
 import { createHeroReveal, type HeroReveal } from './heroReveal';
 import { crearTrazado } from './trazado';
@@ -1362,28 +1361,9 @@ function initLanding(): void {
   // Los botones «Copiar cita» de las referencias.
   initCitas();
 
-  // Muestras reales de acuarela para las tarjetas de la escala de la pagina.
-  // La semilla se queda como estaba (`animo|<nombre>`): es lo que hace que
-  // cada paso tenga siempre la misma silueta, en la pagina y en el alta.
-  for (const node of document.querySelectorAll<HTMLCanvasElement>('canvas[data-sentir]')) {
-    const name = node.dataset.sentir ?? '';
-    const sentir = SENTIRES.find((s) => s.name === name);
-    if (!sentir) continue;
-
-    paintBlob(node, ramp, sentir.valor, { size: 58, seed: `animo|${sentir.name}` });
-
-    // El medidor de la tarjeta se tine con el pigmento de su mancha, no con
-    // un carmin de adorno: la barra y la muestra tienen que ser el mismo
-    // color de la rampa para que el numero y la mancha digan lo mismo.
-    const tarjeta = node.closest<HTMLElement>('.escala-tarjeta');
-    if (tarjeta) {
-      const { r, g, b } = ramp.at(sentir.valor);
-      tarjeta.style.setProperty(
-        '--tinta',
-        `rgb(${Math.round(r)} ${Math.round(g)} ${Math.round(b)})`
-      );
-    }
-  }
+  // Las muestras de la escala no estan en esta pagina: se fueron con su
+  // seccion a «Visualización de datos» y las pinta `./historia.ts` con
+  // `pintarMuestrasEscala()` (en `./pagina.ts`), que es el mismo pincel.
 
   // Botones del Hero y las secciones que bajan al mural y abren un panel.
   for (const btn of document.querySelectorAll<HTMLElement>('[data-mural-action]')) {

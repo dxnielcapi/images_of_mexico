@@ -9,15 +9,16 @@
  * para que `/` abra con el mural y no con seis pantallas de lectura, y la
  * portada entra por la seccion «La historia de nuestros símbolos».
  *
- * Es texto y fotos: nada de esto necesita el motor de acuarela. El `<script>`
- * del final carga `src/mural/historia.ts`, que solo enciende el revelado de
- * los bloques y los fragmentos de red del fondo —el mural, su CSV y el
- * `localStorage` se quedan en `/`.
+ * Es texto, fotos y las nueve muestras de la escala. El `<script>` del final
+ * carga `src/mural/historia.ts`, que enciende el revelado de los bloques, los
+ * fragmentos de red del fondo y el pincel de las muestras —el mural, su CSV y
+ * el `localStorage` se quedan en `/`.
  */
 import Base from '../layouts/Base.astro';
 import Nav from '@components/Nav.astro';
 import Footer from '@components/Footer.astro';
 import '../styles/app.css';
+import { SENTIRES } from '@data/person';
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -101,10 +102,12 @@ const DIETA_FOTOS = [
     </section>
 
     <!-- ========================================== 01 · Visualización de datos -->
-    <!-- Las tres secciones de esta pagina son texto corrido: sin tarjetas ni
-         recuadros, el orden es el del argumento. Primero qué se está midiendo
-         (los datos), luego de dónde sale la forma de medirlo (el mito) y qué
-         sostiene a ese mito (la milpa). -->
+    <!-- Las secciones de esta pagina son texto corrido y el orden es el del
+         argumento: primero qué se está midiendo y con qué (los datos), luego
+         de dónde sale la forma de medirlo (el mito) y qué sostiene a ese mito
+         (la milpa). El único recuadro de la pagina son las nueve muestras de
+         la escala, aquí abajo: son el instrumento, y van donde se explica la
+         herramienta. -->
     <section id="datos" class="relative isolate scroll-mt-[60px] border-t border-line/80 py-20 px-5 telefono:py-12 telefono:px-3.5">
       <!-- Fondo: la misma red del mural, tenue y en movimiento. La escena
            queda clavada en la pantalla y no se mueve en ningun momento. El
@@ -164,6 +167,41 @@ const DIETA_FOTOS = [
           </p>
         </blockquote>
 
+        <!-- Con qué se mide: los nueve pasos de `SENTIRES`, uno por tarjeta
+             —la muestra de acuarela real y, al lado, la respuesta con el
+             medidor del pigmento que le toca. Estaban en «El significado de
+             esta pieza» (`index.astro`), sobre el carmin; aqui son el
+             instrumento de la herramienta que esta seccion explica, y el
+             fondo de red que corre detras es el de la misma red que miden.
+
+             El canvas lo pinta `src/mural/historia.ts` con el pincel del
+             mural, y de esa misma rampa sale el color de la barra. El
+             porcentaje no se escribe —la barra ya lo dice— pero va en el
+             `aria-label` para quien lee la pagina con lector de pantalla. -->
+        <ul class="escala-rejilla mt-9 telefono:mt-7">
+          {SENTIRES.map((s) => (
+            <li data-revelar class="dieta-revelar glass-card escala-tarjeta">
+              <canvas
+                data-sentir={s.name}
+                width="58"
+                height="58"
+                class="blob escala-mancha"
+              ></canvas>
+
+              <div class="escala-cuerpo">
+                <h3 class="escala-nombre">{s.name}</h3>
+
+                <div
+                  class="escala-medidor"
+                  role="img"
+                  aria-label={`Intensidad del pigmento: ${Math.round(s.valor * 100)}%`}
+                >
+                  <span class="escala-relleno" style={`width: ${Math.round(s.valor * 100)}%`}></span>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
 
         <!-- En `/` este boton abre el alta sobre el mural; aqui no hay mural
              que abrir, asi que el mismo rotulo lleva al de la portada. -->
@@ -184,8 +222,7 @@ const DIETA_FOTOS = [
          Falta el texto: llega de quien escribe la pieza y entra tal cual
          debajo del titulo, un `<p data-revelar class="dieta-revelar mt-3
          text-lg leading-[1.7] text-muted">` por parrafo —el primero con
-         `mt-7`— igual que en las secciones de arriba. El distintivo de
-         «texto pendiente» se quita al ponerlo. -->
+         `mt-7`— igual que en las secciones de arriba. -->
     <section id="violencia" class="scroll-mt-[60px] border-t border-line/80 py-20 px-5 telefono:py-12 telefono:px-3.5">
       <div class="mx-auto max-w-[760px]">
         <!-- El revelado va en la envoltura y no en el <h2>: el titulo tiene
@@ -197,9 +234,7 @@ const DIETA_FOTOS = [
           </h2>
         </div>
 
-        <p data-revelar class="dieta-revelar mt-7">
-          <span class="concepto-pendiente">Texto pendiente</span>
-        </p>
+        <!-- Aqui va el texto. -->
       </div>
     </section>
 
@@ -355,8 +390,7 @@ const DIETA_FOTOS = [
          Falta el texto: llega de quien escribe la pieza y entra tal cual
          debajo del titulo, un `<p data-revelar class="dieta-revelar mt-3
          text-lg leading-[1.7] text-muted">` por parrafo —el primero con
-         `mt-7`— igual que en las secciones de arriba. El distintivo de
-         «texto pendiente» se quita al ponerlo. -->
+         `mt-7`— igual que en las secciones de arriba. -->
     <section id="tlacuilo" class="scroll-mt-[60px] border-t border-line/80 py-20 px-5 telefono:py-12 telefono:px-3.5">
       <div class="mx-auto max-w-[760px]">
         <!-- El revelado va en la envoltura y no en el <h2>: el titulo tiene
@@ -368,9 +402,7 @@ const DIETA_FOTOS = [
           </h2>
         </div>
 
-        <p data-revelar class="dieta-revelar mt-7">
-          <span class="concepto-pendiente">Texto pendiente</span>
-        </p>
+        <!-- Aqui va el texto. -->
       </div>
     </section>
 

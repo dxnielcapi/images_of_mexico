@@ -1,15 +1,20 @@
 /**
- * Lo que las dos rutas publicas tienen en comun: el revelado del texto con el
- * scroll y el fondo de red de las secciones de la visualizacion.
+ * Lo que las paginas de lectura necesitan del mural sin ser el mural: el
+ * revelado del texto con el scroll, el fondo de red de las secciones de la
+ * visualizacion y las nueve muestras de la escala.
  *
  * Esto vivia dentro de `main.ts` cuando la pagina era una sola. Al partirse en
  * dos —el mural y lo que lo explica en `/`, el relato en `/historia`— lo de
- * aqui es justo lo que necesitan las dos, y ninguna de las dos funciones toca
- * nada del motor de acuarela: `/historia` las enciende (ver `./historia.ts`)
- * sin cargar el mural.
+ * aqui es lo que las dos pueden pedir sin arrastrar el motor de acuarela:
+ * ninguna de las tres funciones monta el kiosco ni carga el dibujo, el CSV o
+ * el `localStorage`. Cada una pinta si encuentra su markup y se calla si no,
+ * asi que las dos rutas llaman lo que les toca y hoy las muestras solo estan
+ * en `/historia` (ver `./historia.ts`).
  */
 import type { ColorRamp } from '@core/render/palette';
 import { medidasParaDibujo } from '@core/render/medidas';
+import { SENTIRES } from '@data/person';
+import { paintBlob } from '@ui/blob';
 import { crearFondoRed, type CapaFondo } from './fondoRed';
 
 /**
@@ -100,4 +105,34 @@ export function pintarFondoDatos(ramp: ColorRamp): void {
   if (!capas.length) return;
   fondoDatos = true;
   crearFondoRed(capas, { ramp, params: medidasParaDibujo(LADO_PLANTILLA, 0).red });
+}
+
+/**
+ * Las muestras reales de acuarela de la escala: un canvas por paso de
+ * `SENTIRES`, con el pincel y la rampa del mural. Lo que se ve en la tarjeta
+ * es, literalmente, el pigmento que ese paso deja en el muro.
+ *
+ * La semilla es la de siempre (`animo|<nombre>`): es lo que hace que cada
+ * paso tenga la misma silueta en la pagina y en el alta.
+ */
+export function pintarMuestrasEscala(ramp: ColorRamp): void {
+  for (const node of document.querySelectorAll<HTMLCanvasElement>('canvas[data-sentir]')) {
+    const name = node.dataset.sentir ?? '';
+    const sentir = SENTIRES.find((s) => s.name === name);
+    if (!sentir) continue;
+
+    paintBlob(node, ramp, sentir.valor, { size: 58, seed: `animo|${sentir.name}` });
+
+    // El medidor de la tarjeta se tine con el pigmento de su mancha, no con
+    // un carmin de adorno: la barra y la muestra tienen que ser el mismo
+    // color de la rampa para que el numero y la mancha digan lo mismo.
+    const tarjeta = node.closest<HTMLElement>('.escala-tarjeta');
+    if (tarjeta) {
+      const { r, g, b } = ramp.at(sentir.valor);
+      tarjeta.style.setProperty(
+        '--tinta',
+        `rgb(${Math.round(r)} ${Math.round(g)} ${Math.round(b)})`
+      );
+    }
+  }
 }

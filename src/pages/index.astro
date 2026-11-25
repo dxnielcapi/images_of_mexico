@@ -17,11 +17,30 @@ import Base from '../layouts/Base.astro';
 import Nav from '@components/Nav.astro';
 import Footer from '@components/Footer.astro';
 import '../styles/app.css';
-import { SENTIRES } from '../data/person';
 import { REFERENCIAS, citaPlana } from '../data/referencias';
 import { PLANTILLA_DIBUJO } from '../io/plantilla';
 
 const BASE = import.meta.env.BASE_URL;
+
+/** Una pieza de la mesa: la imagen y lo que va escrito debajo de ella. */
+interface ConceptoPieza {
+  /** Ruta dentro de `public/Conceptos/`, o `null` si la imagen de esa pieza
+   *  todavia no existe: entonces la galeria pinta el hueco gris. */
+  archivo: string | null;
+  ancho: number;
+  alto: number;
+  titulo: string;
+  pie: string;
+  /** El alternativo de la foto. Las piezas pendientes no lo llevan: un hueco
+   *  gris no tiene nada que describirle a quien no ve la pagina. */
+  alt?: string;
+}
+
+interface ConceptoGrupo {
+  titulo: string;
+  bajada: string;
+  piezas: ConceptoPieza[];
+}
 
 /** La mesa de referencias de `#concepto`: cada grupo es una carpeta de
  *  `public/Conceptos/` y el orden de aqui es el que sale en la pagina —el
@@ -32,18 +51,17 @@ const BASE = import.meta.env.BASE_URL;
  *  corregir `archivo`, `alto`/`ancho` (van en el `<img>` para que el hueco
  *  quede reservado antes de que baje la foto) y los textos.
  *
- *  `Visualizacion_mito` va con `provisional: true`: lo que hay ahi son
- *  marcadores de sitio —dos referencias de visualizacion y la portada del
- *  libro— hasta que existan las imagenes propias de esa parte. El
- *  distintivo del encabezado lo anuncia; al reemplazarlas, se quita. */
-const CONCEPTO_GRUPOS = [
+ *  Las piezas de `Visualización de datos` van con `archivo: null`: ahi no hay
+ *  imagen propia todavia, asi que en su lugar queda un hueco gris con la
+ *  proporcion que va a tener la obra. Para estrenarla, el archivo en su
+ *  carpeta, la ruta en `archivo` y su `alt`. */
+const CONCEPTO_GRUPOS: ConceptoGrupo[] = [
   {
     titulo: 'Dieta de la milpa · Comercio en la etapa de los mexicas',
     bajada:
       'La dieta de la milpa se ha mantenido en nuestra cultura de manera intacta desde hace ' +
       'décadas; sigue vigente en muchas comunidades rurales de nuestro territorio, que la ' +
       'llevan adelante.',
-    provisional: false,
     piezas: [
       {
         archivo: 'Dieta_Milpa/dieta.webp',
@@ -76,43 +94,33 @@ const CONCEPTO_GRUPOS = [
     bajada:
       'Usamos de referencia los network graphs, asimilando los astros que pudieron ser ' +
       'estudiados gracias a la misma ciencia que nos dejó Quetzalcóatl.',
-    provisional: true,
     piezas: [
       {
-        archivo: 'Visualizacion_mito/red_testimonios.jpg',
+        archivo: null,
         ancho: 1100,
         alto: 1040,
         titulo: 'La red de testimonios',
         pie:
           'La visualización de datos también hace referencia a esa ciencia que nos dejó, ' +
           'pudiendo utilizarla para alzar la voz mediante esta herramienta.',
-        alt:
-          'Visualización de datos en forma de red: miles de puntos de colores unidos por hilos, ' +
-          'dispuestos en anillo sobre fondo oscuro.',
       },
       {
-        archivo: 'Visualizacion_mito/espiral_datos.jpg',
+        archivo: null,
         ancho: 1100,
         alto: 995,
         titulo: 'Uso de espirales',
         pie:
           'El uso de formas en espiral hace referencia a todo este ciclo en la vida, el mismo ' +
           'que utilizaban anteriormente nuestras culturas del México antiguo.',
-        alt:
-          'Visualización de datos circular: anillos de barras azules y naranjas girando ' +
-          'alrededor de un punto central.',
       },
       {
-        archivo: 'Visualizacion_mito/historia_graficos.jpg',
+        archivo: null,
         ancho: 696,
         alto: 1000,
         titulo: 'Color del mural',
         pie:
           'El rojo se escogió porque somos la sangre de Quetzalcóatl: de él venimos, él es el ' +
           'protector de nuestro pueblo.',
-        alt:
-          'Portada del libro History of Information Graphics, con un mapa antiguo de coladas de ' +
-          'lava en colores.',
       },
     ],
   },
@@ -120,7 +128,6 @@ const CONCEPTO_GRUPOS = [
     titulo: 'Inspiración de nuestros antepasados',
     bajada:
       'De dónde viene la forma: los códices y las piedras labradas.',
-    provisional: false,
     piezas: [
       {
         archivo: 'Inspiracion_antepasados/codice.webp',
@@ -304,12 +311,17 @@ const REFERENCIAS_JSONLD = {
 
     <!-- ====================================== 02 · La escala de la alimentación -->
     <!-- Las secciones de abajo son texto corrido: sin tarjetas ni recuadros,
-         el orden es el del argumento. Primero con qué se mide el mural (la
-         escala de los ánimos), luego de dónde sale su figura —eso es
-         `/historia`, y aquí entra por la seccion que la anuncia— y después
-         cómo se armó todo (el concepto). La única excepción es la última,
-         «Cómo participar»: ahí las preguntas sí van en tarjetas que se
-         despliegan. -->
+         el orden es el del argumento. Primero por qué existe la pieza, luego
+         de dónde sale su figura —eso es `/historia`, y aquí entra por la
+         seccion que la anuncia— y después cómo se armó todo (el concepto). La
+         única excepción es la última, «Cómo participar»: ahí las preguntas sí
+         van en tarjetas que se despliegan.
+
+         Las nueve muestras de la escala iban aquí, debajo del texto. Se
+         fueron a «Visualización de datos» (`historia.astro`), que es donde se
+         explica la herramienta con la que se mide: la escala es el
+         instrumento, no el significado. El `id` de la seccion sigue siendo
+         `escala` porque es el del mapa del sitio y el del pie. -->
     <section id="escala" class="relative isolate scroll-mt-[60px] border-t border-[#7d1f22] bg-[#9e2b2b] py-20 px-5 telefono:py-12 telefono:px-3.5">
       <!-- El fondo de red, con el andamio de tres capas: recorte al ras de
            la seccion, riel con una pantalla de holgura por lado —para que la
@@ -320,8 +332,7 @@ const REFERENCIAS_JSONLD = {
            `src/mural/pagina.ts`) y cada ruta aporta el lienzo que tiene.
 
            Va en `-z-10` dentro de la seccion, que es contexto de apilamiento
-           (`isolate`): asi queda encima del carmin y debajo del texto y las
-           tarjetas.
+           (`isolate`): asi queda encima del carmin y debajo del texto.
 
            Sobre el carmin el lienzo no se funde como arriba sino que aclara
            (`mix-blend-screen`), y antes de mezclarse se le va el color y se
@@ -337,86 +348,51 @@ const REFERENCIAS_JSONLD = {
         </div>
       </div>
 
-      <div class="relative mx-auto max-w-[1120px]">
-        <div class="mx-auto max-w-[760px]">
-          <!-- El revelado va en la envoltura y no en el <h2>: el titulo tiene
-               su propia animacion de opacidad (la brasa) y una animacion le
-               gana a la transicion del revelado. -->
-          <div data-titulo class="titulo-revelar">
-            <h2 class="seccion-titulo seccion-titulo-claro text-[42px] font-mid leading-[1.08] tracking-[-0.025em] md:text-[56px] telefono:text-[30px]">
-              El significado de esta pieza
-            </h2>
-          </div>
-          <p data-revelar class="dieta-revelar mt-7 text-lg leading-[1.7] text-white/85">
-            El problema de la alimentación en México y su relación con la falta de idiosincrasia
-            es algo que no estamos acostumbrados a escuchar, pero eso no significa que no se
-            tenga que decir algo al respecto.
-          </p>
-          <p data-revelar class="dieta-revelar mt-7 text-lg leading-[1.7] text-white/85">
-            Durante años, como pueblo, nos hemos visto rezagados ante la indiferencia de nuestros
-            gobernantes, y esa indiferencia ha comenzado a tocar puntos donde cosas
-            indispensables para la sobrevivencia se han visto afectadas: el apoyo a otros
-            sectores que solo buscan un bien económico ha comenzado a desplazar sigilosamente a
-            toda la población, desde cosas bastante «simples» —como acceder a alimentos
-            superprocesados de manera más rápida que a los alimentos que nos pertenecen como
-            identidad de mexicanos y que han estado en nuestra civilización desde hace miles de
-            años— hasta graves crímenes y atentados contra la población, como el desplazamiento
-            de su lugar de origen o la afectación de su economía. Y no hablamos solo de una
-            persona: hablamos de escalas más grandes, como las poblaciones que viven del sistema
-            agroalimentario de la milpa.
-          </p>
-          <p data-revelar class="dieta-revelar mt-7 text-lg leading-[1.7] text-white/85">
-            Buscamos dar un llamado y que se visibilice todo esto que nos afecta: al final se
-            está beneficiando a aquellos que solo buscan aprovecharse de nosotros, en vez de a
-            aquellos que día con día levantamos a este país, mantenemos su cultura y vivimos con
-            sus raíces.
-            En esta pieza lo relatamos mediante la visualización de datos: todos los testimonios
-            de un pueblo, ya sean trabajadores, transportistas, estudiantes, maestros,
-            comerciantes, gente que se dedica a un oficio o una profesión. No se busca enfocarse
-            en un solo sector: estamos hablando de toda una población, de todo un pueblo que día
-            con día sostiene a este país y al que ni siquiera se le puede brindar una
-            alimentación digna.
-          </p>
+      <div class="relative mx-auto max-w-[760px]">
+        <!-- El revelado va en la envoltura y no en el <h2>: el titulo tiene
+             su propia animacion de opacidad (la brasa) y una animacion le
+             gana a la transicion del revelado. -->
+        <div data-titulo class="titulo-revelar">
+          <h2 class="seccion-titulo seccion-titulo-claro text-[42px] font-mid leading-[1.08] tracking-[-0.025em] md:text-[56px] telefono:text-[30px]">
+            El significado de esta pieza
+          </h2>
         </div>
+        <p data-revelar class="dieta-revelar mt-7 text-lg leading-[1.7] text-white/85">
+          El problema de la alimentación en México y su relación con la falta de idiosincrasia
+          es algo que no estamos acostumbrados a escuchar, pero eso no significa que no se
+          tenga que decir algo al respecto.
+        </p>
+        <p data-revelar class="dieta-revelar mt-7 text-lg leading-[1.7] text-white/85">
+          Durante años, como pueblo, nos hemos visto rezagados ante la indiferencia de nuestros
+          gobernantes, y esa indiferencia ha comenzado a tocar puntos donde cosas
+          indispensables para la sobrevivencia se han visto afectadas: el apoyo a otros
+          sectores que solo buscan un bien económico ha comenzado a desplazar sigilosamente a
+          toda la población, desde cosas bastante «simples» —como acceder a alimentos
+          superprocesados de manera más rápida que a los alimentos que nos pertenecen como
+          identidad de mexicanos y que han estado en nuestra civilización desde hace miles de
+          años— hasta graves crímenes y atentados contra la población, como el desplazamiento
+          de su lugar de origen o la afectación de su economía. Y no hablamos solo de una
+          persona: hablamos de escalas más grandes, como las poblaciones que viven del sistema
+          agroalimentario de la milpa.
+        </p>
+        <p data-revelar class="dieta-revelar mt-7 text-lg leading-[1.7] text-white/85">
+          Buscamos dar un llamado y que se visibilice todo esto que nos afecta: al final se
+          está beneficiando a aquellos que solo buscan aprovecharse de nosotros, en vez de a
+          aquellos que día con día levantamos a este país, mantenemos su cultura y vivimos con
+          sus raíces.
+          En esta pieza lo relatamos mediante la visualización de datos: todos los testimonios
+          de un pueblo, ya sean trabajadores, transportistas, estudiantes, maestros,
+          comerciantes, gente que se dedica a un oficio o una profesión. No se busca enfocarse
+          en un solo sector: estamos hablando de toda una población, de todo un pueblo que día
+          con día sostiene a este país y al que ni siquiera se le puede brindar una
+          alimentación digna.
+        </p>
 
-        <!-- Los nueve pasos, uno por tarjeta: la muestra de acuarela real y,
-             al lado, la respuesta con el medidor del pigmento que le toca. El
-             canvas lo pinta `main.ts` con el pincel del mural, y de esa misma
-             rampa sale el color de la barra. El porcentaje no se escribe —la
-             barra ya lo dice— pero va en el `aria-label` para quien lee la
-             pagina con lector de pantalla. -->
-        <div class="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 telefono:gap-2.5">
-          {SENTIRES.map((s) => (
-            <article data-revelar class="dieta-revelar escala-tarjeta">
-              <canvas
-                data-sentir={s.name}
-                width="58"
-                height="58"
-                class="blob escala-mancha"
-              ></canvas>
-
-              <div class="escala-cuerpo">
-                <h3 class="escala-nombre">{s.name}</h3>
-
-                <div
-                  class="escala-medidor"
-                  role="img"
-                  aria-label={`Intensidad del pigmento: ${Math.round(s.valor * 100)}%`}
-                >
-                  <span class="escala-relleno" style={`width: ${Math.round(s.valor * 100)}%`}></span>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        <div class="mx-auto mt-10 max-w-[760px]">
-          <p data-revelar class="dieta-revelar text-lg leading-[1.7] text-white/85">
-            Nuestra visualización busca expresar este llamado de atención: que las personas
-            puedan sentirse escuchadas, que tengan un espacio donde se les permita alzar la voz,
-            aunque sea por un momento.
-          </p>
-        </div>
+        <p data-revelar class="dieta-revelar mt-7 text-lg leading-[1.7] text-white/85">
+          Nuestra visualización busca expresar este llamado de atención: que las personas
+          puedan sentirse escuchadas, que tengan un espacio donde se les permita alzar la voz,
+          aunque sea por un momento.
+        </p>
       </div>
     </section>
 
@@ -515,25 +491,28 @@ const REFERENCIAS_JSONLD = {
                   {grupo.titulo}
                 </h3>
                 <p class="mt-2 text-md leading-[1.6] text-muted">{grupo.bajada}</p>
-                {grupo.provisional && (
-                  <p class="mt-4">
-                    <span class="concepto-pendiente">Imágenes provisionales</span>
-                  </p>
-                )}
               </div>
 
               <div class="concepto-rejilla mt-8" data-columnas={grupo.piezas.length >= 3 ? '3' : '2'}>
                 {grupo.piezas.map((pieza) => (
                   <figure data-revelar class="dieta-revelar concepto-figura">
                     <div class="concepto-marco">
-                      <img
-                        src={`${BASE}Conceptos/${pieza.archivo}`}
-                        alt={pieza.alt}
-                        width={pieza.ancho}
-                        height={pieza.alto}
-                        loading="lazy"
-                        decoding="async"
-                      />
+                      {pieza.archivo ? (
+                        <img
+                          src={`${BASE}Conceptos/${pieza.archivo}`}
+                          alt={pieza.alt}
+                          width={pieza.ancho}
+                          height={pieza.alto}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div
+                          class="concepto-hueco"
+                          style={`aspect-ratio: ${pieza.ancho} / ${pieza.alto}`}
+                          aria-hidden="true"
+                        />
+                      )}
                     </div>
                     <figcaption class="concepto-pie">
                       <span class="concepto-pie-titulo">{pieza.titulo}</span>
@@ -721,7 +700,7 @@ const REFERENCIAS_JSONLD = {
         >
           <ul class="ref-tira">
             {REFERENCIAS.map((ref) => (
-              <li id={ref.id} data-revelar class="dieta-revelar ref-tarjeta">
+              <li id={ref.id} data-revelar class="dieta-revelar glass-card ref-tarjeta">
                 <p class="ref-cita">
                   {ref.cita.map((tramo) => (tramo.cursiva ? <em>{tramo.texto}</em> : tramo.texto))}{ref.url && (
                     <a

@@ -197,18 +197,35 @@
 
   /* ============================================ la escala en tarjetas
 
-     Los nueve pasos de `SENTIRES` en la seccion `#escala`, uno por tarjeta
-     sobre el carmin del fondo. Antes iban los nueve dentro de un solo
-     recuadro crema a nueve columnas: la muestra de acuarela quedaba del
-     tamano de un icono y los nombres largos ("ni bien ni mal") partian en
-     tres renglones. La tarjeta lleva lo justo —la mancha, la respuesta y
+     Los nueve pasos de `SENTIRES`, uno por tarjeta, en «Visualización de
+     datos» (`#datos` de `/historia`). Antes iban los nueve dentro de un
+     solo recuadro crema a nueve columnas: la muestra de acuarela quedaba
+     del tamano de un icono y los nombres largos ("ni bien ni mal") partian
+     en tres renglones. La tarjeta lleva lo justo —la mancha, la respuesta y
      el medidor— y por eso puede ser baja: de un vistazo se leen los nueve.
 
-     El color del medidor no esta aqui: lo pone `main.ts` en `--tinta` con
-     la misma rampa que pinta el mural, asi que la barra y la mancha de al
-     lado son exactamente el mismo pigmento. El valor escrito es el
+     Estuvieron en `#escala` de la portada, sobre el carmin, y de ahi venia
+     su canto blanco. Ahora caen en la columna de lectura de una seccion de
+     papel con el fondo de red corriendo detras, asi que el recuadro lo
+     pone `.glass-card` —el mismo cristal de las fichas de referencias— y
+     aqui solo quedan la forma, el aire y el medidor. El cristal deja pasar
+     la red: es la misma que las muestras miden.
+
+     El color del medidor no esta aqui: lo pone `historia.ts` en `--tinta`
+     con la misma rampa que pinta el mural, asi que la barra y la mancha de
+     al lado son exactamente el mismo pigmento. El valor escrito es el
      respaldo, para que la barra no salga incolora si el script no corre.
      ------------------------------------------------------------------ */
+
+  /* Tantas columnas como quepan sin bajar de 210px: la rejilla mide contra
+     la columna del texto (760px dan tres) y no contra la pantalla, que es
+     lo que hacian los `sm:`/`lg:` de cuando la seccion era a todo lo
+     ancho. */
+  .escala-rejilla {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+  }
 
   .escala-tarjeta {
     --tinta: #b82b41;
@@ -217,13 +234,8 @@
        se centra contra ella y no contra el borde de arriba. */
     align-items: center;
     gap: 13px;
-    padding: 12px 16px;
+    padding: 12px 14px;
     border-radius: 14px;
-    /* Papel con un canto claro: sobre el carmin de la seccion un borde
-       oscuro cerraria la tarjeta y la separaria del fondo de golpe. */
-    border: 1px solid rgb(255 255 255 / 0.55);
-    background: linear-gradient(168deg, #fffdf8 0%, #f8f2e7 100%);
-    box-shadow: 0 12px 26px -16px rgb(40 10 10 / 0.6);
   }
 
   /* La muestra. El tamano queda reservado desde la hoja para que la
@@ -502,7 +514,9 @@
     gap: 2px 12px;
     padding: 18px 2px;
     border-bottom: 1px solid var(--color-line);
-    transition: padding-left 0.18s ease, border-color 0.18s ease;
+    transition:
+      padding-left 0.28s cubic-bezier(0.22, 0.61, 0.36, 1),
+      border-color 0.28s ease;
   }
 
   .historia-numero {
@@ -537,7 +551,7 @@
      fila encendida despues del toque. */
   @media (hover: hover) {
     .historia-fila:hover {
-      padding-left: 8px;
+      padding-left: 22px;
       border-color: var(--color-wash-line);
     }
     .historia-fila:hover .historia-nombre { color: #9e2b2b; }
@@ -580,8 +594,9 @@
 
   /* ==================================== la mesa de referencias
 
-     La galeria de `#concepto`: tres grupos, uno por carpeta de
-     `public/Conceptos`. Las fotos llegan en dos formatos —vertical de
+     La galeria de `#concepto`: tres grupos, cada uno con su carpeta en
+     `public/Conceptos` —salvo el que todavia espera sus imagenes, que va
+     en huecos grises. Las fotos llegan en dos formatos —vertical de
      telefono y horizontal de vitrina— y una rejilla de celdas iguales
      tendria que recortar los codices justo por donde se leen. Por eso va
      en columnas y no en `grid`: cada figura conserva su proporcion y la
@@ -629,6 +644,15 @@
     transition:
       transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1),
       filter 0.4s ease;
+  }
+
+  /* La pieza que todavia no tiene imagen propia: el marco se queda y lo
+     rellena un gris plano con la proporcion que va a tener la obra, para que
+     el grupo no se descuadre mientras llega. */
+  .concepto-hueco {
+    display: block;
+    width: 100%;
+    background: #e7e2da;
   }
 
   .concepto-figura:hover .concepto-marco {
@@ -680,43 +704,29 @@
     background: linear-gradient(90deg, rgb(158 43 43 / 0.3) 0%, rgb(158 43 43 / 0) 100%);
   }
 
-  /* El grupo que todavia espera sus imagenes propias: el distintivo avisa
-     que lo que se ve son marcadores de sitio y no la obra. */
-  .concepto-pendiente {
-    display: inline-block;
-    border: 1px dashed rgb(158 43 43 / 0.4);
-    border-radius: 999px;
-    padding: 3px 11px;
-    background: rgb(158 43 43 / 0.05);
-    font-family: var(--font-mono);
-    font-size: var(--text-2xs);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: rgb(158 43 43 / 0.8);
-  }
-
   /* ============================================== referencias
 
      La seccion `#referencias`: una ficha por fuente con la cita en APA, su
      descripcion, la etiqueta de acceso y los enlaces al texto, todas en una
      tira que se recorre de lado.
 
-     Las fichas van en bajo relieve a proposito: un hilo de borde, el fondo
-     del papel y nada de sombra. Lo que tiene que pesar en esta seccion es la
-     cita, no el recuadro que la rodea —son seis en fila, y seis cajas
-     elevadas se leerian como seis tarjetas de producto.
+     Las fichas son de cristal: el `.glass-card` del Hero, que las despega
+     del papel sin encerrarlas en una caja opaca. Al pasar el cursor se
+     levantan cuatro pixeles y la sombra se abre; de ahi el aire que la tira
+     reserva arriba, porque lo que sobresale de un contenedor con
+     `overflow` se recorta.
 
-     Lo que no se encoge es la letra: 16px o mas en toda la seccion, mientras
-     el resto de la pagina lee a 15px. Aqui hay citas largas, direcciones y
-     nombres propios que se copian a ojo. Lo que se recorta para que la ficha
-     sea mas chica es el aire y el adorno.
+     La escala es la chica de la pagina: la cita a 14px, la descripcion a 13
+     y la etiqueta a 12. Caben mas fichas a la vista y la cita sigue
+     legible; si hiciera falta volver a la escala grande, son los cuatro
+     `font-size` de aqui abajo.
      ------------------------------------------------------------------ */
 
   /* La pista de la entrada: dice cuantas son y que la tira se recorre de
      lado, que es lo unico que no se adivina mirando. */
   .ref-pista {
-    margin-top: 14px;
-    font-size: var(--text-xl);
+    margin-top: 12px;
+    font-size: var(--text-base);
     line-height: 1.5;
     color: rgb(158 43 43 / 0.75);
   }
@@ -729,9 +739,13 @@
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x proximity;
-    scroll-padding-left: 1px;
-    /* Aire entre la ultima linea de las fichas y la barra de desplazamiento. */
-    padding-bottom: 14px;
+    /* El relleno es el margen de maniobra de la levantada: sin el, el
+       contenedor recortaria la ficha en alto y su sombra a los lados. Los
+       margenes negativos lo devuelven a la columna del texto, y el
+       `scroll-padding` deja el enganche al ras de la primera ficha. */
+    margin-inline: -8px;
+    padding: 10px 8px 16px;
+    scroll-padding-left: 8px;
     scrollbar-width: thin;
     scrollbar-color: rgb(158 43 43 / 0.35) rgb(226 217 201 / 0.5);
   }
@@ -760,38 +774,50 @@
   .ref-tira {
     display: flex;
     align-items: stretch;
-    gap: 12px;
+    gap: 10px;
   }
 
-  /* Cada ficha mide lo mismo y no se encoge: en pantalla ancha se ven dos y
-     el borde de la tercera, que es lo que anuncia que la tira sigue. En el
-     telefono entra una y asoma la siguiente; el 84vw no es capricho: con
-     menos, la cita mas larga se parte en tantos renglones que la tira
-     entera crece (a 76vw medía 118px mas de alto). */
+  /* Cada ficha mide lo mismo y no se encoge: en pantalla ancha se ven casi
+     tres, y el filo de la siguiente es lo que anuncia que la tira sigue. En
+     el telefono entra una y asoma la que viene. */
   .ref-tira > .ref-tarjeta {
-    flex: 0 0 clamp(282px, 84vw, 470px);
+    flex: 0 0 clamp(258px, 82vw, 400px);
     scroll-snap-align: start;
   }
 
+  /* El cristal lo pone `.glass-card`, que la ficha lleva en el markup; aqui
+     van la forma, el aire y la levantada. */
   .ref-tarjeta {
-    border: 1px solid var(--color-line);
-    border-radius: 10px;
-    background: rgb(255 253 248 / 0.5);
-    padding: 17px 19px;
-    transition: border-color 0.2s ease, background 0.2s ease;
+    border-radius: 12px;
+    padding: 14px 16px;
+    transition:
+      translate 0.25s cubic-bezier(0.22, 0.61, 0.36, 1),
+      box-shadow 0.25s ease,
+      border-color 0.25s ease;
+    will-change: translate;
   }
+
+  /* La levantada va en `translate` y no en `transform` a proposito: el
+     `transform` de la ficha ya lo maneja el revelado del scroll
+     (`.revelar-activo .dieta-revelar.revelado { transform: none }`), que gana
+     por especificidad y dejaria el salto en nada. Las dos propiedades se
+     componen, asi que cada efecto anima la suya. */
   .ref-tarjeta:hover {
-    border-color: var(--color-wash-line);
-    background: var(--color-panel);
+    translate: 0 -4px;
+    border-color: #fff;
+    box-shadow:
+      0 22px 44px rgb(43 38 32 / 0.16),
+      0 4px 12px rgb(43 38 32 / 0.06),
+      inset 0 1px 0 0 rgb(255 255 255 / 0.95);
   }
 
   /* La sangria francesa de la cita: la primera linea al ras y el resto
      adentro, como en una lista de referencias impresa. */
   .ref-cita {
-    padding-left: 1.8em;
-    text-indent: -1.8em;
-    font-size: var(--text-xl);
-    line-height: 1.55;
+    padding-left: 1.7em;
+    text-indent: -1.7em;
+    font-size: var(--text-md);
+    line-height: 1.5;
     color: var(--color-ink);
   }
 
@@ -808,8 +834,8 @@
   .ref-doi:hover { text-decoration-color: #9e2b2b; }
 
   .ref-descripcion {
-    margin-top: 8px;
-    font-size: var(--text-xl);
+    margin-top: 7px;
+    font-size: var(--text-base);
     line-height: 1.5;
     color: var(--color-muted);
   }
@@ -819,8 +845,8 @@
      es como venia escrito. Antes eran pildoras; de ese tamano competian con
      los botones por la atencion. */
   .ref-acceso {
-    margin-top: 10px;
-    font-size: var(--text-xl);
+    margin-top: 9px;
+    font-size: var(--text-sm);
     line-height: 1.45;
     color: var(--color-muted);
   }
@@ -831,7 +857,7 @@
     display: inline-block;
     border: 1px solid rgb(158 43 43 / 0.3);
     border-radius: 999px;
-    padding: 1px 10px;
+    padding: 1px 8px;
     margin-right: 2px;
     color: #8a2525;
     font-weight: var(--font-weight-mid);
@@ -841,8 +867,8 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 7px;
-    margin-top: 14px;
+    gap: 6px;
+    margin-top: 12px;
   }
 
   /* Los enlaces de la ficha. El principal lleva el carmin y los otros van en
@@ -852,12 +878,12 @@
     display: inline-flex;
     align-items: center;
     border-radius: 999px;
-    padding: 6px 14px;
+    padding: 5px 12px;
     border: 1px solid var(--color-line);
-    background: transparent;
+    background: rgb(255 253 248 / 0.45);
     color: var(--color-muted);
     font: inherit;
-    font-size: var(--text-xl);
+    font-size: var(--text-base);
     text-decoration: none;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
@@ -898,10 +924,10 @@
   }
 
   @media (width < 560px) {
-    .ref-tarjeta { padding: 15px 14px; }
+    .ref-tarjeta { padding: 13px 14px; }
     /* Con la ficha angosta la sangria francesa se come media linea. */
-    .ref-cita { padding-left: 1.2em; text-indent: -1.2em; }
-    .ref-btn { padding: 6px 12px; }
+    .ref-cita { padding-left: 1.1em; text-indent: -1.1em; }
+    .ref-btn { padding: 5px 11px; }
   }
 
   /* ============================================================== kiosco */
@@ -1438,6 +1464,8 @@
     .ref-tarjeta,
     .ref-btn,
     .ref-doi { transition: none; }
+    /* La levantada es movimiento: queda la sombra, se va el salto. */
+    .ref-tarjeta:hover { translate: none; }
 
     /* Sin movimiento no hay entrada: el texto esta puesto desde el inicio. */
     .revelar-activo .dieta-revelar,
