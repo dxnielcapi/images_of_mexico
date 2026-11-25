@@ -110,16 +110,27 @@ El sitio se publica como assets estáticos en un Worker. En el panel, el
 (`scripts/build-ci.sh`) mira `WORKERS_CI_BRANCH` y decide qué datos lleva el
 bundle.
 
-| Rama | Qué compila |
-| --- | --- |
-| `master` | solo registros reales |
-| cualquier otra | con el banco simulado |
+Son **dos Workers sobre la misma rama de código**, cada uno con su rama y sus
+variables de build:
 
-Producción es la excepción explícita y todo lo demás lleva simulados, no al
-revés: si aparece una rama nueva, lo peor que pasa es que su preview salga con
-gente ficticia. Al revés —producción estrenando 1800 personas inventadas— no
-se nota y es mentira. El script además **desactiva** la variable en `master`,
-así que dejarla puesta en el panel por error no contamina producción.
+| Worker | Rama | Datos |
+| --- | --- | --- |
+| `images-of-mexico` | `master` | los registros reales de Supabase |
+| `images-of-mexico-simulado` | `test` | el banco de 1800, sin base de datos |
+
+El de pruebas va **sin** las credenciales de Supabase a propósito: así
+`supabaseConfigured()` da false, cae a `localStorage` y nadie que se registre
+desde esa URL puede ensuciar el mural de verdad.
+
+Si CI no informa de la rama, el script respeta lo que venga del entorno. Eso
+es lo que permite que el despliegue de pruebas funcione aunque el proveedor no
+inyecte `WORKERS_CI_BRANCH`: basta con ponerle `PUBLIC_DATOS_SIMULADOS=true`
+en sus variables de build.
+
+Producción está protegida por los dos lados: su rama la desactiva
+explícitamente —no solo "no la activa", así que dejarla puesta en el panel por
+error no la contamina— y además no tiene esa variable. Tendrían que fallar las
+dos cosas a la vez.
 
 Esto no se puede resolver con los entornos de Workers Builds: sus variables de
 preview son de *runtime*, y `PUBLIC_DATOS_SIMULADOS` la hornea Vite al

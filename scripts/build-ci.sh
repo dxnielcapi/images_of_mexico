@@ -1,44 +1,49 @@
 #!/bin/sh
 # =============================================================================
-#  El build de Cloudflare Workers: que datos lleva cada rama
+#  El build del deploy: que datos lleva cada despliegue
 # =============================================================================
 #
 #  `PUBLIC_DATOS_SIMULADOS` la hornea Vite al compilar, no se lee en el
-#  navegador. Por eso la separacion de entornos que trae Workers Builds no
-#  sirve para esto: sus variables de preview son de *runtime*, y las de build
-#  —dice la documentacion— «will not be accessible at runtime» y no tienen
-#  override por entorno. Una sola casilla en el panel no puede dar dos
-#  bundles distintos.
+#  navegador, asi que el bundle de pruebas y el de produccion tienen que salir
+#  de dos compilaciones distintas. Esto decide cual es cual.
 #
-#  La salida es `WORKERS_CI_BRANCH`, que Workers Builds inyecta con el nombre
-#  de la rama justo para esto («customizing build based on branch»). Asi la
-#  regla vive aqui, versionada y revisable en un diff, y no en una casilla del
-#  panel que nadie recuerda haber marcado.
+#  Hay dos despliegues y una sola rama de codigo:
 #
-#      master          -> solo registros reales
-#      cualquier otra  -> con el banco simulado
+#      images-of-mexico            <- master,  registros reales de Supabase
+#      images-of-mexico-simulado   <- test,    el banco de 1800, sin base
 #
-#  Produccion es la excepcion explicita y todo lo demas lleva simulados: si
-#  manana aparece una rama nueva, lo peor que pasa es que su preview salga con
-#  gente ficticia. Al reves —produccion estrenando mil ochocientas personas
-#  inventadas— no se nota y es mentira.
+#  La regla, en orden:
 #
-#  Uso en el panel del Worker, como Build command:  npm run build:ci
+#    1. Si CI dice que la rama es la de produccion -> simulados FUERA, pase lo
+#       que pase. Se desactiva en vez de solo no activarse: si alguien deja la
+#       variable puesta en el panel de produccion por error, no la contamina.
+#    2. Si CI dice que es cualquier otra rama -> simulados dentro.
+#    3. Si CI no dice nada —el proveedor no inyecto la rama, o esto corre en
+#       una maquina— se respeta lo que venga del entorno o del `.env`.
+#
+#  El paso 3 es el que hace esto robusto. La primera version dependia solo de
+#  `WORKERS_CI_BRANCH`, y si el proveedor no la inyecta, el build se cae al
+#  lado seguro y el despliegue de pruebas sale sin banco. Ahora basta con
+#  ponerle `PUBLIC_DATOS_SIMULADOS=true` en sus variables de build y funciona
+#  aunque la deteccion de rama falle.
+#
+#  Produccion sigue protegida por el paso 1, y ademas no tiene esa variable
+#  puesta: le haria falta que las dos cosas fallaran a la vez.
+#
+#  Build command en el panel:  npm run build:ci
 # =============================================================================
 set -e
 
 RAMA_PRODUCCION=master
 
-if [ -n "$WORKERS_CI_BRANCH" ] && [ "$WORKERS_CI_BRANCH" != "$RAMA_PRODUCCION" ]; then
+if [ "$WORKERS_CI_BRANCH" = "$RAMA_PRODUCCION" ]; then
+  echo "build: rama '$WORKERS_CI_BRANCH' (produccion) -> solo registros reales"
+  unset PUBLIC_DATOS_SIMULADOS
+elif [ -n "$WORKERS_CI_BRANCH" ]; then
   echo "build: rama '$WORKERS_CI_BRANCH' -> con el banco simulado"
   export PUBLIC_DATOS_SIMULADOS=true
 else
-  # Se desactiva a proposito y no solo «no se activa»: si alguien deja la
-  # variable puesta en el panel, esto impide que produccion salga con gente
-  # inventada. En local no estorba, porque ahi el valor viene del `.env`, que
-  # Vite lee por su cuenta.
-  echo "build: rama '${WORKERS_CI_BRANCH:-local}' -> solo registros reales"
-  unset PUBLIC_DATOS_SIMULADOS
+  echo "build: sin rama de CI -> se respeta el entorno (PUBLIC_DATOS_SIMULADOS=${PUBLIC_DATOS_SIMULADOS:-sin poner})"
 fi
 
 exec npx astro build
