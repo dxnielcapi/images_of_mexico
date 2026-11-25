@@ -59,10 +59,10 @@ solo agrega al final (ver *El banco simulado*).
   raíz de las dos pantallas.
 - **Canvas 2D** para todo el pintado, **PapaParse** para el CSV. Ninguna
   librería de UI: el DOM lo arman módulos TypeScript a mano.
-- **Supabase** es la fuente de datos de `index`. **Todavía no está conectada**:
-  no hay dependencia ni llamadas en el código. Hoy `index` lee el dataset
-  simulado de `public/samples/` y guarda las altas en el `localStorage` del
-  dispositivo (ver *Mientras Supabase no esté conectado*).
+- **Supabase** es la fuente de datos de `index`: los registros van a
+  `public.registros` y vuelven en tiempo real, así que el mural de un teléfono
+  es el de todos (ver *La base compartida*). Si faltan las variables de
+  entorno, todo cae a `localStorage` y el mural sigue abriendo.
 
 ### Cómo se reparte el CSS
 
@@ -164,8 +164,8 @@ desenfocar.
 
 Hoy arranca sola con la plantilla (`Mural/Final.svg`, su `.zones.json` y el
 `.tlacuilo.svg` de la figura central) y los 1800 registros simulados de
-`datos_ejemplo.csv`. Ese CSV es el sustituto temporal de la tabla de Supabase;
-todo lo que sigue en esta sección es la pantalla de verdad. El `zona` que trae
+`datos_ejemplo.csv` cuando el banco simulado está encendido, más lo que haya
+en Supabase. Todo lo que sigue en esta sección es la pantalla de verdad. El `zona` que trae
 el CSV es caché de un dibujo anterior: al cargarlo se remapea con la regla
 vigente, así el banco de pruebas cae siempre sobre la ilustración que hay
 puesta.
@@ -209,15 +209,36 @@ Por nombre, sin importar acentos ni mayúsculas. Al elegir un resultado se marca
 su mancha con un círculo que late y se abre su ficha. Con el mouse, además,
 pasar por cualquier mancha muestra la ficha de esa persona.
 
-### Mientras Supabase no esté conectado
+### La base compartida
 
-El dataset simulado (`public/samples/datos_ejemplo.csv`) es de **solo lectura** y
-nunca se modifica. Lo que se registra se guarda en el `localStorage` del
-navegador (`mural.personas.v1`, ver `src/data/repo/localRepo.ts`) —las columnas
-de la persona y la versión del mapeo que las ubicó— y se pinta junto a los
-registros simulados. Es por navegador y por dispositivo: no se
-comparte ni se sube a ningún lado, así que el mural de un teléfono no es el del
-siguiente. Es exactamente lo que Supabase viene a resolver.
+Lo que alguien registra va a `public.registros` en Supabase y vuelve a las
+demás pantallas por Realtime, sin que nadie baje ni suba nada. El dataset
+simulado (`public/samples/datos_ejemplo.csv`) sigue siendo de **solo lectura**
+y solo entra si `PUBLIC_DATOS_SIMULADOS` está encendido. El `localStorage`
+(`mural.personas.v1`, ver `src/data/repo/localRepo.ts`) se queda como copia
+local y como respaldo si la base no está configurada.
+
+**El esquema está en `supabase/schema.sql` y hay que leerlo antes de tocar la
+tabla.** El sitio es estático: el navegador habla directo con la Data API con
+una llave que viaja en el bundle y cualquiera puede leer. Eso es normal en
+Supabase, pero significa que **las defensas de `@data/seguridad` no protegen la
+base**: corren en el navegador y no se aplican a un `curl`. Lo único que de
+verdad cuida la tabla es lo que está en ese archivo —RLS, constraints CHECK y
+un rate limit en trigger—, y por eso está versionado y no solo en el panel.
+
+Cómo está hoy, comprobado contra la base: la llave pública puede `SELECT` e
+`INSERT`; `UPDATE` y `DELETE` dan 401. Cada campo tiene su CHECK, incluida la
+restricción a las 32 entidades de México, que así vive en Postgres y no solo
+en el formulario. El trigger limita por IP —20 por minuto, 300 por hora, 2000
+por día— y pone un tope global de 60 por minuto.
+
+Esos números **no** son los de `@data/seguridad` y no deben copiarse de ahí: el
+mural se deja en un puesto, donde todo un evento sale por la misma IP, así que
+el límite del navegador (10 al día) bloquearía la jornada entera. El del
+servidor es un tope contra abuso masivo, no un límite por persona.
+
+Correrlo: el SQL Editor del panel de Supabase, pegando el archivo entero. Es
+idempotente, así que se puede repetir sin romper lo que ya está.
 
 Como el navegador puede borrar sus datos, el recuadro de alta trae al pie un
 `<details>` plegado, **Mis registros** —el respaldo es tarea de quien atiende el
@@ -1094,9 +1115,6 @@ public/Mural/        LA PLANTILLA
                      Final.zones.json     ← close 24, 1 zona, 261 semillas
                      Final.trazos.json    ← las líneas que entinta la gente
                      Final.espina.json    ← el recorrido de la espiral
-                     bocetoactualizado.* · boceto.*  ← los bocetos anteriores,
-                     cada uno con sus horneados: apuntar `plantilla.ts` de
-                     vuelta a ellos los devuelve al aire tal como estaban
 
 public/dieta/        EL FONDO DE «LA DIETA DE LA MILPA»
                      maiz.jpg · frijol.jpg · calabza.jpg (se relevan solas)
@@ -1108,7 +1126,17 @@ public/Conceptos/    LA MESA DE REFERENCIAS DE «EL CONCEPTO»
                      Visualizacion_mito/  ← provisional, marcadores de sitio
 
 public/samples/      EL BANCO DE PRUEBAS
-                     datos_ejemplo.csv (simulado) — la base de datos de hoy
+                     datos_ejemplo.csv — gente simulada, solo si
+                     PUBLIC_DATOS_SIMULADOS está encendido
+
+bocetos-anteriores/  FUERA DEL DEPLOY · los bocetos previos con sus horneados;
+                     para volver a uno, copiarlo a public/Mural/ y apuntar
+                     plantilla.ts
+
+supabase/schema.sql  LA DEFENSA DE LA BASE · RLS, constraints y el rate limit
+                     en trigger. Se corre a mano en el panel; no lo toca el
+                     build. Es lo único que protege la tabla, porque la llave
+                     va en el bundle
 
 tools/figuras.py     fuera del build · separa al tlacuilo del cartel
 tools/trazos.py      fuera del build · hornea las líneas del dibujo

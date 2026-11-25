@@ -3,7 +3,10 @@
  *
  * El sitio es 100% estatico: el navegador lee e inserta directamente contra la
  * Data API de Supabase usando la llave publica (`PUBLIC_SUPABASE_ANON_KEY`),
- * protegido por RLS y constraints CHECK en la tabla `public.registros`.
+ * protegido por RLS, constraints CHECK y un rate limit en trigger. Todo eso
+ * vive en `supabase/schema.sql`, que es la unica defensa real: la llave viaja
+ * en el bundle y lo de `@data/seguridad` corre en el navegador, asi que no
+ * aplica a quien llame la API por su cuenta.
  *
  * Si las variables de entorno no estan configuradas, todas las operaciones son
  * no-op seguras y el mural cae automaticamente a `localStorage` (`localRepo`).
@@ -186,6 +189,25 @@ export async function insertRemote(record: DataRecord): Promise<RemoteInsertResu
         ok: false,
         conflict: false,
         error: 'Alguno de los datos no pasó la validación del servidor.',
+      };
+    }
+    // El trigger de `supabase/schema.sql` levanta estos dos con un SQLSTATE
+    // propio. El rate limit del navegador (`@data/seguridad`) deberia haber
+    // frenado antes a quien usa el formulario, asi que llegar aqui significa
+    // casi siempre que la red entera lleva muchas altas: el mensaje habla de
+    // la red y no de la persona, que no hizo nada raro.
+    if (error.code === 'PT429') {
+      return {
+        ok: false,
+        conflict: false,
+        error: 'El mural está recibiendo muchos registros desde esta red. Intenta en un momento.',
+      };
+    }
+    if (error.code === 'PT422') {
+      return {
+        ok: false,
+        conflict: false,
+        error: 'La fecha de tu dispositivo no coincide con la del servidor. Revísala e intenta de nuevo.',
       };
     }
 
