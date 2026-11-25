@@ -22,6 +22,7 @@ import type { LoadedDrawing } from '@io/readers/drawing';
 import { recordsToCsv } from '@io/writers/csv';
 import { downloadText } from '@io/writers/download';
 import { clearLocal, mergeById, parseBackup, saveLocal, storageAvailable } from '@data/repo/localRepo';
+import { insertRemote, subscribeRemote, supabaseConfigured } from '@data/repo/supabaseRepo';
 import { placeRecords } from '@core/scene';
 import { renderScene } from '@core/render/compose';
 import { CARMIN, ColorRamp } from '@core/render/palette';
@@ -39,9 +40,13 @@ import {
   PERSON_FIELD_KEYS, PersonIds, SENTIRES, searchByName, todayIso, type Person,
 } from '@data/person';
 import { mapPerson, remapAll, zonasDisponibles, type MappingContext } from '@data/mapping';
+import { esUbicacionMexico } from '@data/mexico';
+import {
+  esDuplicadoReciente, registrarEnvio, validarPersona, verificarRateLimit,
+} from '@data/seguridad';
 import { cargarMural, opcionesMural, redDeRegistros } from './cartel';
 import { personSearch, type PersonSearch } from '@ui/personPanel';
-import { registroForm, type RegistroForm, type RegistroResult } from '@ui/registroForm';
+import { registroForm, type RegistroAddResult, type RegistroForm } from '@ui/registroForm';
 import { paintBlob } from '@ui/blob';
 import { Tooltip } from '@ui/tooltip';
 import { createHeroReveal, type HeroReveal } from './heroReveal';
@@ -531,7 +536,7 @@ document.addEventListener('keydown', (e) => {
 // ---------------------------------------------------------------- la red
 
 function records(): DataRecord[] {
-  return [...base, ...propios];
+  return mergeById(base, propios).records;
 }
 
 function valueRange(): { min: number; max: number } {
@@ -946,12 +951,19 @@ function exportPropios(): void {
   note(`Copia bajada: ${plural(propios.length, 'registro', 'registros')} en CSV.`, 'ok');
 }
 
+const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
+const MAX_IMPORT_RECORDS = 5000;
+
 async function importPropios(file: File): Promise<void> {
+  if (file.size > MAX_IMPORT_BYTES) {
+    note('El archivo es demasiado grande (máximo 5 MB).', 'bad');
+    return;
+  }
   let incoming: DataRecord[] = [];
   try {
     const batch = parseBackup(await file.text());
     // Si la copia se hizo con una regla anterior, se remapea al entrar.
-    incoming = remapAll(batch.records, batch.mapeo, mapping()).records;
+    incoming = remapAll(batch.records.slice(0, MAX_IMPORT_RECORDS), batch.mapeo, mapping()).records;
   } catch {
     incoming = [];
   }
@@ -959,13 +971,22 @@ async function importPropios(file: File): Promise<void> {
     note('No se encontraron registros en ese archivo.', 'bad');
     return;
   }
+  const soloMexico = incoming.filter((r) => esUbicacionMexico(r.extra['lugar_origen'] ?? ''));
+  const descartados = incoming.length - soloMexico.length;
+  if (soloMexico.length === 0) {
+    note('Solo se permiten ubicaciones de México: no se importó ningún registro.', 'bad');
+    return;
+  }
   const known = new Set(base.map((r) => r.id));
-  const { records: merged, added } = mergeById(propios, incoming.filter((r) => !known.has(r.id)));
+  const { records: merged, added } = mergeById(propios, soloMexico.filter((r) => !known.has(r.id)));
   setPropios(merged);
+  const sufijoDescartados = descartados > 0
+    ? ` (${descartados} fuera de México ${descartados === 1 ? 'omitido' : 'omitidos'}).`
+    : '.';
   note(
     added === 0
-      ? 'Ya estaban todos: no se agregó ninguno.'
-      : `Se ${added === 1 ? 'sumó' : 'sumaron'} ${added} de ${plural(incoming.length, 'registro', 'registros')}.`,
+      ? `Ya estaban todos: no se agregó ninguno${sufijoDescartados}`
+      : `Se ${added === 1 ? 'sumó' : 'sumaron'} ${added} de ${plural(soloMexico.length, 'registro', 'registros')}${sufijoDescartados}`,
     added === 0 ? '' : 'ok'
   );
 }
@@ -1013,12 +1034,57 @@ function backupBox(): HTMLElement {
 
 // ---------------------------------------------------------------- alta y busqueda
 
-function addPerson(p: Person): RegistroResult | null {
-  if (zones.size === 0) return null;
-  // El id va primero y no depende de la zona: si manana el mapeo manda a esta
-  // persona a otro petalo, sigue siendo la misma y su mancha no se duplica.
-  const rec = mapPerson(p, ids.next(p.fecha), mapping());
-  if (!rec.zona) return null;
+const MAX_ID_RETRIES = 5;
+
+async function addPerson(p: Person): Promise<RegistroAddResult> {
+  if (zones.size === 0) {
+    return { ok: false, error: 'El mural todavía está cargando. Prueba de nuevo en un momento.' };
+  }
+  const rl = verificarRateLimit();
+  if (!rl.permitido) {
+    return { ok: false, error: rl.motivo };
+  }
+  const validacion = validarPersona(p);
+  if (!validacion.ok) {
+    return { ok: false, error: validacion.error };
+  }
+  const limpia = validacion.persona;
+  if (esDuplicadoReciente(limpia)) {
+    return { ok: false, error: 'Ya recibimos un registro idéntico hace unos minutos.' };
+  }
+
+  let rec: DataRecord | null = null;
+
+  if (supabaseConfigured()) {
+    // Si otro dispositivo genero el mismo ID secuencial al mismo tiempo,
+    // Postgres devuelve conflicto (23505) y avanzamos al siguiente ID libre.
+    for (let intento = 0; intento < MAX_ID_RETRIES; intento++) {
+      const candidato = mapPerson(limpia, ids.next(limpia.fecha), mapping());
+      if (!candidato.zona) {
+        return { ok: false, error: 'No se pudo sumar tu mancha. Prueba de nuevo en un momento.' };
+      }
+      const res = await insertRemote(candidato);
+      if (res.ok) {
+        rec = candidato;
+        break;
+      }
+      if (!res.conflict) {
+        return { ok: false, error: res.error };
+      }
+    }
+    if (!rec) {
+      return { ok: false, error: 'Muchos registros a la vez. Intenta de nuevo en unos segundos.' };
+    }
+  } else {
+    // Modo local sin Supabase: el ID va primero y no depende de la zona.
+    const candidato = mapPerson(limpia, ids.next(limpia.fecha), mapping());
+    if (!candidato.zona) {
+      return { ok: false, error: 'No se pudo sumar tu mancha. Prueba de nuevo en un momento.' };
+    }
+    rec = candidato;
+  }
+
+  registrarEnvio(limpia);
   propios.push(rec);
   persist();
   ids.sync(records());
@@ -1028,8 +1094,8 @@ function addPerson(p: Person): RegistroResult | null {
   highlight = placed.find((pt) => pt.record.id === rec.id) ?? null;
   paint();
   search?.refresh();
-  ultimoNombre = p.nombre;
-  return { id: rec.id, zona: rec.zona };
+  ultimoNombre = limpia.nombre;
+  return { ok: true, id: rec.id, zona: rec.zona };
 }
 
 /** "Ver mi mancha": cierra el recuadro y deja el aviso sobre el mural. */
@@ -1499,6 +1565,22 @@ async function start(): Promise<void> {
 
   // Con la escena ya pintada, el Hero se dibuja solo trazo a trazo.
   initHeroReveal(d.imageData);
+
+  // Actualizaciones en vivo desde Supabase Realtime: cuando alguien se suma
+  // desde otro dispositivo, su mancha entra al mural sin recargar.
+  if (supabaseConfigured()) {
+    const unsubscribe = subscribeRemote((item) => {
+      if (records().some((r) => r.id === item.record.id)) return;
+      const [rec] = remapAll([item.record], item.mapeo, mapping()).records;
+      if (!rec || !esUbicacionMexico(rec.extra['lugar_origen'] ?? '')) return;
+      base.push(rec);
+      ids.sync(records());
+      placeAll();
+      render();
+      search?.refresh();
+    });
+    window.addEventListener('pagehide', unsubscribe, { once: true });
+  }
 }
 
 /** El pulso solo corre con el mural a la vista. */

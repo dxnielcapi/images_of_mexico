@@ -1,10 +1,24 @@
 import type { DataRecord } from '@core/types';
 
+/**
+ * Neutraliza posibles formulas de hoja de calculo (CSV Formula Injection)
+ * prefijando con apostrofo los textos que inician con `=`, `+`, `-`, `@`,
+ * tabulador o retorno de carro, sin tocar numeros puros.
+ */
+function safeCsvCell(value: string | number): string {
+  const s = String(value);
+  const neutralized =
+    typeof value === 'string' && /^[=+\-@\t\r]/.test(s) && !/^-?\d+(\.\d+)?$/.test(s)
+      ? `'${s}`
+      : s;
+  return /[",\n\r]/.test(neutralized)
+    ? `"${neutralized.replace(/"/g, '""')}"`
+    : neutralized;
+}
+
 /** Una fila de CSV, con comillas solo donde hacen falta. */
 function csvRow(values: (string | number)[]): string {
-  return values
-    .map((v) => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v)))
-    .join(',');
+  return values.map(safeCsvCell).join(',');
 }
 
 /**

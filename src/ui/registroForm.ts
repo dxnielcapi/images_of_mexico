@@ -19,6 +19,13 @@ import {
   PREGUNTAS, SENTIRES, emptyPerson, sentirByName, todayIso,
   type Person, type Pregunta,
 } from '@data/person';
+import {
+  ESTADOS_MEXICO, MENSAJE_SOLO_MEXICO, OPCION_EXTERNO, normalizarEstadoMexico,
+} from '@data/mexico';
+import {
+  LIMITES_TEXTO, RATE_LIMIT_CONFIG, esDuplicadoReciente, limpiarTexto,
+  validarPersona, verificarRateLimit,
+} from '@data/seguridad';
 import { paintBlob } from './blob';
 import { el } from './controls';
 
@@ -27,11 +34,15 @@ export interface RegistroResult {
   zona: string;
 }
 
+export type RegistroAddResult =
+  | ({ ok: true } & RegistroResult)
+  | { ok: false; error: string };
+
 export interface RegistroFormHooks {
   /** Rampa del mural: las muestras usan el color de verdad. */
   ramp: ColorRamp;
-  /** Da de alta la persona; null si todavia no hay zonas donde ubicarla. */
-  add: (person: Person) => RegistroResult | null;
+  /** Da de alta la persona; devuelve error si se bloquea o todavia no hay zonas. */
+  add: (person: Person) => RegistroAddResult | Promise<RegistroAddResult>;
   /** Se avisa al cerrar la tarjeta final ("ver mi mancha"). */
   onDone?: () => void;
 }
@@ -42,7 +53,7 @@ export interface RegistroForm {
   reset: () => void;
 }
 
-type Single = HTMLInputElement | HTMLTextAreaElement;
+type Single = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
 
 /** Campo de una linea: etiqueta chica arriba, texto grande abajo. */
 function campo(
@@ -59,6 +70,29 @@ function campo(
       input,
     ]),
     input,
+  };
+}
+
+/** Selector con la misma estetica de renglon que `campo`. */
+function campoSelect(
+  label: string,
+  placeholder: string,
+  opciones: { value: string; label: string }[]
+): { root: HTMLElement; select: HTMLSelectElement } {
+  const select = el('select', { class: 'campo-input campo-select' });
+  select.append(el('option', { value: '', text: placeholder }));
+  for (const o of opciones) {
+    select.append(el('option', { value: o.value, text: o.label }));
+  }
+  return {
+    root: el('label', { class: 'block mt-[15px]' }, [
+      el('span', {
+        class: 'block mb-px text-[10.5px] uppercase tracking-[0.08em] text-muted',
+        text: label,
+      }),
+      select,
+    ]),
+    select,
   };
 }
 
@@ -89,18 +123,50 @@ interface Grupo {
 export function registroForm(hooks: RegistroFormHooks): RegistroForm {
   const person: Person = { ...emptyPerson(), alimentacion: '', fecha: todayIso() };
   let step = 0;
+  let openedAt = Date.now();
+  let submitting = false;
 
   // ------------------------------------------------------------ paso 1
-  const nombre = campo('Tu nombre', { autocomplete: 'name' });
-  const edad = campo('Edad', { type: 'number', min: '1', max: '120', inputMode: 'numeric' });
-  const ocupacion = campo('A qué te dedicas');
-  const origen = campo('De dónde eres');
+  const nombre = campo('Tu nombre', { autocomplete: 'name', maxLength: LIMITES_TEXTO.nombreMax });
+  const edad = campo('Edad', {
+    type: 'number', min: String(LIMITES_TEXTO.edadMin), max: String(LIMITES_TEXTO.edadMax),
+    step: '1', inputMode: 'numeric',
+  });
+  const ocupacion = campo('A qué te dedicas', { maxLength: LIMITES_TEXTO.ocupacionMax });
+  const origen = campoSelect(
+    '¿De qué parte de México eres?',
+    'Elige tu estado…',
+    [
+      ...ESTADOS_MEXICO.map((estado) => ({ value: estado, label: estado })),
+      { value: OPCION_EXTERNO, label: 'Otro país (fuera de México)' },
+    ]
+  );
+
+  // Campo trampa (honeypot) invisible para personas: si un bot lo rellena,
+  // el envio se rechaza silenciosamente sin registrar nada.
+  const trampa = el('input', {
+    type: 'text',
+    name: 'sitio_web',
+    class: 'campo-trampa',
+    tabIndex: -1,
+    autocomplete: 'off',
+  });
+  trampa.setAttribute('aria-hidden', 'true');
+
+  origen.select.addEventListener('change', () => {
+    if (origen.select.value === OPCION_EXTERNO) {
+      fail(MENSAJE_SOLO_MEXICO);
+    } else if (origen.select.value) {
+      clearAviso();
+    }
+  });
 
   const paso1 = el('div', { class: 'paso' }, [
     el('p', { class: PREGUNTA, text: '¿Cómo te llamas?' }),
     nombre.root,
     el('div', { class: 'grid grid-cols-[78px_1fr] gap-3.5' }, [edad.root, ocupacion.root]),
     origen.root,
+    trampa,
   ]);
 
   // ------------------------------------------------------------ paso 2
@@ -176,14 +242,26 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
   });
 
   // ------------------------------------------------------------ ultimo paso
-  const mensaje = el('textarea', { class: 'campo-input campo-area', rows: 3 });
+  const mensaje = el('textarea', {
+    class: 'campo-input campo-area',
+    rows: 3,
+    maxLength: LIMITES_TEXTO.mensajeMax,
+  });
   // Sin placeholder y sin etiqueta propia: la pregunta de arriba la nombra.
   mensaje.setAttribute('aria-label', 'Qué te gustaría decir');
+  const contadorMensaje = el('span', {
+    class: 'block mt-1 text-right text-[11px] text-muted',
+    text: `0 / ${LIMITES_TEXTO.mensajeMax}`,
+  });
+  const syncContador = () => {
+    contadorMensaje.textContent = `${mensaje.value.length} / ${LIMITES_TEXTO.mensajeMax}`;
+  };
+  mensaje.addEventListener('input', syncContador);
   const frases = el('div', { class: 'flex flex-wrap gap-1.5 mt-[11px]' });
 
   const pasoMensaje = el('div', { class: 'paso' }, [
     el('p', { class: PREGUNTA, text: '¿Qué te gustaría decir?' }),
-    el('label', { class: 'block mt-[15px]' }, [mensaje]),
+    el('label', { class: 'block mt-[15px]' }, [mensaje, contadorMensaje]),
     frases,
     el('p', { class: `${AYUDA} mb-3`, text: 'Toca una frase para usarla, o escribe la tuya. También puedes dejarlo en blanco.' }),
   ]);
@@ -207,6 +285,7 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
       });
       chip.addEventListener('click', () => {
         mensaje.value = f;
+        syncContador();
         mensaje.focus();
       });
       frases.append(chip);
@@ -303,15 +382,33 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
   /** Valida el paso actual y vuelca lo escrito en `person`. */
   function commit(): boolean {
     if (step === 0) {
-      person.nombre = nombre.input.value.trim();
-      if (!person.nombre) return fail('Nos falta tu nombre.', nombre.input), false;
-      const n = Number(edad.input.value);
-      if (edad.input.value && (!isFinite(n) || n < 1 || n > 120)) {
-        return fail('La edad tiene que ser un número entre 1 y 120.', edad.input), false;
+      const nombreLimpio = limpiarTexto(nombre.input.value, LIMITES_TEXTO.nombreMax);
+      if (!nombreLimpio) return fail('Nos falta tu nombre.', nombre.input), false;
+      if (nombreLimpio.length < LIMITES_TEXTO.nombreMin || !/\p{L}/u.test(nombreLimpio)) {
+        return fail('Escribe un nombre válido (al menos 2 letras).', nombre.input), false;
       }
-      person.edad = edad.input.value.trim();
-      person.ocupacion = ocupacion.input.value.trim();
-      person.lugar_origen = origen.input.value.trim();
+      const edadRaw = edad.input.value.trim();
+      if (edadRaw) {
+        const n = Number(edadRaw);
+        if (!/^\d{1,3}$/.test(edadRaw) || !Number.isInteger(n) || n < LIMITES_TEXTO.edadMin || n > LIMITES_TEXTO.edadMax) {
+          return fail('La edad tiene que ser un número entre 1 y 120.', edad.input), false;
+        }
+      }
+      const origenRaw = origen.select.value.trim();
+      if (!origenRaw) {
+        return fail('Elige de qué estado de México eres.', origen.select), false;
+      }
+      if (origenRaw === OPCION_EXTERNO) {
+        return fail(MENSAJE_SOLO_MEXICO, origen.select), false;
+      }
+      const estado = normalizarEstadoMexico(origenRaw);
+      if (!estado) {
+        return fail(MENSAJE_SOLO_MEXICO, origen.select), false;
+      }
+      person.nombre = nombreLimpio;
+      person.edad = edadRaw ? String(Number(edadRaw)) : '';
+      person.ocupacion = limpiarTexto(ocupacion.input.value, LIMITES_TEXTO.ocupacionMax);
+      person.lugar_origen = estado;
       return true;
     }
     if (step === 1) {
@@ -332,7 +429,7 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
       for (const [i, g] of par.grupos.entries()) person[par.preguntas[i].key] = g.valor();
       return true;
     }
-    person.mensaje = mensaje.value.trim();
+    person.mensaje = limpiarTexto(mensaje.value, LIMITES_TEXTO.mensajeMax);
     return true;
   }
 
@@ -355,15 +452,59 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
     cuerpo.closest('.panel')?.scrollTo({ top: 0 });
   }
 
-  function submit(): void {
+  async function submit(): Promise<void> {
+    if (submitting) return;
     if (!commit()) return;
-    person.fecha = todayIso();
-    const res = hooks.add(person);
-    if (!res) {
-      fail('No se pudo sumar tu mancha. Prueba de nuevo en un momento.');
+
+    // 1. Honeypot: un usuario real nunca llena este campo.
+    if (trampa.value.trim()) {
+      fail('No se pudo procesar tu registro. Recarga e intenta de nuevo.');
       return;
     }
-    showListo(person, res);
+
+    // 2. Tiempo minimo de llenado: frena envios automatizados instantaneos.
+    if (Date.now() - openedAt < RATE_LIMIT_CONFIG.tiempoMinimoLlenadoMs) {
+      fail('Tómate un momento para revisar tus respuestas antes de enviar.');
+      return;
+    }
+
+    // 3. Rate limit del navegador.
+    const rl = verificarRateLimit();
+    if (!rl.permitido) {
+      fail(rl.motivo);
+      return;
+    }
+
+    // 4. Validacion completa del esquema (ubicacion de Mexico, anti-spam, catalogo).
+    person.fecha = todayIso();
+    const validacion = validarPersona(person);
+    if (!validacion.ok) {
+      fail(validacion.error);
+      return;
+    }
+
+    // 5. Evita registros duplicados inmediatos.
+    if (esDuplicadoReciente(validacion.persona)) {
+      fail('Ya recibimos un registro idéntico hace unos minutos.');
+      return;
+    }
+
+    submitting = true;
+    seguir.disabled = true;
+    seguir.textContent = 'Guardando…';
+    try {
+      const res = await hooks.add(validacion.persona);
+      if (!res.ok) {
+        fail(res.error);
+        return;
+      }
+      Object.assign(person, validacion.persona);
+      showListo(validacion.persona, res);
+    } finally {
+      submitting = false;
+      seguir.disabled = false;
+      seguir.textContent = step === STEPS - 1 ? 'Sumar al mural' : 'Seguir';
+    }
   }
 
   function reset(): void {
@@ -371,8 +512,11 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
     nombre.input.value = '';
     edad.input.value = '';
     ocupacion.input.value = '';
-    origen.input.value = '';
+    origen.select.value = '';
+    trampa.value = '';
     mensaje.value = '';
+    syncContador();
+    openedAt = Date.now();
     for (const b of botones.values()) {
       b.classList.remove('sel');
       b.setAttribute('aria-pressed', 'false');
@@ -388,7 +532,7 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
   }
 
   // Enter en un campo de una linea avanza, como el "Seguir".
-  for (const i of [nombre.input, edad.input, ocupacion.input, origen.input]) {
+  for (const i of [nombre.input, edad.input, ocupacion.input]) {
     i.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); goto(step + 1); }
     });

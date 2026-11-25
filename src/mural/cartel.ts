@@ -37,7 +37,8 @@ import {
   DATOS_EJEMPLO, PLANTILLA_DIBUJO, PLANTILLA_ESPINA, PLANTILLA_TLACUILO, PLANTILLA_TRAZOS,
   PLANTILLA_ZONAS,
 } from '@io/plantilla';
-import { loadLocal } from '@data/repo/localRepo';
+import { loadLocal, mergeById } from '@data/repo/localRepo';
+import { loadRemote } from '@data/repo/supabaseRepo';
 import { analyzeDrawing, clamp01, typicalDepth, zonesFromConfig } from '@core/scene';
 import { medidasParaDibujo } from '@core/render/medidas';
 import { espinaDesde, parseEspinaJson, type Espina } from '@core/render/espina';
@@ -47,6 +48,7 @@ import { recorridoDe, tramaDe, type Trama } from '@core/render/recorrido';
 import { redDe, type Red } from '@core/render/red';
 import type { ShapeField } from '@core/render/field';
 import { remapAll, zonasDisponibles, type MappingContext } from '@data/mapping';
+import { esUbicacionMexico } from '@data/mexico';
 import { FIRMAS, PUESTO_DE_FIRMA, afinidad, firmaDe, rasgosDe, type Rasgos } from '@data/afinidad';
 import { personFromExtra } from '@data/person';
 import type { DataRecord, RenderOptions, ZoneMap } from '@core/types';
@@ -123,7 +125,7 @@ export interface Mural {
  * tarda, asi que el CSV y los horneados viajan a su lado en vez de esperarlo.
  */
 export async function cargarMural(render: RenderOptions): Promise<Mural> {
-  const [d, cfgText, csvText, espinaText, trazosText, tlacuiloSvg, tlacuiloImg] = await Promise.all([
+  const [d, cfgText, csvText, espinaText, trazosText, tlacuiloSvg, tlacuiloImg, remoto] = await Promise.all([
     loadDrawingUrl(PLANTILLA_DIBUJO),
     fetch(PLANTILLA_ZONAS).then((r) => r.text()),
     // El banco simulado solo si esta encendido (ver `SIMULADOS`). Apagado no
@@ -140,6 +142,8 @@ export async function cargarMural(render: RenderOptions): Promise<Mural> {
     // cartel sale sin pintor y todo lo demas sigue igual.
     fetch(PLANTILLA_TLACUILO).then((r) => (r.ok ? r.text() : '')).catch(() => ''),
     loadImage(PLANTILLA_TLACUILO).catch(() => null),
+    // Los registros compartidos de Supabase (si esta configurado).
+    loadRemote(),
   ]);
 
   render.width = d.width;
@@ -201,21 +205,34 @@ export async function cargarMural(render: RenderOptions): Promise<Mural> {
   // dibujo: eso es cache, no dato. Se remapea con la regla vigente (mapeo 0 =
   // "de otra version", fuerza el recalculo) para que caiga donde corresponde
   // en la plantilla de hoy, igual que lo registrado en el dispositivo.
-  const base = csvText
+  const simulados = csvText
     ? remapAll(parseCsvText(csvText).records, 0, mapeo).records
     : [];
 
+  // Los registros reales que vienen de Supabase: cada uno trae la version del
+  // mapeo con la que se guardo, y se filtran ubicaciones fuera de Mexico.
+  const remotos: DataRecord[] = [];
+  for (const item of remoto.items) {
+    const [r] = remapAll([item.record], item.mapeo, mapeo).records;
+    if (r && esUbicacionMexico(r.extra['lugar_origen'] ?? '')) remotos.push(r);
+  }
+  const base = mergeById(simulados, remotos).records;
+
   // Lo guardado en este dispositivo puede venir de una version anterior del
   // mapeo: se recalcula con la regla vigente. Volver a guardarlo es de quien
-  // llame, que es el unico que sabe si esta pantalla escribe.
+  // llame, que es el unico que sabe si esta pantalla escribe. Ademas se
+  // filtran ubicaciones fuera de Mexico para que nunca entren a la red.
   const guardado = loadLocal();
   const puestos = remapAll(guardado.records, guardado.mapeo, mapeo);
+  const propiosSoloMexico = puestos.records.filter((r) =>
+    esUbicacionMexico(r.extra['lugar_origen'] ?? '')
+  );
 
   return {
     cartel: { drawing: d, zones, field, espina, boceto, trama, tlacuilo },
     mapeo,
     base,
-    propios: puestos.records,
+    propios: propiosSoloMexico,
     remapeados: puestos.remapped,
   };
 }

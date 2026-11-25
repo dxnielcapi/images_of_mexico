@@ -44,6 +44,7 @@ import { CARMIN, ColorRamp } from '@core/render/palette';
 import { dibujarFigura, rasterizarFigura } from '@core/render/figura';
 import { dibujarRed, type Arista, type Nodo, type Red } from '@core/render/red';
 import { dibujarSilueta, ocupacionDe, tramosDe, type Tramos } from '@core/render/silueta';
+import { mergeById } from '@data/repo/localRepo';
 import { cargarMural, opcionesMural, redDeRegistros, type Cartel } from './cartel';
 import type { DataRecord } from '@core/types';
 
@@ -542,9 +543,9 @@ async function start(): Promise<void> {
   const cargado = await cargarMural(RENDER);
   cartel = cargado.cartel;
 
-  // Los propios van con los del banco: son registros del mural como
-  // cualquier otro, y traen su fecha igual que los demas.
-  const gente = [...cargado.base, ...cargado.propios];
+  // Los propios van con los del banco (sin duplicar los ya sincronizados):
+  // son registros del mural como cualquier otro, y traen su fecha igual.
+  const gente = mergeById(cargado.base, cargado.propios).records;
   const armada = redDeRegistros(gente, cartel.trama, cartel.field, RENDER);
   if (!armada) {
     sinPelicula('No se pudo armar la red del mural: falta la espiral del dibujo.');

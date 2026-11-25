@@ -47,23 +47,40 @@ export function storageAvailable(): boolean {
   }
 }
 
+const CLAVES_PROHIBIDAS = new Set(['__proto__', 'constructor', 'prototype']);
+const MAX_RECORDS_LOCAL = 20_000;
+const MAX_EXTRA_KEYS = 32;
+const MAX_EXTRA_LEN = 500;
+const CTRL_CHARS = /[\u0000-\u001F\u007F]/g;
+
 /** Se queda con lo que tenga forma de registro y descarta el resto. */
 function sanitize(data: unknown): DataRecord[] {
   if (!Array.isArray(data)) return [];
   const out: DataRecord[] = [];
-  for (const raw of data) {
+  const limite = Math.min(data.length, MAX_RECORDS_LOCAL);
+  for (let i = 0; i < limite; i++) {
+    const raw = data[i];
     if (!raw || typeof raw !== 'object') continue;
     const { id, zona, valor, extra } = raw as Partial<DataRecord>;
-    if (typeof id !== 'string' || !id) continue;
-    if (typeof zona !== 'string' || !zona) continue;
+    if (typeof id !== 'string' || !id || id.length > 120) continue;
+    if (typeof zona !== 'string' || !zona || zona.length > 120) continue;
     if (typeof valor !== 'number' || !isFinite(valor)) continue;
     const safe: Record<string, string> = {};
-    if (extra && typeof extra === 'object') {
+    if (extra && typeof extra === 'object' && !Array.isArray(extra)) {
+      let count = 0;
       for (const [k, v] of Object.entries(extra)) {
-        if (typeof v === 'string' && v !== '') safe[k] = v;
+        if (count >= MAX_EXTRA_KEYS) break;
+        if (CLAVES_PROHIBIDAS.has(k) || k.length > 80) continue;
+        if (typeof v === 'string') {
+          const clean = v.replace(CTRL_CHARS, '').trim().slice(0, MAX_EXTRA_LEN);
+          if (clean !== '') {
+            safe[k] = clean;
+            count++;
+          }
+        }
       }
     }
-    out.push({ id, zona, valor, extra: safe });
+    out.push({ id: id.replace(CTRL_CHARS, ''), zona: zona.replace(CTRL_CHARS, ''), valor, extra: safe });
   }
   return out;
 }
