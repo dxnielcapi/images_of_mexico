@@ -15,6 +15,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { DataRecord } from '@core/types';
 import { MAPPING_VERSION } from '@data/mapping';
 import { PERSON_FIELD_KEYS } from '@data/person';
+import { fechaValida, valorSeguro, zonaSegura } from '@data/seguridad';
 
 const SUPABASE_URL = (import.meta.env.PUBLIC_SUPABASE_URL ?? '').trim();
 const SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
@@ -79,10 +80,22 @@ function getClient(): SupabaseClient | null {
   return cachedClient;
 }
 
+/**
+ * Una fila de la tabla como registro del mural, o `null` si no se entiende.
+ *
+ * La tabla es compartida y se inserta desde el navegador, asi que una fila
+ * puede no venir del formulario: lo que vuelve es entrada, no dato propio.
+ * `zona` y `valor` se acotan a su forma —el mapeo recalcula lo que no
+ * pertenezca al dibujo de hoy— y la `fecha` a la ventana de
+ * `@data/seguridad`, porque es el unico campo con el que una sola fila puede
+ * estropear una pagina entera: `/timelapse` mide su largo de la fecha mas
+ * vieja a la mas nueva. Fuera de la ventana se deja vacia y quien la trajo
+ * entra como quien no dejo fecha.
+ */
 function rowToItem(row: Partial<RegistroRow>): RemoteItem | null {
   if (typeof row.id !== 'string' || !row.id) return null;
-  const valor = typeof row.valor === 'number' && Number.isFinite(row.valor) ? row.valor : 0.5;
-  const zona = typeof row.zona === 'string' ? row.zona : '';
+  const valor = valorSeguro(row.valor);
+  const zona = zonaSegura(row.zona);
   const mapeo =
     typeof row.mapeo_version === 'number' && Number.isFinite(row.mapeo_version)
       ? row.mapeo_version
@@ -94,6 +107,7 @@ function rowToItem(row: Partial<RegistroRow>): RemoteItem | null {
     const v = raw[key];
     if (typeof v === 'string' && v !== '') extra[key] = v;
   }
+  if (extra['fecha'] && !fechaValida(extra['fecha'])) delete extra['fecha'];
 
   return {
     record: { id: row.id, zona, valor, extra },

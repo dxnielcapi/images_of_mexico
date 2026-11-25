@@ -24,7 +24,7 @@ import {
 } from '@data/mexico';
 import {
   LIMITES_TEXTO, RATE_LIMIT_CONFIG, esDuplicadoReciente, limpiarTexto,
-  validarPersona, verificarRateLimit,
+  moderarTexto, validarPersona, verificarRateLimit,
 } from '@data/seguridad';
 import { paintBlob } from './blob';
 import { el } from './controls';
@@ -263,7 +263,7 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
     el('p', { class: PREGUNTA, text: '¿Qué te gustaría decir?' }),
     el('label', { class: 'block mt-[15px]' }, [mensaje, contadorMensaje]),
     frases,
-    el('p', { class: `${AYUDA} mb-3`, text: 'Toca una frase para usarla, o escribe la tuya. También puedes dejarlo en blanco.' }),
+    el('p', { class: `${AYUDA} mb-3`, text: 'Toca una frase para usarla, o escribe la tuya. También puedes dejarlo en blanco. Lo que escribas se va a leer en el mural.' }),
   ]);
 
   /** Los pasos en orden: es lo que recorre `goto`. */
@@ -429,7 +429,17 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
       for (const [i, g] of par.grupos.entries()) person[par.preguntas[i].key] = g.valor();
       return true;
     }
-    person.mensaje = limpiarTexto(mensaje.value, LIMITES_TEXTO.mensajeMax);
+    const mensajeLimpio = limpiarTexto(mensaje.value, LIMITES_TEXTO.mensajeMax);
+    const moderado = moderarTexto(mensajeLimpio);
+    if (!moderado.ok) return fail(moderado.error, mensaje), false;
+    // Lo que quede es lo que se va a leer en el mural: si la moderacion le
+    // bajo el volumen a un grito, se ve aqui —con el mensaje todavia a la
+    // vista— y no despues de enviar.
+    if (moderado.texto !== mensaje.value) {
+      mensaje.value = moderado.texto;
+      syncContador();
+    }
+    person.mensaje = moderado.texto;
     return true;
   }
 

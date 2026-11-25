@@ -45,6 +45,7 @@ import { dibujarFigura, rasterizarFigura } from '@core/render/figura';
 import { dibujarRed, type Arista, type Nodo, type Red } from '@core/render/red';
 import { dibujarSilueta, ocupacionDe, tramosDe, type Tramos } from '@core/render/silueta';
 import { mergeById } from '@data/repo/localRepo';
+import { diaDeFecha } from '@data/seguridad';
 import { cargarMural, opcionesMural, redDeRegistros, type Cartel } from './cartel';
 import type { DataRecord } from '@core/types';
 
@@ -121,21 +122,24 @@ const FECHA_CORTA = new Intl.DateTimeFormat('es-MX', {
 /** Un dia en milisegundos. */
 const DIA_MS = 86400000;
 
-/** Un dia del calendario en dias desde la epoca, o null si no se entiende. */
-function enDias(a: number, m: number, d: number): number | null {
-  const ms = Date.UTC(a, m - 1, d);
-  return Number.isFinite(ms) ? ms / DIA_MS : null;
-}
-
 /**
  * Cuando se registro alguien. La columna `fecha` manda; si no esta, queda la
  * del id, que la lleva escrita en el nombre (ver `@core/ids/idCodec`).
+ *
+ * Las dos pasan por la ventana de `@data/seguridad` (noventa anos atras, un
+ * dia adelante), y ese filtro es el que cuida la pelicula: el largo sale de la
+ * fecha mas vieja a la mas nueva, asi que un solo registro fechado en 1800
+ * —en la columna o en el id de una fila que no vino del formulario— la
+ * estiraria dos siglos y aplastaria todo lo real en su ultimo tramo. Fuera de
+ * la ventana la fecha no cuenta, y quien la trae entra como quien no dejo
+ * ninguna: desde el principio.
  */
 function diaDe(r: DataRecord): number | null {
   const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec((r.extra['fecha'] ?? '').trim());
-  if (iso) return enDias(+iso[1], +iso[2], +iso[3]);
+  const porColumna = iso ? diaDeFecha(+iso[1], +iso[2], +iso[3]) : null;
+  if (porColumna !== null) return porColumna;
   const compacta = /^(\d{4})(\d{2})(\d{2})$/.exec(parseId(r.id).fecha);
-  return compacta ? enDias(+compacta[1], +compacta[2], +compacta[3]) : null;
+  return compacta ? diaDeFecha(+compacta[1], +compacta[2], +compacta[3]) : null;
 }
 
 /** El calendario de la pelicula: cuando entra cada quien, en [0,1]. */
