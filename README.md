@@ -156,15 +156,30 @@ ilustración. Hace falta Python con `numpy`, `scipy`, `scikit-image` y
 `Pillow`.
 
 ```bash
+node tools/aligerar.mjs                                          # el SVG, a dos decimales
 cd tools
 python3 figuras.py ../public/Mural/Final.svg                     # el tlacuilo, aparte
+node ../tools/aligerar.mjs ../public/Mural/Final.tlacuilo.svg    # y el suyo
 python3 espina.py  ../public/Mural/Final.svg --sin ../public/Mural/Final.tlacuilo.svg
 python3 trazos.py  ../public/Mural/Final.svg --sin ../public/Mural/Final.tlacuilo.svg
 python3 zonas.py   ../public/Mural/Final.svg                     # semillas y umbrales
 ```
 
-`figuras.py` va primero porque los otros dos le descuentan esa figura al
-dibujo. Después hay que apuntar `src/io/plantilla.ts` al SVG nuevo —es el
+**`aligerar.mjs` va antes que todo** y es el paso nuevo: el export de Concepts
+trae dieciséis decimales por coordenada y pesa 4,2 MB, de los cuales casi tres
+son ceros al final de los números. Recortado a dos decimales son 1,2 MB sin
+que cambie un píxel (ver *El Hero: lo primero que se ve*). Va primero para que
+los horneados salgan del mismo archivo que se publica, y se vuelve a pasar
+sobre el `.tlacuilo.svg` porque ese lo escribe `figuras.py` después. Es
+idempotente: pasarlo dos veces no cambia nada.
+
+Lo único que se le cambia a `preset-default` de svgo es que **los `id` se
+quedan**: los horneados buscan las capas del export por su `id` (`CAPA` en
+`figuras.py`, `CAPAS_ESPIRAL` en `espina.py`), así que limpiarlos ahorraría
+80 KB y dejaría el dibujo sin poder rehornearse.
+
+`figuras.py` va primero de los cuatro porque los otros dos le descuentan esa
+figura al dibujo. Después hay que apuntar `src/io/plantilla.ts` al SVG nuevo —es el
 único lugar del código que nombra los archivos— y, si el dibujo trae otras
 capas, revisar `CAPA` en `figuras.py` y `CAPAS_ESPIRAL` en `espina.py`, que son
 los dos nombres que el horneado toma del export.
@@ -225,23 +240,43 @@ buscar** y **persona+**. Los tres últimos abren su recuadro **hacia arriba**:
 se abre uno por vez, el mismo icono lo cierra y `Esc` también. El primero no
 abre nada —es un enlace, y lleva a `/timelapse`.
 
-### Sumarse: tres preguntas
+### Sumarse: seis pantallas
 
-El alta no es un formulario largo sino tres pasos, cada uno en una pantalla de
+El alta no es un formulario largo sino seis pasos, cada uno en una pantalla de
 teléfono sin scrollear, con sus puntos de progreso arriba:
 
 1. **¿Cómo te llamas?** — nombre (lo único obligatorio), edad, a qué te dedicas
-   y de dónde eres. `Enter` avanza igual que el botón *Seguir*.
-2. **¿Cómo estás hoy?** — los nueve ánimos en una cuadrícula de 3×3, pero no
-   como lista: cada uno es **una mancha pintada con el pincel del mural**, con
-   su color de verdad. Se ve de antemano qué va a quedar en el mural. Van sin
-   mechón: lo que se elige ahí es el color, y nueve mechones de 58 px uno al
-   lado del otro son ruido que no ayuda a decidir.
-3. **¿Qué te gustaría decir?** — opcional. Debajo aparecen las frases sugeridas
-   del ánimo elegido; un toque las copia al campo.
+   y de qué estado de México eres. `Enter` avanza igual que el botón *Seguir*.
+2. **¿Cómo te sientes con tu alimentación?** — los nueve pasos de la escala en
+   una cuadrícula de 3×3, pero no como lista: cada uno es **una mancha pintada
+   con el pincel del mural**, con su color de verdad. Se ve de antemano qué va a
+   quedar en el mural. Van sin mechón: lo que se elige ahí es el color, y nueve
+   mechones de 58 px uno al lado del otro son ruido que no ayuda a decidir.
+3. **¿Qué alimentos consideras que puedes acceder de manera más rápida?** — las
+   cuatro preguntas de opción (`PREGUNTAS`) van en **lista de opción múltiple**:
+   un renglón por respuesta, con su encabezado y sus ejemplos debajo, y la
+   elegida marcada. Son `<input type="radio">` de verdad dentro de su etiqueta,
+   así que se tocan en todo el ancho del renglón y se recorren con las flechas.
+   Esta se lleva una pantalla entera por lo que ocupan sus tres opciones.
+4. **Las dos de sí o no** — si mereces una alimentación digna y si el reparto de
+   oportunidades es justo. Comparten pantalla porque sus opciones son de un
+   renglón.
+5. **¿Por qué crees que se ha perdido la alimentación típica de México?** — las
+   cuatro causas: políticas, económicas, la industria o las sociales. Pantalla
+   propia, como la 3.
+6. **¿Qué te gustaría decir?** — opcional, y una caja en blanco: **no hay frases
+   sugeridas**. Las hubo —un toque copiaba una del punto elegido en la escala— y
+   se quitaron porque ponían palabras en la boca de quien se registra, y lo que
+   se lee en el mural es justamente lo que nadie más le dijo.
+
+Cuántas preguntas entran por pantalla no es una constante sino algo que se
+calcula de las preguntas mismas (`enPasos`, en `@ui/registroForm`): la que trae
+ejemplos en sus opciones se lleva la pantalla entera y las de sí/no se van
+juntando. Así, estrenar una opción o una pregunta no deja un paso con scroll sin
+que nadie se entere —y este formulario se llena de pie en un kiosco.
 
 Al sumar, la tarjeta final trae la marca entera en grande —núcleo y mechón,
-sembrada con el ID, así es exactamente la que quedó—, el nombre, dónde quedó ("entre los pétalos" si la
+sembrada con el ID, así es exactamente la que quedó—, el nombre, dónde quedó ("en la serpiente" si la
 zona no tiene nombre propio), el ID completo y dos botones: **Ver mi mancha**,
 que cierra el recuadro y deja el agradecimiento sobre el mural mientras la marca
 late unos segundos, y **Sumar a otra persona**, que vuelve al paso 1 en blanco.
@@ -252,9 +287,61 @@ cualquiera, sorteado **de forma determinista desde el ID** —no con
 
 ### Buscar
 
-Por nombre, sin importar acentos ni mayúsculas. Al elegir un resultado se marca
-su mancha con un círculo que late y se abre su ficha. Con el mouse, además,
-pasar por cualquier mancha muestra la ficha de esa persona.
+Por nombre, sin importar acentos ni mayúsculas. Al elegir un resultado **la
+lupa se acerca a esa mancha** (3,2×), la marca con un círculo que late y abre
+su ficha.
+
+Marcarla donde estaba no alcanzaba: en el cartel entero una mancha son tres
+píxeles entre mil ochocientos, así que había que saber de antemano dónde
+mirar.
+
+Lo que decide dónde se la deja no es el ancho de la pantalla sino **lo que el
+recuadro abierto no tapa** (`zonaLibre`). Los recuadros se abren siempre
+contra un borde —a lo ancho y desde abajo en el teléfono, pegados a la derecha
+en una pantalla ancha—, así que lo libre sigue siendo un rectángulo: la mancha
+se lleva a su centro y la ficha se ancla dentro de él. Medirlo es más honesto
+que suponerlo, porque el recuadro mide distinto según lo que tenga dentro.
+
+**Y en el teléfono el buscador no se cierra: encoge.** Cerrarlo dejaba ver la
+mancha pero se llevaba la lista, y entonces probar con el siguiente nombre era
+volver a abrir el buscador cada vez —justo lo que uno quiere hacer rápido
+cuando está buscando a alguien entre varios homónimos—. Encogido pierde el
+encabezado y deja la lista en tres renglones (sigue desplazándose), así que
+pasa de tres cuartos de pantalla a poco más de un cuarto: arriba quedan la
+mancha marcada y su ficha, y el siguiente nombre está a un toque. Al escribir
+otra cosa vuelve a su tamaño, y al cerrarlo se devuelve el cartel entero.
+
+A lo alto, dentro de esa zona libre, la ficha del teléfono se ancla al borde
+más lejano de la mancha y se queda con poco más de la mitad: el resto es para
+la mancha, que es lo que se fue a ver. Si los datos de alguien no entran en
+eso, la hoja se desplaza por dentro.
+
+En una pantalla ancha nada de esto hace falta: el recuadro no tapa el mural,
+así que se queda entero y la mancha se centra en lo que queda a su izquierda.
+Si cae contra la orilla del dibujo el encuadre no puede correrse más (ver *La
+lupa*) y queda donde el tope la deje —la ficha, que se ancla al borde opuesto,
+se acomoda sola—.
+
+### El dedo: tocar una mancha
+
+Con el mouse, pasar por cualquier mancha muestra la ficha de esa persona. En
+un teléfono eso no existe, y lo que había era solo la red apartándose del
+dedo: no había forma de saber de quién era una mancha salvo buscarla por su
+nombre.
+
+Ahora **un toque quieto abre la ficha** de quien quedó debajo, con el cartel
+entero o con la lupa puesta, y un toque sobre el papel vacío la cierra. Un
+toque que se corrió no cuenta —era un arrastre, de la página o del cartel— y
+uno largo tampoco. El área sensible se mide en píxeles de pantalla y no en los
+del dibujo: el dedo tapa una moneda, así que son 22 px de pantalla alrededor
+del toque, lo que de lejos abarca varias manchas y de cerca una sola.
+
+La ficha, en el teléfono, no se pone al lado del dedo —ahí tapaba justo lo que
+se acababa de señalar— sino anclada al borde que le quede más lejos, a lo
+ancho y dentro de la zona libre, para no taparle el buscador ni la fila de
+iconos. Va más corta que en el escritorio: los datos en dos pares por renglón,
+los valores largos con el renglón entero y el desglose del ID fuera, que es lo
+que menos se mira y lo que más renglones trae.
 
 ### La base compartida
 
@@ -286,6 +373,16 @@ servidor es un tope contra abuso masivo, no un límite por persona.
 
 Correrlo: el SQL Editor del panel de Supabase, pegando el archivo entero. Es
 idempotente, así que se puede repetir sin romper lo que ya está.
+
+La sección 3 es la excepción a eso y hay que leerla antes de pegar el archivo:
+es el único `delete` de todo el esquema. Las dos preguntas que cambiaron
+—`prefiere`, que pasó del gusto al acceso, y `perdida_soberania`, que pasó a
+cuatro causas— guardan tokens nuevos, así que esa sección **borra las filas que
+contestaron con las opciones de antes** y recién después reescribe sus dos
+`CHECK`; al revés, `add constraint` valida lo que ya está en la tabla y falla
+con `23514`. Borra solo lo que ya no cabe en las preguntas de hoy, así que
+sobre una tabla al día no toca nada. El `count(*)` que va comentado arriba dice
+cuántas filas se va a llevar antes de correrlo.
 
 Como el navegador puede borrar sus datos, el recuadro de alta trae al pie un
 `<details>` plegado, **Mis registros** —el respaldo es tarea de quien atiende el
@@ -338,9 +435,9 @@ Tres cosas lo definen:
 
 Lo que sí vive en el script es el **vocabulario** —nombres, oficios, lugares y
 las frases de más—, porque la app no necesita conocerlo. Las cuatro frases por
-punto de la escala que trae `SENTIRES` son las que el alta sugiere como chips,
-no las que alcanzan para mil doscientas personas, así que el banco habla
-además con un repertorio propio.
+punto de la escala que trae `SENTIRES` se importan y se usan, pero treinta y
+seis no alcanzan para mil ochocientas personas, así que el banco habla además
+con un repertorio propio.
 
 ### Cuánta gente hace falta
 
@@ -509,7 +606,7 @@ para quien quiera verla de todos modos.
 de alguien. Está aparte del esquema (`@data/person`) y de la persistencia
 (`@data/repo/localRepo`) porque es justo lo que va a cambiar cuando estén
 delimitados los datos y las zonas definitivas, y el resto del sistema no debería
-enterarse. La regla vigente (**versión 3**) es: el valor es la intensidad
+enterarse. La regla vigente (**versión 4**) es: el valor es la intensidad
 cultural que sale de las cinco respuestas juntas (`intensidad(rasgosDe(…))`,
 ver *La afinidad*), y la zona se sigue sorteando desde el ID en proporción al
 espacio de cada región —pero ya no decide dónde se pinta nadie: eso lo deciden
@@ -918,6 +1015,136 @@ cambiar el tamaño de la ventana se vuelve a rasterizar, 180 ms después del
 Como el trazo escala con la resolución, el PNG 4x sigue siendo un re-render de
 verdad: la tinta media es idéntica a 1x, 2x y 4x.
 
+### El teléfono: lo que se apaga para que el scroll vaya
+
+Un fotograma del mural son unas cuantas miles de trazadas —cada arista, cada
+nodo— y el bucle las pide sesenta veces por segundo mientras el cartel esté a
+la vista. En una pantalla de escritorio eso entra en el presupuesto; en un
+teléfono, no, y lo primero que se nota no es la animación sino **el scroll**,
+que se arrastra porque el hilo principal está pintando.
+
+Lo que se hace es dejar de pedirle trabajo al hilo justo cuando se lo necesita
+para otra cosa. Nada de esto cambia el dibujo:
+
+- **El lápiz se para mientras la página se desplaza.** Se apaga en el primer
+  evento de scroll y vuelve 140 ms después del último. Nadie está mirando la
+  animación mientras pasa la página: medido en el navegador, el mural pasa de
+  unos cuarenta repintados por segundo a **uno** durante el gesto. El trazado
+  del Hero para con él —es más barato, pero el primer scroll de la página
+  ocurre justo encima— y vuelve solo si el Hero sigue a la vista.
+- **El dedo ya no arrastra la red.** Antes, mover el dedo sobre el mural
+  seguía el punto tocado y repintaba cada fotograma; pero sobre un lienzo que
+  ocupa la pantalla entera, mover el dedo es desplazar la página. Ahora en
+  cuanto el toque se corre se suelta el punto (ver *El dedo*).
+- **Treinta fotogramas por segundo con el dedo, sesenta con el ratón.** La
+  esquivada se sigue con el puntero y a 30 se nota a saltos; con el dedo no
+  hay puntero que seguir, así que la mitad de los cuadros no se echan de
+  menos. Lo decide `(pointer: coarse)`, no el ancho: hay pantallas chicas con
+  ratón y tabletas grandes sin él.
+- **Menos cristal.** `backdrop-filter` no es un fondo: es un desenfoque de lo
+  que haya detrás, y el navegador lo recalcula en cada fotograma en que la
+  caja se mueve. Por debajo de 560 px las cajas que se repiten —tarjetas,
+  pastillas, botones, la ficha— cambian el desenfoque por un papel algo más
+  opaco; en una pantalla de 390 px lo que se adivinaba detrás de ellas era un
+  píxel de acuarela. El cristal de verdad se queda donde se lo mira: la barra,
+  el velo del Hero y su placa central, que son tres cajas y no treinta.
+- **El Hero sale sin desenfoque.** Su salida con el scroll animaba un
+  `filter: blur` sobre una placa que ya desenfoca lo que tiene detrás: era
+  desenfocar media pantalla dos veces por fotograma. En el teléfono queda la
+  opacidad y el desplazamiento, que los compone la GPU sola. Y el alto del
+  Hero se mide una vez y no en cada evento de scroll, que obligaba a
+  recalcular la página en medio del gesto.
+
+### El Hero: lo primero que se ve
+
+La portada abre con la ilustración trazándose sola detrás del cristal
+(`src/mural/heroReveal.ts`). Eso es lo primero que mira cualquiera, y en un
+teléfono tardaba varios segundos en aparecer. No era la animación: era todo lo
+que se le había puesto delante.
+
+**El Hero esperaba al mural entero.** `initHeroReveal` se llamaba al final del
+arranque, después de bajar los seis archivos, analizar el dibujo píxel a
+píxel, armar la red con la gente y renderizar la escena. Entre esas cosas
+estaba la consulta a Supabase —un viaje de ida y vuelta por la red, 600 ms en
+un escritorio con fibra y bastante más en un teléfono—, y el Hero no necesita
+saber quién pintó el mural para dibujar la ilustración: lo único que mira es
+el dibujo.
+
+Ahora `cargarMural` avisa en cuanto el dibujo está rasterizado
+(`alTenerDibujo`) y el Hero arranca ahí, con la lámina de líneas como fuente;
+cuando el mural termina de renderizarse, `render` le cambia la fuente por la
+escena pintada y el Hero pasa a mostrar el color sin cortar el ciclo. Es la
+misma figura con la misma geometría, así que el cambio no se ve. Medido en el
+navegador, el lienzo del Hero pasa de aparecer a los **2.270 ms** a hacerlo a
+los **270**.
+
+**Y el dibujo pesaba 4,2 MB.** El export de Concepts guarda dieciséis
+decimales por coordenada; a dos decimales el mismo trazo son 1,2 MB, y el
+tlacuilo baja de 0,48 a 0,13. Es la descarga que bloquea al Hero —y la que
+después hay que parsear y decodificar antes de rasterizar—, así que es la que
+más se nota en un teléfono. No cambia el dibujo: el viewBox está en puntos y
+la plantilla se rasteriza a 2000 px, o sea 0,75 px por punto, de modo que un
+centésimo de punto son tres milésimas de píxel. Comprobado contra el original:
+de los 482.000 píxeles con tinta, el recorte mueve 4.400 bordes y ninguno más
+de un cuarto de tono. Lo hace `tools/aligerar.mjs`, fuera del build (ver
+*Cambiar la ilustración*).
+
+La lámina quieta que va debajo del lienzo es ese mismo archivo, pedido con
+`fetchpriority="high"`: es lo primero del dibujo que se ve y lo que el motor
+va a rasterizar, así que adelantarlo adelanta las dos cosas.
+
+**Y el análisis congelaba la página.** Lo que quedó siendo lo más caro de
+abrir el mural no es bajar nada: es medir el dibujo. Binarizar, cerrar el
+trazo, la transformada de distancia y el etiquetado son **tres transformadas
+sobre los 3,94 millones de píxeles** del cartel, y eso corría en el hilo de la
+página. Medido en este escritorio: **491 ms** de los 700 que tarda el mural en
+estar listo —el 70 %—, y el hilo tomado de punta a punta. El Hero ya empezaba
+a trazarse antes que todo eso, pero se quedaba clavado en su primer fotograma
+hasta que terminaba, y la página entera con él: el hueco más grande entre dos
+fotogramas era de **598 ms**. Medio segundo de página muerta justo cuando se
+está mirando.
+
+No se puede abaratar sin cambiar el dibujo, y se probaron las dos maneras. La
+transformada ya es la exacta en tiempo lineal y, cronometrada pasada por
+pasada, está en su piso (113 ms por transformada, repartidos parejo entre
+columnas y filas: no es un problema de caché). Bajar la resolución del
+análisis costaría cuatro veces menos, pero lo pintable son bandas de **ocho
+píxeles de ancho** —la profundidad mediana del campo es 4,2 px—: a la mitad de
+resolución el cierre morfológico ya no rellena las mismas, y eso sí cambia el
+dibujo. Y hornearlo con `tools/`, que es lo que se hace con todo lo demás,
+tampoco: el campo se usa píxel a píxel contra el mismo raster que el navegador
+acaba de hacer, y el rasterizador de Python no cae en el mismo píxel
+—comprobado: 5 % de diferencia en el área pintable, un píxel de desajuste—.
+Por eso `zonas.py` hornea semillas y no máscaras: una semilla es el píxel más
+interior de su pieza y aguanta esa diferencia, un campo no.
+
+Así que el cálculo se queda entero y exacto, y lo que se va es el bloqueo:
+corre en un hilo aparte (`src/core/zones/analisis.worker.ts`, por la puerta de
+`analisisAparte.ts`). En el hilo de la página queda solo la binarización
+—13 ms—, que es la que necesita la `ImageData` de dieciséis megas que ya está
+ahí; lo que viaja es la máscara de tinta, cuatro megas, y va *transferida*, sin
+copia. **El hueco más grande pasa de 598 ms a 113**, y lo que queda ya no es
+medir: es pintar el mural. El total hasta el cartel no cambia —son los mismos
+3,94 millones de píxeles, más unos 20 ms de abrir el hilo—, pero durante ese
+rato el Hero sigue trazándose, la barra responde y la página hace scroll.
+
+El resultado es idéntico, no parecido: es el mismo código sobre los mismos
+bytes. Comprobado sumando el campo entero por los dos caminos —3 468 275,26276
+en los dos—, junto con la tinta, las etiquetas y el área de la zona. Y si no
+hay hilos —un navegador viejo, una política de contenido que los prohíbe, el
+archivo que no carga— se mide en la página como antes: el mural abre igual,
+nada más que se queda quieto ese rato. Es el mismo trato que tienen los cuatro
+archivos horneados.
+
+**Y la barra ya no se mueve.** Los dos logos de la derecha iban sin `width` ni
+`height`, así que hasta que bajaban medían cero y la barra repartía el espacio
+sin ellos: al llegar los dos archivos, «Participa» y la fila de secciones
+saltaban cincuenta píxeles a la izquierda. Es el mismo cuidado que ya tenían
+las fotos del concepto —los atributos van en el `<img>` para que el hueco esté
+reservado antes de que baje el archivo (con el alto en CSS y la proporción en
+los atributos, el navegador ya sabe el ancho)—, y faltaba en los cuatro logos
+de la barra y el pie.
+
 ### Los brotes: lo único que se mueve
 
 `src/mural/brotes.ts` hace crecer una veintena de hebras tenues que salen de
@@ -948,8 +1175,8 @@ reducido no hay bucle y el mural se ve igual, quieto y entero.
 
 `alimentacion` toma uno de los nueve pasos de `SENTIRES` (`muy bien`, `bien`,
 `casi bien`, `más o menos`, `ni bien ni mal`, `algo mal`, `mal`, `muy mal`,
-`nada bien`) y cada paso trae sus frases sugeridas, que son las que ofrece el
-último paso del alta.
+`nada bien`). Cada paso trae además cuatro frases: las sugería el último paso
+del alta y ya no, así que hoy son solo el habla del banco simulado.
 
 Pero el color no sale de la escala sola: sale de las **cinco** respuestas
 juntas, vía `intensidad(rasgosDe(person))` en `@data/afinidad`. La escala pesa
@@ -1121,6 +1348,8 @@ src/
     types/           dataset · zone · placement · render · warning
     platform/        surface  ← el único punto del núcleo que crea un lienzo
     zones/           binarize · morphology · connectedComponents · zoneMask
+                     analisis.worker + analisisAparte  ← medir el dibujo sin
+                     congelar la página
     sampling/        prng · grid · randomInMask · poissonInMask
     render/          watercolor · trazo · field · medidas · paper · palette
                      boceto · pincelada  ← la figura la trazan los datos
@@ -1197,6 +1426,7 @@ tools/trazos.py      fuera del build · hornea las líneas del dibujo
 tools/espina.py      fuera del build · hornea el recorrido de la espiral
 tools/zonas.py       fuera del build · escribe el .zones.json del dibujo
                      los cuatro desde el SVG (numpy, scipy, scikit-image, Pillow)
+tools/aligerar.mjs   fuera del build · recorta los decimales de los SVG (svgo)
 tools/registros.mjs  fuera del build · agrega gente al banco simulado
 ```
 

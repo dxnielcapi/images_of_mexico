@@ -7,10 +7,19 @@
  * pintada con el pincel del mural, asi se ve de antemano el color que va a
  * quedar en el dibujo.
  *
- * Los dos pasos que siguen son las cuatro preguntas de opcion (`PREGUNTAS`):
- * van de a dos por pantalla, un toque cada una. Podrian ir las cuatro juntas,
- * pero en un telefono eso ya es una pantalla con scroll, y este formulario se
- * llena de pie en un kiosco.
+ * Los pasos que siguen son las cuatro preguntas de opcion (`PREGUNTAS`), cada
+ * una como una lista de opcion multiple: la respuesta se marca y queda a la
+ * vista, con sus ejemplos debajo del encabezado. Cuantas entran por pantalla
+ * lo decide la pregunta y no una constante (ver `enPasos`): una opcion con
+ * ejemplos ocupa dos renglones, asi que las dos preguntas que los traen se
+ * llevan una pantalla cada una y las dos de si/no comparten la suya. Este
+ * formulario se llena de pie en un kiosco y ningun paso debe pedir scroll.
+ *
+ * El ultimo paso es una caja de texto en blanco. Antes traia las frases
+ * sugeridas del punto de la escala, de un toque; se quitaron porque ponian
+ * palabras en la boca de quien se registra —y lo que se lee en el mural es
+ * justamente lo que nadie mas le dijo. Las frases siguen en `SENTIRES`: son
+ * el habla del banco simulado (ver `tools/registros.mjs`).
  *
  * No toca el estado global: todo sale por los callbacks de `hooks`.
  */
@@ -102,15 +111,37 @@ function campoSelect(
    utilidades de la misma propiedad gana la que Tailwind emite ultima, no la
    que este despues en el atributo `class`. */
 const PREGUNTA = 'mb-[5px] text-2xl telefono:text-3xl font-mid leading-[1.3] tracking-[-0.005em]';
-/* Cuando van dos preguntas en el mismo paso, el tamano grande no cabe. */
-const PREGUNTA_PAR = 'mb-2 text-lg telefono:text-xl font-mid leading-[1.35] tracking-[-0.005em]';
+/* En los pasos de opcion el tamano grande no cabe: debajo de la pregunta va
+   una lista que ocupa el resto de la pantalla. */
+const PREGUNTA_OPCION = 'mb-2 text-lg telefono:text-xl font-mid leading-[1.35] tracking-[-0.005em]';
 const AYUDA = 'text-[12.5px] leading-[1.45] text-muted';
 
-/** Las cuatro preguntas de opcion, de a dos por paso. */
-const PARES: Pregunta[][] = [PREGUNTAS.slice(0, 2), PREGUNTAS.slice(2, 4)];
+/** True si las opciones de la pregunta traen ejemplos: ocupan dos renglones. */
+const esLarga = (q: Pregunta) => q.opciones.some((o) => o.detalle);
 
-/** Datos · escala · dos pares de preguntas · mensaje. */
-const STEPS = 3 + PARES.length;
+/**
+ * Reparte las preguntas de opcion en pasos, en el orden en que estan.
+ *
+ * Una pregunta larga se lleva la pantalla entera y las cortas —las de si/no,
+ * sin ejemplos— se van juntando en la misma. Se calcula de las preguntas y no
+ * se escribe a mano para que estrenar una opcion o una pregunta no deje un
+ * paso con scroll sin que nadie se entere.
+ */
+function enPasos(preguntas: readonly Pregunta[]): Pregunta[][] {
+  const pasos: Pregunta[][] = [];
+  for (const q of preguntas) {
+    const ultimo = pasos[pasos.length - 1];
+    if (!esLarga(q) && ultimo && !ultimo.some(esLarga)) ultimo.push(q);
+    else pasos.push([q]);
+  }
+  return pasos;
+}
+
+/** Las cuatro preguntas de opcion repartidas en pantallas. */
+const PASOS_PREGUNTAS: Pregunta[][] = enPasos(PREGUNTAS);
+
+/** Datos · escala · las preguntas de opcion · mensaje. */
+const STEPS = 2 + PASOS_PREGUNTAS.length + 1;
 
 /** Un grupo de opciones: se responde con un toque y se puede volver a cambiar. */
 interface Grupo {
@@ -193,49 +224,69 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
 
   // ------------------------------------------------------------ pasos 3 y 4
 
-  /** Los botones de una pregunta de opcion, con su estado elegido. */
+  /**
+   * Una pregunta de opcion como lista: un renglon por respuesta, con su
+   * encabezado y sus ejemplos, y la elegida marcada.
+   *
+   * Los renglones son `<input type="radio">` de verdad dentro de su etiqueta,
+   * no botones: la pregunta admite una sola respuesta y el control nativo es
+   * el que lo dice solo —se recorre con las flechas, lo lee un lector de
+   * pantalla como lo que es, y marcar uno desmarca el anterior sin que haya
+   * que mantenerlo a mano. Lo unico que se lleva en JS es la clase `sel`, que
+   * es la que pinta el renglon entero.
+   */
   function grupo(q: Pregunta): Grupo {
     let elegido = '';
-    const fila = el('div', { class: 'flex flex-wrap gap-1.5' });
-    const items = new Map<string, HTMLButtonElement>();
+    const idPregunta = `alta-pregunta-${q.key}`;
+    const lista = el('div', { class: 'opciones' });
+    lista.setAttribute('role', 'radiogroup');
+    lista.setAttribute('aria-labelledby', idPregunta);
+    const items = new Map<string, { radio: HTMLInputElement; fila: HTMLElement }>();
 
     for (const o of q.opciones) {
-      const b = el('button', { class: 'opcion', type: 'button', text: o.etiqueta });
-      b.setAttribute('aria-pressed', 'false');
-      b.addEventListener('click', () => {
+      const radio = el('input', {
+        type: 'radio',
+        class: 'opcion-marca',
+        name: `alta-${q.key}`,
+        value: o.valor,
+      });
+      const texto: Node[] = [el('span', { class: 'opcion-titulo', text: o.etiqueta })];
+      if (o.detalle) texto.push(el('span', { class: 'opcion-detalle', text: o.detalle }));
+      const fila = el('label', { class: 'opcion' }, [
+        radio,
+        el('span', { class: 'opcion-texto' }, texto),
+      ]);
+      radio.addEventListener('change', () => {
+        if (!radio.checked) return;
         elegido = o.valor;
-        for (const [v, node] of items) {
-          const on = v === o.valor;
-          node.classList.toggle('sel', on);
-          node.setAttribute('aria-pressed', String(on));
-        }
+        for (const [v, item] of items) item.fila.classList.toggle('sel', v === o.valor);
         clearAviso();
       });
-      items.set(o.valor, b);
-      fila.append(b);
+      items.set(o.valor, { radio, fila });
+      lista.append(fila);
     }
 
+    const titulo = el('p', { class: PREGUNTA_OPCION, text: q.pregunta });
+    titulo.id = idPregunta;
+
     return {
-      root: el('div', { class: 'mt-4 first:mt-0' }, [
-        el('p', { class: PREGUNTA_PAR, text: q.pregunta }),
-        fila,
-      ]),
+      root: el('div', { class: 'mt-5 first:mt-0' }, [titulo, lista]),
       valor: () => elegido,
       clear: () => {
         elegido = '';
-        for (const node of items.values()) {
-          node.classList.remove('sel');
-          node.setAttribute('aria-pressed', 'false');
+        for (const { radio, fila } of items.values()) {
+          radio.checked = false;
+          fila.classList.remove('sel');
         }
       },
     };
   }
 
-  /** Un paso por par de preguntas, con sus grupos a mano para validar. */
-  const paresPasos = PARES.map((par) => {
-    const grupos = par.map(grupo);
+  /** Un paso por pantalla de preguntas, con sus grupos a mano para validar. */
+  const pasosPreguntas = PASOS_PREGUNTAS.map((preguntas) => {
+    const grupos = preguntas.map(grupo);
     return {
-      preguntas: par,
+      preguntas,
       grupos,
       root: el('div', { class: 'paso' }, grupos.map((g) => g.root)),
     };
@@ -257,40 +308,15 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
     contadorMensaje.textContent = `${mensaje.value.length} / ${LIMITES_TEXTO.mensajeMax}`;
   };
   mensaje.addEventListener('input', syncContador);
-  const frases = el('div', { class: 'flex flex-wrap gap-1.5 mt-[11px]' });
 
   const pasoMensaje = el('div', { class: 'paso' }, [
     el('p', { class: PREGUNTA, text: '¿Qué te gustaría decir?' }),
     el('label', { class: 'block mt-[15px]' }, [mensaje, contadorMensaje]),
-    frases,
-    el('p', { class: `${AYUDA} mb-3`, text: 'Toca una frase para usarla, o escribe la tuya. También puedes dejarlo en blanco. Lo que escribas se va a leer en el mural.' }),
+    el('p', { class: `${AYUDA} mb-3`, text: 'Con tus palabras. También puedes dejarlo en blanco. Lo que escribas se va a leer en el mural.' }),
   ]);
 
   /** Los pasos en orden: es lo que recorre `goto`. */
-  const PASOS: HTMLElement[] = [paso1, paso2, ...paresPasos.map((p) => p.root), pasoMensaje];
-
-  /** Frases sugeridas del punto elegido en la escala: un toque las copia. */
-  function refreshFrases(): void {
-    frases.textContent = '';
-    const sentir = sentirByName(person.alimentacion);
-    if (!sentir) return;
-    for (const f of sentir.frases) {
-      const chip = el('button', {
-        class: 'px-[11px] py-1.5 rounded-full border border-accent-line bg-paper '
-          + 'text-sm leading-[1.3] text-left text-muted cursor-pointer touch-manipulation '
-          + 'transition-[border-color,color] duration-[120ms] '
-          + 'hover:border-accent hover:text-ink focus-visible:border-accent focus-visible:text-ink focus-visible:outline-none',
-        type: 'button',
-        text: f,
-      });
-      chip.addEventListener('click', () => {
-        mensaje.value = f;
-        syncContador();
-        mensaje.focus();
-      });
-      frases.append(chip);
-    }
-  }
+  const PASOS: HTMLElement[] = [paso1, paso2, ...pasosPreguntas.map((p) => p.root), pasoMensaje];
 
   // ------------------------------------------------------------ tarjeta final
   const listo = el('div', { class: 'paso hidden pt-1 text-center' });
@@ -365,7 +391,6 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
       b.setAttribute('aria-pressed', String(on));
     }
     clearAviso();
-    refreshFrases();
   }
 
   function clearAviso(): void {
@@ -417,16 +442,16 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
     }
     // Los pasos de opciones: las preguntas se contestan con un toque, asi que
     // se piden todas. Son las que va a leer el mapeo.
-    const par = paresPasos[step - 2];
-    if (par) {
-      for (const [i, g] of par.grupos.entries()) {
+    const pantalla = pasosPreguntas[step - 2];
+    if (pantalla) {
+      for (const [i, g] of pantalla.grupos.entries()) {
         if (!g.valor()) {
-          return fail(par.grupos.length > 1 && i === 1
+          return fail(pantalla.grupos.length > 1 && i === 1
             ? 'Falta la segunda pregunta de esta pantalla.'
             : 'Elige una respuesta para seguir.'), false;
         }
       }
-      for (const [i, g] of par.grupos.entries()) person[par.preguntas[i].key] = g.valor();
+      for (const [i, g] of pantalla.grupos.entries()) person[pantalla.preguntas[i].key] = g.valor();
       return true;
     }
     const mensajeLimpio = limpiarTexto(mensaje.value, LIMITES_TEXTO.mensajeMax);
@@ -531,8 +556,7 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
       b.classList.remove('sel');
       b.setAttribute('aria-pressed', 'false');
     }
-    for (const par of paresPasos) for (const g of par.grupos) g.clear();
-    refreshFrases();
+    for (const pantalla of pasosPreguntas) for (const g of pantalla.grupos) g.clear();
     listo.classList.add('hidden');
     pasos.classList.remove('hidden');
     nav.classList.remove('hidden');
@@ -549,7 +573,6 @@ export function registroForm(hooks: RegistroFormHooks): RegistroForm {
   }
 
   const root = el('div', { class: 'flex flex-col' }, [pasos, cuerpo, aviso, nav]);
-  refreshFrases();
   step = 1;
   goto(0);
 

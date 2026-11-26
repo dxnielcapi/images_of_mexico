@@ -16,7 +16,10 @@
  * El bucle solo corre con alguna de las secciones a la vista y la pestaña al
  * frente; con `prefers-reduced-motion` los fragmentos quedan quietos.
  */
-import { dibujarRed, type Arista, type Nodo, type Red, type RedParams } from '@core/render/red';
+import {
+  derivaX, derivaY, dibujarRed, respiracionDe,
+  type Arista, type Nodo, type Red, type RedParams,
+} from '@core/render/red';
 import type { ColorRamp } from '@core/render/palette';
 import type { PlacedPoint } from '@core/types';
 
@@ -61,7 +64,6 @@ export function crearFondoRed(capas: CapaFondo[], o: Opciones) {
     const escena = lienzos[0]?.canvas.parentElement;
     ancla.y = escena ? parseFloat(getComputedStyle(escena).top) || 0 : 0;
   }
-  let fases = new Float32Array(0);
   let raf = 0;
   let visible = false;
   let ultimo = 0;
@@ -86,6 +88,7 @@ export function crearFondoRed(capas: CapaFondo[], o: Opciones) {
           punto: { record: { id: '' }, x, y, t } as unknown as PlacedPoint,
           bx: x, by: y, dx: 0, dy: 0,
           r: (2.5 + 4 * t) * (lado / 700),
+          ...respiracionDe(Math.random),
         };
         propios.push(n);
       }
@@ -101,8 +104,6 @@ export function crearFondoRed(capas: CapaFondo[], o: Opciones) {
       nodos.push(...propios);
     }
     red = { nodos, aristas };
-    fases = new Float32Array(nodos.length * 2);
-    for (let i = 0; i < fases.length; i++) fases[i] = Math.random() * Math.PI * 2;
   }
 
   /**
@@ -156,12 +157,16 @@ export function crearFondoRed(capas: CapaFondo[], o: Opciones) {
     // Con `prefers-reduced-motion` la respiracion se congela en su primer
     // fotograma: el repintado del scroll y el del resize entran por aqui, y
     // sin esto los nodos irian saltando a la posicion que les tocara ahora.
+    // Es la misma deriva que respira la red del mural (ver `derivaX`), solo
+    // que aqui la amplitud va en pixeles de pantalla y se asigna sin
+    // suavizar: no hay cursor que esquivar, y asi cada repintado suelto —el
+    // del scroll, el del resize— sale igual que el del bucle.
     const t = (menos?.matches ? 0 : ms) / 1000;
     const amp = Math.min(w, h) * 0.012;
-    red.nodos.forEach((n, i) => {
-      n.dx = Math.sin(t * 0.5 + fases[i * 2]) * amp;
-      n.dy = Math.cos(t * 0.4 + fases[i * 2 + 1]) * amp;
-    });
+    for (const n of red.nodos) {
+      n.dx = derivaX(n, amp, t);
+      n.dy = derivaY(n, amp, t);
+    }
 
     const params = { ...o.params, aristaAncho: o.params.aristaAncho * dpr };
     for (const l of lienzos) {

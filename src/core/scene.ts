@@ -46,7 +46,30 @@ export function analyzeDrawing(
   height: number,
   p: DetectParams
 ): Analysis {
-  const raw = binarize(imageData, p.threshold);
+  return analizarTinta(binarize(imageData, p.threshold), width, height, p);
+}
+
+/**
+ * El analisis a partir de la tinta ya binarizada: todo el trabajo pesado.
+ *
+ * Esta separado de `analyzeDrawing` porque es la mitad que se puede mandar
+ * fuera del hilo de la pagina (ver `@core/zones/analisisAparte`). La
+ * binarizacion se queda afuera a proposito: es la unica parte que necesita la
+ * `ImageData` entera —dieciseis megas— y la unica barata, asi que conviene
+ * hacerla donde esta la imagen y mandar la mascara, que es la cuarta parte.
+ *
+ * Son tres transformadas de distancia sobre los cuatro millones de pixeles del
+ * cartel (dos las gasta `strokeFill`): medio segundo largo en un escritorio y
+ * unos segundos en un telefono, sin soltar el hilo en ningun momento. Por eso
+ * se corre aparte, y no porque se pueda abaratar: la transformada ya es la
+ * exacta en tiempo lineal.
+ */
+export function analizarTinta(
+  raw: Uint8Array,
+  width: number,
+  height: number,
+  p: DetectParams
+): Analysis {
   const ink = p.dilate > 0 ? dilate(raw, width, height, p.dilate) : raw;
 
   // Lo que se va a etiquetar. Normalmente es el fondo que el trazo encierra;

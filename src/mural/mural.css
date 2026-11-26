@@ -148,6 +148,47 @@
     box-shadow: 0 10px 24px rgb(43 38 32 / 0.12), inset 0 1px 0 #fff;
   }
 
+  /* ------------------------------------------------- cristal en telefono
+
+     El `backdrop-filter` no es un fondo: es un desenfoque de lo que haya
+     detras, y el navegador lo recalcula en cada fotograma en que la caja se
+     mueve. En el escritorio pasa inadvertido; en un telefono, con una docena
+     de tarjetas de cristal a la vista y el mural pintandose debajo, es lo
+     que hacia que el scroll fuera a tirones.
+
+     Las que se repiten —tarjetas, pastillas, botones— cambian el desenfoque
+     por un papel algo mas opaco: en una pantalla de 390 px lo que se
+     adivinaba detras de ellas era un pixel de acuarela. El cristal de verdad
+     se queda donde se lo mira: la barra, el velo del Hero y su placa
+     central, que son tres cajas y no treinta.
+     ------------------------------------------------------------------ */
+
+  @media (width < 560px) {
+    .glass-card,
+    .glass-pill,
+    .glass-btn {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    .glass-card { background: rgb(255 253 248 / 0.94); }
+    .glass-pill { background: rgb(255 253 248 / 0.92); }
+    .glass-btn { background: rgb(255 253 248 / 0.9); }
+
+    /* La levantada de la ficha es de `:hover`, que en un telefono no existe:
+       la capa aparte que `will-change` le reserva a cada una de las doce no
+       la mira nadie. */
+    .ref-tarjeta { will-change: auto; }
+
+    /* El desenfoque de salida del Hero lo escribia `main.ts` fotograma a
+       fotograma; alli se deja de escribir en este ancho (ver
+       `updateHeroExit`) y aqui sale de la transicion, para que no quede uno
+       a medio aplicar. */
+    .hero-exit-target {
+      will-change: transform, opacity;
+      transition: transform 0.08s linear, opacity 0.08s linear;
+    }
+  }
+
   /* Acordeon de preguntas frecuentes en la pagina publica. */
   .faq-item {
     border: 1px solid var(--color-line);
@@ -441,6 +482,10 @@
   .revelar-activo .dieta-revelar.revelado {
     opacity: 1;
     transform: none;
+    /* Ya entro: la capa aparte que `will-change` le reserva no vuelve a
+       usarse, y en una pagina con decenas de bloques revelados son decenas
+       de capas que el telefono sigue guardando. */
+    will-change: auto;
   }
 
   /* --------------------------------------------------------- el rotulo */
@@ -1142,14 +1187,15 @@
   .panel .txt:focus { border-color: var(--color-accent); outline: none; }
   .panel .ritem:hover { background: var(--color-accent-soft); outline-color: var(--color-accent); }
 
-  /* ================================================ alta en tres pasos
+  /* ================================================ alta por pantallas
 
      Un formulario largo no entra en un telefono sin scrollear, y pedir diez
-     datos de golpe espanta. Se parte en tres preguntas, y la del medio se
-     contesta tocando una mancha: se elige por color, no por lista.
+     datos de golpe espanta. Se parte en una pregunta por pantalla —dos cuando
+     las dos son de si o no— y la de la escala se contesta tocando una mancha:
+     se elige por color, no por lista.
      ------------------------------------------------------------------ */
 
-  /* Una de las tres gotas que se van llenando. */
+  /* Una de las gotas que se van llenando, una por paso. */
   .punto {
     width: 9px;
     height: 9px;
@@ -1248,34 +1294,73 @@
 
   /* ------------------------------------------ preguntas de opcion */
 
-  /* Los botones de respuesta de `PREGUNTAS`. Van en pildora como las frases
-     sugeridas del ultimo paso, pero con estado elegido: la respuesta tiene
-     que quedar a la vista despues del toque, porque se contestan dos por
-     pantalla y hay que poder revisarlas antes de seguir. */
+  /* Las respuestas de `PREGUNTAS`, en lista de opcion multiple: un renglon
+     por opcion, con su encabezado arriba y sus ejemplos debajo. Eran pildoras
+     en fila cuando las opciones eran dos y cabian en dos palabras; con
+     «Alimentos tipicamente mexicanos / Nopal, maiz, calabaza» no hay pildora
+     que las contenga, y la lista dice sola que se responde una.
+
+     El renglon entero es la etiqueta de su radio, asi que se toca donde sea:
+     el mural se llena de pie en un kiosco y ahi nadie apunta a un circulo de
+     16 px. */
+  .opciones { display: flex; flex-direction: column; gap: 6px; }
+
   .opcion {
-    padding: 8px 13px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
     border: 1.5px solid var(--color-accent-line);
-    border-radius: 999px;
+    border-radius: 10px;
     background: var(--color-paper);
-    font: inherit;
-    font-size: 13.5px;
-    line-height: 1.3;
-    text-align: left;
-    color: var(--color-muted);
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    transition: border-color 0.12s, background 0.12s, color 0.12s;
+    transition: border-color 0.12s, background 0.12s;
   }
   @media (hover: hover) {
-    .opcion:hover { border-color: var(--color-accent); color: var(--color-ink); }
+    .opcion:hover { border-color: var(--color-accent); }
+    .opcion:hover .opcion-titulo { color: var(--color-ink); }
   }
-  .opcion:focus-visible { border-color: var(--color-accent); color: var(--color-ink); outline: none; }
-  .opcion.sel {
+  .opcion.sel { border-color: var(--color-accent); background: var(--color-accent-soft); }
+
+  /* El circulo se dibuja a mano: el nativo entra con el azul del sistema y
+     rompe el papel. Sigue siendo un `input[type=radio]` para todo lo demas
+     —flechas, lector de pantalla, una sola respuesta por grupo. */
+  .opcion-marca {
+    appearance: none;
+    -webkit-appearance: none;
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin: 2px 0 0;
+    border: 1.5px solid var(--color-accent-line);
+    border-radius: 50%;
+    background: var(--color-paper);
+    cursor: pointer;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  /* El punto de dentro, sin un elemento mas: el anillo de papel tapa el
+     relleno por los bordes y lo que queda a la vista es el centro. */
+  .opcion-marca:checked {
     border-color: var(--color-accent);
-    background: var(--color-accent-soft);
-    color: var(--color-ink);
-    font-weight: var(--font-weight-mid);
+    box-shadow: inset 0 0 0 3px var(--color-paper), inset 0 0 0 16px var(--color-accent);
+  }
+  .opcion-marca:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+  .opcion-texto { display: flex; flex-direction: column; gap: 1px; }
+  .opcion-titulo {
+    font-size: 14.5px;
+    line-height: 1.3;
+    color: var(--color-muted);
+    transition: color 0.12s;
+  }
+  .opcion.sel .opcion-titulo { color: var(--color-ink); font-weight: var(--font-weight-mid); }
+  .opcion-detalle {
+    font-size: 12.5px;
+    line-height: 1.35;
+    color: var(--color-muted);
+    opacity: 0.78;
   }
 
   /* --------------------------------------------- avisos y botonera */
@@ -1428,6 +1513,16 @@
       -webkit-overflow-scrolling: touch;
     }
     .panel .results { max-height: 34dvh; }
+
+    /* Al elegir a alguien el buscador encoge en vez de cerrarse (ver
+       `locateRecord`): se va el encabezado y la lista se queda en tres
+       renglones, asi que el recuadro pasa de tres cuartos de pantalla a poco
+       mas de un cuarto. Arriba queda sitio para la mancha que se acaba de
+       encontrar y para su ficha, y el siguiente nombre sigue estando a un
+       toque en vez de detras de otra busqueda. */
+    .panel.compacta { max-height: 34dvh; }
+    .panel.compacta .panel-cabecera { display: none; }
+    .panel.compacta .results { max-height: 16dvh; }
 
     .lupa { max-width: none; border-radius: 14px; box-shadow: 0 -8px 28px rgb(60 48 30 / 0.22); }
     .lupa-boton { width: 40px; height: 40px; font-size: 21px; }

@@ -85,6 +85,15 @@ const LARGO_ARISTA = 0.058;
 const ANCHO_ARISTA = 0.0012;
 const ALCANCE_CURSOR = 0.075;
 const EMPUJE_CURSOR = 0.013;
+/**
+ * El circulo por el que se pasea un nodo al respirar se mide contra el nodo,
+ * no contra el dibujo: un tercio escaso del radio del mas cargado, o sea unas
+ * veinte veces menos que una arista. A esa escala el movimiento no deforma
+ * nada —ni la figura, ni el tejido, ni el borde del cuerpo—: lo unico que se
+ * nota es que el mural no esta congelado. Subirlo es lo primero que se ve, y
+ * lo primero que rompe el dibujo.
+ */
+const DERIVA_NODO = 0.002;
 
 export interface Medidas {
   watercolor: WatercolorParams;
@@ -132,6 +141,7 @@ export function medidasParaDibujo(lado: number, hueco: number): Medidas {
       aristaAncho: Math.max(0.6, lado * ANCHO_ARISTA),
       evasion: Math.max(20, lado * ALCANCE_CURSOR),
       empuje: Math.max(4, lado * EMPUJE_CURSOR),
+      deriva: Math.max(1, lado * DERIVA_NODO),
     },
   };
 }

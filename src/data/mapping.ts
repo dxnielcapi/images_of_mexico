@@ -19,9 +19,12 @@
  *   regla vigente (`remapAll`). Subir `MAPPING_VERSION` es todo lo que hace
  *   falta para que lo ya registrado se reacomode solo.
  *
- * Regla vigente (version 3): el valor es la intensidad cultural que sale de
+ * Regla vigente (version 4): el valor es la intensidad cultural que sale de
  * las cinco respuestas juntas (ver `@data/afinidad`), no ya de la escala
- * sola. La zona se sigue calculando igual —una region cualquiera del dibujo,
+ * sola. La 4 no cambia la regla sino lo que se le pregunta: `prefiere` pasa
+ * del gusto al acceso y con una opcion mas, y la perdida pasa a tener cuatro
+ * causas. Subir la version es lo que hace que lo registrado con las preguntas
+ * de antes se vuelva a mapear con los pesos de ahora. La zona se sigue calculando igual —una region cualquiera del dibujo,
  * sorteada en proporcion a su espacio— pero ya no decide donde se pinta
  * nadie: desde que el mural es una red, el lugar de cada quien lo deciden
  * sus respuestas (ver `@core/render/red`). La zona queda como lo que
@@ -39,7 +42,7 @@ import {
  * el valor: los registros guardados con una version anterior se remapean al
  * cargarlos.
  */
-export const MAPPING_VERSION = 3;
+export const MAPPING_VERSION = 4;
 
 /** Una zona del dibujo y el espacio que tiene para manchas. */
 export interface ZonaDisponible {

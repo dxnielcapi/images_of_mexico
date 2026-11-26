@@ -34,8 +34,11 @@
 --  registros_oportunidades_justas_check, registros_perdida_soberania_check,
 --  registros_valor_check, registros_mensaje_check.
 --
---  Nada de lo de abajo los toca: se agregan constraints nuevas con nombre
---  propio para no pisar definiciones que no estan en este archivo.
+--  Nada de lo de abajo los toca, salvo dos: `registros_prefiere_check` y
+--  `registros_perdida_soberania_check`, que la seccion 3 vuelve a escribir
+--  porque las dos preguntas que vigilan cambiaron de opciones. Esas dos ya
+--  viven aqui. El resto se deja como esta y las constraints nuevas llevan
+--  nombre propio, para no pisar definiciones que no estan en este archivo.
 -- -----------------------------------------------------------------------------
 
 
@@ -246,7 +249,64 @@ create trigger registros_rate_limit
 
 
 -- -----------------------------------------------------------------------------
---  3 · Comprobar que quedo puesto
+--  3 · Las dos preguntas que cambiaron (2026-11-26)
+-- -----------------------------------------------------------------------------
+--
+--  `prefiere` dejo de preguntar por el gusto y pregunta por el acceso —que
+--  alimentos tiene alguien a la mano—, con tres opciones donde habia dos. Y la
+--  perdida se pregunta por la alimentacion tipica, con cuatro causas donde
+--  habia tres: la economica no estaba.
+--
+--  Las columnas NO se renombran. Lo que guardan cambio de significado, pero
+--  renombrarlas obligaria a tocar `supabaseRepo`, el CSV que la gente descarga
+--  y el banco simulado sin que ningun dato quedara mejor guardado. Lo que
+--  cambia son los valores que aceptan:
+--
+--      prefiere           mexicana | superprocesado | extranjero
+--      perdida_soberania  politica | economia | industria | social
+--
+--  Los tokens salen de `PREGUNTAS` en `src/data/person.ts` y tienen que
+--  coincidir letra por letra: el navegador valida contra esa lista
+--  (`OPCIONES_VALIDAS` en `@data/seguridad`) y esto valida contra la misma, de
+--  los dos lados de la API.
+--
+--  EL ORDEN IMPORTA. Primero se van las filas con las respuestas de antes y
+--  despues se ponen las CHECK: `add constraint` valida lo que ya esta en la
+--  tabla, asi que al reves falla con 23514 y no se pone ninguna.
+--
+--  El DELETE es el unico de todo este archivo y borra de verdad —no hay
+--  papelera, y la tabla no deja hacer UPDATE ni DELETE con la llave publica,
+--  asi que esto corre en el SQL Editor del panel. Borra solo lo que ya no
+--  cabe en las preguntas de hoy: vuelto a correr sobre una tabla al dia no
+--  toca nada.
+--
+--  Para ver cuantas filas se va a llevar, antes de correrlo:
+--    select count(*) from public.registros
+--     where prefiere not in ('mexicana', 'superprocesado', 'extranjero')
+--        or perdida_soberania not in ('politica', 'economia', 'industria', 'social');
+
+delete from public.registros
+ where prefiere          not in ('mexicana', 'superprocesado', 'extranjero')
+    or perdida_soberania not in ('politica', 'economia', 'industria', 'social');
+
+--  Las dos CHECK se reescriben enteras en vez de agregarse al lado: la vieja
+--  rechaza los valores nuevos, asi que convivir no es una opcion. `drop ... if
+--  exists` deja el bloque idempotente igual que los de arriba.
+alter table public.registros drop constraint if exists registros_prefiere_check;
+alter table public.registros add constraint registros_prefiere_check
+  check (prefiere in ('mexicana', 'superprocesado', 'extranjero'));
+
+alter table public.registros drop constraint if exists registros_perdida_soberania_check;
+alter table public.registros add constraint registros_perdida_soberania_check
+  check (perdida_soberania in ('politica', 'economia', 'industria', 'social'));
+
+--  `mapeo_version` no necesita nada: la columna ya esta y las altas nuevas
+--  llegan con 4 (ver `MAPPING_VERSION` en `src/data/mapping.ts`). Lo que
+--  quede guardado con una version anterior lo remapea el navegador al cargar.
+
+
+-- -----------------------------------------------------------------------------
+--  4 · Comprobar que quedo puesto
 -- -----------------------------------------------------------------------------
 --  Las constraints de la tabla:
 --    select conname from pg_constraint
@@ -256,6 +316,16 @@ create trigger registros_rate_limit
 --  Que el trigger este vivo:
 --    select tgname, tgenabled from pg_trigger
 --     where tgrelid = 'public.registros'::regclass and not tgisinternal;
+--
+--  Que las dos preguntas que cambiaron acepten lo de hoy y nada mas:
+--    select conname, pg_get_constraintdef(oid) from pg_constraint
+--     where conrelid = 'public.registros'::regclass
+--       and conname in ('registros_prefiere_check',
+--                       'registros_perdida_soberania_check');
+--
+--  Que no quede ninguna fila con las respuestas de antes:
+--    select prefiere, perdida_soberania, count(*) from public.registros
+--     group by 1, 2 order by 3 desc;
 --
 --  Que `envios` y `config_privada` no tengan politicas (o sea, cerradas):
 --    select tablename, policyname from pg_policies

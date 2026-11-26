@@ -39,7 +39,8 @@ import {
 } from '@io/plantilla';
 import { loadLocal, mergeById } from '@data/repo/localRepo';
 import { loadRemote } from '@data/repo/supabaseRepo';
-import { analyzeDrawing, clamp01, typicalDepth, zonesFromConfig } from '@core/scene';
+import { clamp01, typicalDepth, zonesFromConfig } from '@core/scene';
+import { analizarAparte } from '@core/zones/analisisAparte';
 import { medidasParaDibujo } from '@core/render/medidas';
 import { espinaDesde, parseEspinaJson, type Espina } from '@core/render/espina';
 import { bocetoDesde, parseBocetoJson, type Boceto } from '@core/render/boceto';
@@ -98,6 +99,21 @@ export interface Cartel {
   tlacuilo: Figura | null;
 }
 
+/** Lo que se le puede pedir a la carga ademas del mural. */
+export interface OpcionesCarga {
+  /**
+   * Se llama en cuanto el dibujo esta bajado y rasterizado, antes de los
+   * horneados y de los registros.
+   *
+   * Es para el Hero de `/`, que no necesita saber quien pinto el mural para
+   * empezar a trazarse: lo unico que mira es la ilustracion. Esperaba a todo
+   * —el analisis del dibujo, el banco de registros y la consulta a Supabase,
+   * que es un viaje de ida y vuelta por la red— y en un telefono eso eran
+   * varios segundos de Hero vacio.
+   */
+  alTenerDibujo?: (d: LoadedDrawing) => void;
+}
+
 /** El mural entero listo para dibujarse: el cartel y su gente. */
 export interface Mural {
   cartel: Cartel;
@@ -121,12 +137,17 @@ export interface Mural {
  * salen de los dos—, asi que quien llama se queda con las opciones ya a la
  * medida de la ilustracion que cargo.
  *
- * Todo en un solo `Promise.all`: son seis archivos y el dibujo es el que
- * tarda, asi que el CSV y los horneados viajan a su lado en vez de esperarlo.
+ * Todo viaja junto: son seis archivos y el dibujo es el que tarda, asi que el
+ * CSV y los horneados van a su lado en vez de esperarlo. Lo que no va junto
+ * es la *espera*: el dibujo se aguarda aparte para avisar en cuanto esta
+ * (ver `alTenerDibujo`), y recien despues lo demas.
  */
-export async function cargarMural(render: RenderOptions): Promise<Mural> {
-  const [d, cfgText, csvText, espinaText, trazosText, tlacuiloSvg, tlacuiloImg, remoto] = await Promise.all([
-    loadDrawingUrl(PLANTILLA_DIBUJO),
+export async function cargarMural(
+  render: RenderOptions,
+  opciones: OpcionesCarga = {}
+): Promise<Mural> {
+  const pDibujo = loadDrawingUrl(PLANTILLA_DIBUJO);
+  const pResto = Promise.all([
     fetch(PLANTILLA_ZONAS).then((r) => r.text()),
     // El banco simulado solo si esta encendido (ver `SIMULADOS`). Apagado no
     // se pide: produccion no tiene por que bajar 300 KB de gente inventada.
@@ -145,12 +166,32 @@ export async function cargarMural(render: RenderOptions): Promise<Mural> {
     // Los registros compartidos de Supabase (si esta configurado).
     loadRemote(),
   ]);
+  // Los dos `await` van uno detras del otro, asi que si el dibujo fallara
+  // nadie llegaria a recoger lo demas: este `catch` vacio esta solo para que
+  // el navegador no lo cuente como un rechazo sin dueno. El `await pResto`
+  // de abajo sigue recibiendo el error.
+  pResto.catch(() => {});
 
+  const d = await pDibujo;
   render.width = d.width;
   render.height = d.height;
 
+  if (opciones.alTenerDibujo) {
+    opciones.alTenerDibujo(d);
+    // Un respiro para que el Hero recien avisado pinte su primer fotograma
+    // antes de que esta funcion siga. El analisis ya no lo congela —corre en
+    // un hilo aparte—, pero la binarizacion que lo precede si recorre los
+    // cuatro millones de pixeles aqui mismo.
+    await new Promise((listo) => setTimeout(listo, 0));
+  }
+
+  const [cfgText, csvText, espinaText, trazosText, tlacuiloSvg, tlacuiloImg, remoto] = await pResto;
+
   const cfg = parseConfig(cfgText);
-  const analysis = analyzeDrawing(d.imageData, d.width, d.height, {
+  // Medir el dibujo es lo mas caro de abrir el mural y corre en un hilo
+  // aparte: el mismo calculo, pero sin tomar la pagina medio segundo largo
+  // (ver `@core/zones/analisisAparte`).
+  const analysis = await analizarAparte(d.imageData, d.width, d.height, {
     threshold: cfg.threshold,
     dilate: cfg.dilate,
     // Mientras el boceto no cierre sus regiones, lo pintable es el relleno

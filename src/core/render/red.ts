@@ -85,6 +85,11 @@ export interface RedParams {
   empuje: number;
   /** Que tan rapido obedece el nodo, en 1/segundos. */
   respuesta: number;
+  /**
+   * Radio del circulo por el que se pasea un nodo al respirar, en px de
+   * trabajo. En 0 los nodos se quedan donde descansan (ver `derivaX`).
+   */
+  deriva: number;
 }
 
 /**
@@ -104,6 +109,7 @@ export const DEFAULT_RED: RedParams = {
   evasion: 150,
   empuje: 26,
   respuesta: 9,
+  deriva: 4,
 };
 
 export interface Nodo {
@@ -112,11 +118,20 @@ export interface Nodo {
   /** Donde descansa, en px de trabajo. Es lo que indexa el hit-testing. */
   bx: number;
   by: number;
-  /** Cuanto esta corrido ahora mismo por el cursor. */
+  /** Cuanto esta corrido ahora mismo: su respiracion mas el cursor. */
   dx: number;
   dy: number;
   /** Radio en px de trabajo. */
   r: number;
+  /**
+   * Por donde anda su respiracion y a que ritmo la lleva. Son dos fases por
+   * eje porque el paseo son dos ondas sumadas (ver `derivaX`).
+   */
+  faseX: number;
+  faseX2: number;
+  faseY: number;
+  faseY2: number;
+  ritmo: number;
 }
 
 export interface Arista {
@@ -131,7 +146,7 @@ export interface Red {
   aristas: Arista[];
 }
 
-/** Donde esta un nodo ahora mismo: su reposo mas lo que lo corrio el cursor. */
+/** Donde esta un nodo ahora mismo: su reposo mas lo que lo corrio el fotograma. */
 export const vivoX = (n: Nodo) => n.bx + n.dx;
 export const vivoY = (n: Nodo) => n.by + n.dy;
 
@@ -206,7 +221,7 @@ export function redDe(
       // esta dicho a lo largo.
       const v = (rng() * 2 - 1) * p.banda;
 
-      nodos.push(nodoEn(e, recorrido, field, p, s, v));
+      nodos.push(nodoEn(e, recorrido, field, p, s, v, rng));
     });
 
     desde += arco;
@@ -215,14 +230,21 @@ export function redDe(
   return { nodos, aristas: aristasDe(nodos, p, o) };
 }
 
-/** Un nodo en `s` del recorrido, corrido `v` semianchos hacia un costado. */
+/**
+ * Un nodo en `s` del recorrido, corrido `v` semianchos hacia un costado.
+ *
+ * El `rng` llega ya usado —de ahi salieron `s` y `v`— y se le sacan los tres
+ * numeros de su respiracion: con la semilla de la persona adentro, el vaiven
+ * de cada quien es siempre el mismo y no cambia porque se rearme la tanda.
+ */
 function nodoEn(
   e: EntradaRed,
   recorrido: Recorrido,
   field: ShapeField | null,
   p: RedParams,
   s: number,
-  v: number
+  v: number,
+  rng: () => number
 ): Nodo {
   const q = recorrido.en(s);
   const nx = -Math.sin(q.ang);
@@ -248,6 +270,7 @@ function nodoEn(
     punto: { record: e.record, x, y, t },
     bx: x, by: y, dx: 0, dy: 0,
     r: p.radioMin + (p.radioMax - p.radioMin) * t,
+    ...respiracionDe(rng),
   };
 }
 
@@ -317,6 +340,87 @@ function aristasDe(nodos: readonly Nodo[], p: RedParams, o: RedOpts): Arista[] {
   return aristas;
 }
 
+// ----------------------------------------------------------- la respiracion
+
+/**
+ * Lo lento del paseo, en radianes por segundo: la onda de fondo da una vuelta
+ * cada doce segundos a lo ancho y cada quince a lo alto.
+ *
+ * Las dos no van a la misma velocidad a proposito —y una es seno y la otra
+ * coseno, que ya empiezan en cuartos distintos—: con la misma, el nodo iria y
+ * vendria por una diagonal.
+ */
+const VAIVEN_X = 0.5;
+const VAIVEN_Y = 0.4;
+
+/**
+ * Encima de esa onda va otra mas corta, en razon aurea con ella: dos ondas
+ * cuyas vueltas no son multiplo una de otra no vuelven nunca a la misma
+ * combinacion, asi que el nodo no describe una orbita —que es lo que se le
+ * acaba viendo a un seno solo— sino un vagar que no se repite. Pesa poco para
+ * que lo que mande siga siendo la onda lenta: lo que se busca es que el
+ * camino sea impredecible, no que el nodo vibre.
+ */
+const RAZON = 1.618;
+const PESO_CORTO = 0.35;
+
+/**
+ * Cada nodo lo lleva un poco mas rapido o un poco mas lento que el de al
+ * lado. Sin esto los trescientos van a compas y lo que respira no es la
+ * gente sino el dibujo entero, de una pieza.
+ */
+const RITMO_MIN = 0.75;
+const RITMO_MAX = 1.25;
+
+/**
+ * Sortea la respiracion de un nodo. Pasa por aqui todo el que arme nodos
+ * —el mural con la semilla de cada persona, el fondo de la pagina con
+ * `Math.random`— para que el vaiven se afine en un solo sitio.
+ */
+export function respiracionDe(
+  rng: () => number
+): Pick<Nodo, 'faseX' | 'faseX2' | 'faseY' | 'faseY2' | 'ritmo'> {
+  const vuelta = () => rng() * Math.PI * 2;
+  return {
+    faseX: vuelta(),
+    faseX2: vuelta(),
+    faseY: vuelta(),
+    faseY2: vuelta(),
+    ritmo: RITMO_MIN + rng() * (RITMO_MAX - RITMO_MIN),
+  };
+}
+
+/**
+ * La respiracion de la red: un vagar lento que no para nunca.
+ *
+ * El mural ya se dibuja solo —el lapiz no deja de dar la vuelta al cartel—
+ * pero la gente quedaba clavada al pixel encima de ese trazo que iba y venia,
+ * y lo que se leia era una capa quieta sobre una animada. Ahora cada quien se
+ * pasea dentro de un circulo diminuto —una fraccion de su propio nodo— con
+ * su fase y su ritmo, asi que el tejido nunca esta del todo quieto.
+ *
+ * El radio es lo unico que decide si esto se ve bien o mal. Chico, la figura
+ * no se entera: las aristas son diez o veinte veces mas largas que el paseo,
+ * el borde del cuerpo no se deshilacha y lo que se percibe es que el dibujo
+ * respira. Grande, cada nodo se va por su cuenta, las aristas se estiran y el
+ * cuerpo se deforma; por eso el radio vive en `medidas` junto al tamano del
+ * nodo y se mide contra el, no contra el dibujo entero.
+ *
+ * Es una funcion del tiempo y no una velocidad que se acumule: el mismo `t`
+ * devuelve siempre la misma posicion, asi que un fotograma perdido no corre
+ * la red de su sitio y congelarla —movimiento reducido— la deja quieta donde
+ * este y no derivando a saltos.
+ *
+ * `amp` va en px de trabajo, como todo lo que mide la red: quien dibuja en
+ * pixeles de pantalla (el fondo de la pagina) pasa la suya.
+ */
+export const derivaX = (n: Nodo, amp: number, t: number): number =>
+  (Math.sin(t * VAIVEN_X * n.ritmo + n.faseX) * (1 - PESO_CORTO)
+    + Math.sin(t * VAIVEN_X * RAZON * n.ritmo + n.faseX2) * PESO_CORTO) * amp;
+export const derivaY = (n: Nodo, amp: number, t: number): number =>
+  (Math.cos(t * VAIVEN_Y * n.ritmo + n.faseY) * (1 - PESO_CORTO)
+    + Math.cos(t * VAIVEN_Y * RAZON * n.ritmo + n.faseY2) * PESO_CORTO) * amp;
+
 // ---------------------------------------------------------------- el cursor
 
 export interface Cursor {
@@ -325,24 +429,44 @@ export interface Cursor {
 }
 
 /**
- * Corre los nodos para que esquiven el cursor, y los deja volver cuando se
- * va. Devuelve true mientras quede algo moviendose: es lo que apaga el bucle
- * de animacion cuando la red ya esta quieta.
+ * Lleva cada nodo a donde le toca estar en este instante: su respiracion, mas
+ * lo que se aparta del cursor. `t` son los segundos corridos desde que abrio
+ * la pagina; `dt`, lo que duro el fotograma.
+ *
+ * Las dos cosas se suman en un mismo destino y se persiguen con el mismo
+ * suavizado, asi que no hay dos movimientos encimados sino uno: al pasar el
+ * raton, el nodo se aparta sin dejar de respirar, y al quitarlo vuelve a su
+ * vaiven en vez de a un punto fijo. El vaiven es lento al lado de `respuesta`
+ * —una vuelta de doce segundos contra nueve por segundo— asi que el suavizado
+ * no lo achica ni lo atrasa de forma que se note.
+ *
+ * Devuelve true mientras quede algo moviendose: es lo que mantiene vivo el
+ * bucle de animacion. Con `deriva` la red nunca termina de llegar, y eso es
+ * justo lo que se quiere; en 0 vuelve a apagarse en cuanto los nodos acaban
+ * de volver a su sitio.
  *
  * El empuje se mide desde el reposo del nodo y no desde donde esta ahora. Es
  * la diferencia entre esquivar y huir: midiendo desde la posicion corrida, un
  * nodo que se aparta deja de sentir el cursor, vuelve, lo vuelve a sentir, y
  * tiembla. Desde el reposo la fuerza es constante mientras el cursor no se
- * mueva, y el nodo se queda apartado, quieto.
+ * mueva, y el nodo se queda apartado, quieto. Con la respiracion encima pasa
+ * lo mismo y por el mismo motivo: lo que el cursor mide es `bx`/`by`.
  */
-export function evadir(red: Red, cursor: Cursor | null, p: RedParams, dt: number): boolean {
+export function evadir(
+  red: Red,
+  cursor: Cursor | null,
+  p: RedParams,
+  dt: number,
+  t = 0
+): boolean {
   // Suavizado exponencial: independiente del fotograma, sin rebote.
   const k = 1 - Math.exp(-Math.max(0, dt) * p.respuesta);
-  let vivo = false;
+  const respira = p.deriva > 0;
+  let vivo = respira;
 
   for (const n of red.nodos) {
-    let tx = 0;
-    let ty = 0;
+    let tx = respira ? derivaX(n, p.deriva, t) : 0;
+    let ty = respira ? derivaY(n, p.deriva, t) : 0;
     if (cursor) {
       const dx = n.bx - cursor.x;
       const dy = n.by - cursor.y;
@@ -351,8 +475,8 @@ export function evadir(red: Red, cursor: Cursor | null, p: RedParams, dt: number
         // Cuadratico: casi nada en el borde del radio, firme al centro.
         const f = 1 - d / p.evasion;
         const push = p.empuje * f * f;
-        tx = (dx / d) * push;
-        ty = (dy / d) * push;
+        tx += (dx / d) * push;
+        ty += (dy / d) * push;
       }
     }
     n.dx += (tx - n.dx) * k;
@@ -363,7 +487,11 @@ export function evadir(red: Red, cursor: Cursor | null, p: RedParams, dt: number
   return vivo;
 }
 
-/** Deja la red en reposo, sin animar. Para el fondo del Hero y el export. */
+/**
+ * Deja la red en reposo —sin respiracion y sin cursor—, que es como se hornea
+ * la escena cacheada: el fondo del Hero y el export quieren los nodos donde
+ * descansan, no donde los dejo un fotograma cualquiera.
+ */
 export function enReposo(red: Red): void {
   for (const n of red.nodos) { n.dx = 0; n.dy = 0; }
 }

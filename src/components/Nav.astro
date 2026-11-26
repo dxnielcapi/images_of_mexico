@@ -91,6 +91,15 @@ const inicio = enlace('inicio', 'inicio');
         </a>
       )}
       <span class="h-4 w-px bg-line" aria-hidden="true"></span>
+      <!-- Los dos logos van con `width`/`height` —los de su `viewBox`— por lo
+           mismo que las fotos del concepto: sin ellos el navegador no sabe
+           cuanto van a medir hasta que bajan, y hasta entonces ocupan cero.
+           Como la barra reparte el espacio sobre la marcha, al llegar los dos
+           archivos todo lo de la derecha saltaba cincuenta pixeles: la
+           palabra «Participa» y, en pantalla ancha, la fila de secciones
+           entera se corrian al cargar. Con el alto puesto en CSS (`h-6`) y la
+           proporcion en los atributos, el hueco esta reservado desde el
+           primer pixel. -->
       <a
         href="https://www.imagesofmexico.com/"
         target="_blank"
@@ -101,6 +110,8 @@ const inicio = enlace('inicio', 'inicio');
         <img
           src={`${BASE}Logos/IoM_icono.svg`}
           alt="Images of Mexico"
+          width="120"
+          height="118"
           class="h-6 w-auto"
         />
       </a>
@@ -114,6 +125,8 @@ const inicio = enlace('inicio', 'inicio');
         <img
           src={`${BASE}Logos/syle.svg`}
           alt="Syle Studio"
+          width="5383"
+          height="5059"
           class="h-6 w-auto brightness-[0.12]"
         />
       </a>

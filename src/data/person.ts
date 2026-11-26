@@ -23,10 +23,10 @@ export const PERSON_FIELDS = [
   { key: 'ocupacion', label: 'Ocupación' },
   { key: 'lugar_origen', label: 'Lugar de origen' },
   { key: 'alimentacion', label: 'Cómo se siente con su alimentación' },
-  { key: 'prefiere', label: 'Qué prefiere comer' },
+  { key: 'prefiere', label: 'Qué alimentos consigue más rápido' },
   { key: 'merece_digna', label: 'Merece una alimentación digna' },
   { key: 'oportunidades_justas', label: 'Las oportunidades son justas' },
-  { key: 'perdida_soberania', label: 'Por qué se perdieron los alimentos soberanos' },
+  { key: 'perdida_soberania', label: 'Por qué se perdió la alimentación típica' },
   { key: 'mensaje', label: 'Qué te gustaría decir' },
   { key: 'fecha', label: 'Fecha' },
 ] as const;
@@ -62,7 +62,13 @@ export interface Sentir {
   name: string;
   /** Valor base en [0,1] que alimenta el mapa de calor. */
   valor: number;
-  /** Frases coherentes con ese sentir, para el campo "que te gustaria decir". */
+  /**
+   * Frases coherentes con ese sentir. Ya no se le sugieren a nadie —el ultimo
+   * paso del alta es una caja en blanco a proposito, ver `@ui/registroForm`—:
+   * son el habla del banco simulado, que las usa para que lo que dice cada
+   * registro ficticio cuadre con como dijo que se siente
+   * (ver `tools/registros.mjs`).
+   */
   frases: string[];
 }
 
@@ -222,13 +228,30 @@ export function valorForSentir(sentir: string, seed: string): number {
 
 // ---------------------------------------------------------------- preguntas de opcion
 
+/** Una opcion de respuesta: lo que se guarda, lo que se lee y sus ejemplos. */
+export interface Opcion {
+  /** El token corto y estable que se persiste. */
+  valor: string;
+  /** El encabezado de la opcion: la categoria. */
+  etiqueta: string;
+  /**
+   * Los ejemplos que la vuelven concreta («Nopal, maíz, calabaza»). Son parte
+   * de la pregunta, no un adorno: «alimentos extranjeros» sin ejemplos no
+   * quiere decir lo mismo para dos personas. Las de sí/no no llevan, y por eso
+   * es opcional: su ausencia es lo que marca a una pregunta como corta y deja
+   * que dos de ellas compartan pantalla (ver `PASOS_PREGUNTAS` en
+   * `@ui/registroForm`).
+   */
+  detalle?: string;
+}
+
 /** Una pregunta de opcion del alta: un toque y queda respondida. */
 export interface Pregunta {
   key: PersonFieldKey;
   /** La pregunta como se le muestra a la persona. */
   pregunta: string;
-  /** Las opciones: `valor` es lo que se guarda, `etiqueta` lo que se lee. */
-  opciones: { valor: string; etiqueta: string }[];
+  /** Las opciones, en el orden en que se leen. */
+  opciones: Opcion[];
 }
 
 const SI_NO = [
@@ -239,18 +262,42 @@ const SI_NO = [
 /**
  * Las cuatro preguntas que acompanan a la escala.
  *
- * No son relleno de formulario: son las dimensiones con las que va a trabajar
- * el mapeo cuando deje de repartir por zonas. Por eso lo que se guarda es un
- * token corto y estable (`superprocesado`, `cadenas grandes`) y no la etiqueta
- * larga: la etiqueta se puede reescribir sin invalidar lo ya registrado.
+ * No son relleno de formulario: son las dimensiones con las que trabaja el
+ * mapeo (ver `@data/afinidad`). Por eso lo que se guarda es un token corto y
+ * estable (`superprocesado`, `industria`) y no la etiqueta larga: la etiqueta
+ * se puede reescribir sin invalidar lo ya registrado.
+ *
+ * Las dos preguntas abiertas cambiaron de pregunta —no de columna— y los
+ * tokens que guardan son otros. `prefiere` ya no pregunta por el gusto sino
+ * por el **acceso**: que alimentos tiene alguien a la mano, que es lo que de
+ * verdad decide lo que come. Y la perdida se pregunta por la alimentacion
+ * tipica, con sus cuatro causas separadas: la economica —«ya no alcanza»— no
+ * estaba, y era la que mas faltaba. El nombre de las columnas se queda como
+ * esta: la tabla se vuelve a llenar, y renombrarlas no cambiaria ningun dato.
+ *
+ * El orden de las opciones es dato: `@data/afinidad` lee el indice de la
+ * elegida, asi que reordenarlas cambia lo que pinta el mural.
  */
 export const PREGUNTAS: Pregunta[] = [
   {
     key: 'prefiere',
-    pregunta: '¿Qué prefieres comer?',
+    pregunta: '¿Qué alimentos consideras que puedes acceder de manera más rápida?',
     opciones: [
-      { valor: 'comida mexicana', etiqueta: 'Comida completamente mexicana' },
-      { valor: 'superprocesado', etiqueta: 'Algún producto superprocesado' },
+      {
+        valor: 'mexicana',
+        etiqueta: 'Alimentos típicamente mexicanos',
+        detalle: 'Nopal, maíz, calabaza',
+      },
+      {
+        valor: 'superprocesado',
+        etiqueta: 'Alimentos superprocesados',
+        detalle: 'Galletas, refresco, frituras',
+      },
+      {
+        valor: 'extranjero',
+        etiqueta: 'Alimentos extranjeros',
+        detalle: 'Alimentos con harina, azúcares artificiales',
+      },
     ],
   },
   {
@@ -265,15 +312,62 @@ export const PREGUNTAS: Pregunta[] = [
   },
   {
     key: 'perdida_soberania',
-    pregunta: '¿Por qué crees que se han perdido los alimentos soberanos de México?',
+    pregunta: '¿Por qué crees que se ha perdido la alimentación típica de México?',
     opciones: [
-      { valor: 'gobernantes', etiqueta: 'Por los gobernantes' },
-      { valor: 'cadenas grandes', etiqueta: 'Por las cadenas grandes' },
-      { valor: 'al pueblo ya no le interesa', etiqueta: 'Al pueblo ya no le interesa' },
+      {
+        valor: 'politica',
+        etiqueta: 'Cuestiones políticas',
+        detalle: 'Nuestros gobernantes',
+      },
+      {
+        valor: 'economia',
+        etiqueta: 'Problemas económicos',
+        detalle: 'A la gente ya no le alcanza',
+      },
+      {
+        valor: 'industria',
+        etiqueta: 'Industria',
+        detalle: 'Las cadenas grandes acaparan el mercado',
+      },
+      {
+        valor: 'social',
+        etiqueta: 'Cuestiones sociales',
+        detalle: 'A la gente ya no le interesan mucho estos alimentos típicos',
+      },
     ],
   },
 ];
 
+
+/** Las opciones de todas las preguntas, por campo y token, para releerlas. */
+const OPCION_POR_VALOR = new Map<string, Opcion>(
+  PREGUNTAS.flatMap((q) => q.opciones.map((o): [string, Opcion] => [`${q.key}|${o.valor}`, o]))
+);
+
+/** «Nopal, maíz…» dentro de un parentesis va en minuscula. */
+function enMinuscula(s: string): string {
+  return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
+/**
+ * La respuesta de alguien escrita entera: el encabezado de su opcion y, entre
+ * parentesis, los ejemplos que la vuelven concreta.
+ *
+ * Lo que se guarda es un token corto (`mexicana`, `industria`) para que la
+ * etiqueta se pueda reescribir sin invalidar lo ya registrado, pero el token
+ * no le dice nada a quien mira una ficha en el mural: «mexicana» no aclara de
+ * que alimentos se habla, y los ejemplos son justamente lo que la pregunta usa
+ * para aclararlo. Esto es la vuelta: del token a la respuesta completa.
+ *
+ * Un valor que no este en el catalogo —algo registrado con una version
+ * anterior de la pregunta, o un CSV traido de otra parte— se devuelve tal
+ * cual, porque es todo lo que se sabe de el.
+ */
+export function respuestaLegible(key: string, valor: string): string {
+  const opcion = OPCION_POR_VALOR.get(`${key}|${valor.trim().toLowerCase()}`);
+  if (!opcion) return valor;
+  return opcion.detalle ? `${opcion.etiqueta} (${enMinuscula(opcion.detalle)})` : opcion.etiqueta;
+}
 
 /** La fecha de hoy en YYYY-MM-DD, que es como la guarda el registro. */
 export function todayIso(d = new Date()): string {

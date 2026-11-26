@@ -103,6 +103,26 @@ let mine: HTMLElement | null = null;   // "N guardados en este dispositivo"
 let backupNote: HTMLElement | null = null;
 let pulseUntil = 0;   // hasta cuando late la marca de la mancha senalada
 
+// ---------------------------------------------------------------- el aparato
+
+/**
+ * Con que se esta mirando el mural.
+ *
+ * No es lo mismo un raton que un dedo —uno senala un pixel y el otro tapa
+ * veinte— ni una pantalla de escritorio que una de telefono, donde el
+ * recuadro que se abre ocupa casi todo. Las dos cosas se preguntan al
+ * navegador y no se adivinan por el ancho: hay pantallas chicas con raton y
+ * tabletas grandes sin el.
+ */
+const tactil = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+
+/** El ancho al que el kiosco pasa a telefono: el mismo `telefono:` del CSS. */
+const TELEFONO = 560;
+
+function angosto(): boolean {
+  return window.innerWidth < TELEFONO;
+}
+
 // ---------------------------------------------------------------- layout
 
 const view = el('canvas', { class: 'max-w-full max-h-full' });
@@ -144,6 +164,18 @@ mount.append(page);
 
 const heroCanvas = document.getElementById('hero-canvas') as HTMLCanvasElement | null;
 let heroReveal: HeroReveal | null = null;   // trazado animado del Hero
+/**
+ * De donde copia el Hero lo que muestra.
+ *
+ * Termina siendo `scene` —el mural pintado—, pero empieza siendo el dibujo
+ * recien bajado: el Hero arranca en cuanto hay ilustracion, sin esperar a
+ * que la red de registros este armada ni a que el mural se renderice (ver
+ * `alTenerDibujo` en `./cartel`). Es la misma figura con la misma geometria;
+ * lo que cambia es que todavia no tiene el color que le pone la gente.
+ */
+let heroFuente: CanvasImageSource | null = null;
+/** Si el Hero esta en pantalla: su bucle solo corre mientras lo este. */
+let heroALaVista = true;
 /** Lado mayor del lienzo de fondo del Hero. */
 const HERO_MAX_SIDE = 900;
 const tooltip = new Tooltip(document.body);
@@ -463,8 +495,23 @@ function toggle(which: Exclude<PanelId, null>): void {
   setOpen(open === which ? null : which);
 }
 
+/**
+ * El buscador encogido: sin encabezado y con la lista en tres renglones.
+ *
+ * Es como queda despues de elegir a alguien en el telefono, y es la unica
+ * forma de que quepan las dos cosas que hacen falta a la vez: la mancha que
+ * se acaba de encontrar y la lista para seguir mirando. En pantalla ancha no
+ * hace falta —el recuadro no tapa el mural— asi que no encoge.
+ */
+function compactarBusqueda(si: boolean): void {
+  searchPanel.classList.toggle('compacta', si && angosto());
+}
+
 function setOpen(which: PanelId): void {
   open = which;
+  // Abrir o cerrar un recuadro empieza una busqueda nueva: el buscador
+  // vuelve a su tamano.
+  compactarBusqueda(false);
   searchPanel.classList.toggle('hidden', which !== 'buscar');
   addPanel.classList.toggle('hidden', which !== 'registrar');
   lupaPanel.classList.toggle('hidden', which !== 'lupa');
@@ -660,6 +707,8 @@ function render(): void {
     red.nodos.forEach((n, i) => { n.dx = corridos[i][0]; n.dy = corridos[i][1]; });
   }
   paint();
+  // De aqui en mas el Hero copia el mural pintado y no el dibujo pelado.
+  heroFuente = scene;
   paintHero();
   pintarFondoDatos(ramp);
 }
@@ -696,7 +745,7 @@ function encuadrarTrazado(): void {
 
 /** Copia el mapeo renderizado al lienzo de fondo del Hero (bajo el efecto cristal). */
 function paintHero(): void {
-  if (!heroCanvas || !drawing) return;
+  if (!heroCanvas || !heroFuente) return;
   // Va desenfocado bajo el velo de cristal: no hace falta la resolucion de
   // trabajo entera, y asi el trazado animado repinta barato cada fotograma.
   const k = Math.min(1, HERO_MAX_SIDE / Math.max(RENDER.width, RENDER.height));
@@ -710,10 +759,10 @@ function paintHero(): void {
   if (!hctx) return;
   // Con el trazado en curso el Hero muestra solo lo que lleva dibujado.
   if (heroReveal) {
-    heroReveal.paint(hctx, scene);
+    heroReveal.paint(hctx, heroFuente);
   } else {
     hctx.clearRect(0, 0, w, h);
-    hctx.drawImage(scene, 0, 0, w, h);
+    hctx.drawImage(heroFuente, 0, 0, w, h);
   }
   // La escena del mural va sin papel —ahi la ilustracion es a sangre, sin
   // recuadro—, pero el fondo del Hero si lo quiere: desenfocado bajo el velo
@@ -820,10 +869,19 @@ const PULSE_MS = 1500;
  * cuanto la red vuelve al reposo y no hay nada latiendo, no quedan
  * fotogramas pedidos.
  */
-const FPS = 60;
+/**
+ * En el escritorio son 60. En un telefono el fotograma cuesta mas que los
+ * 16 ms que hay —son miles de trazadas de red por cuadro— asi que pedir 60
+ * era quedarse sin tiempo para nada mas, y lo primero que se nota es el
+ * scroll. A 30 el dibujo se ve igual de vivo y queda la mitad del hilo
+ * libre.
+ */
+const FPS = tactil ? 30 : 60;
 let animRaf = 0;
 let ultimoFrame = 0;
 let muralVisible = true;
+/** Mientras la pagina se desplaza el lapiz se para (ver `pausarEnScroll`). */
+let desplazando = false;
 
 const menosMovimiento = window.matchMedia?.('(prefers-reduced-motion: reduce)');
 
@@ -840,7 +898,7 @@ trazado.animar(!menosMovimiento?.matches);
 function quiereAnimar(): boolean {
   if (menosMovimiento?.matches) return false;
   if (document.hidden || !drawing) return false;
-  if (!muralVisible) return false;
+  if (!muralVisible || desplazando) return false;
   // El lapiz no para mientras el cartel este a la vista: es lo unico que
   // dibuja el codice, asi que si se detuviera no quedaria dibujo. Lo demas
   // —la red apartandose, el pulso de una marca— va y viene encima.
@@ -882,6 +940,38 @@ document.addEventListener('visibilitychange', () => {
   else animar();
 });
 
+/**
+ * En el telefono el dibujo se para mientras la pagina se desplaza.
+ *
+ * Un fotograma del mural son miles de trazadas y en un telefono eso es casi
+ * todo el presupuesto del hilo principal: con el bucle corriendo, el scroll
+ * se mueve a tirones. Se apaga en el primer evento y vuelve sola cuando el
+ * gesto termina, con una espera corta: lo justo para que el scroll suelte el
+ * hilo.
+ *
+ * En el escritorio no se para. La red respira todo el tiempo que esta a la
+ * vista y detenerla justo mientras la pagina la trae a cuadro era cortar el
+ * movimiento en el unico momento en que se la estaba mirando llegar; ahi el
+ * fotograma sobra y el scroll lo mueve el sistema, no el hilo.
+ */
+function pausarEnScroll(): void {
+  if (!tactil) return;
+  let timer = 0;
+  window.addEventListener('scroll', () => {
+    desplazando = true;
+    detenerAnimacion();
+    // El Hero tambien: su trazado es mas barato que el mural, pero el primer
+    // scroll de la pagina ocurre justo encima de el.
+    heroReveal?.pause();
+    clearTimeout(timer);
+    timer = window.setTimeout(() => {
+      desplazando = false;
+      animar();
+      if (heroALaVista) heroReveal?.play();
+    }, 140);
+  }, { passive: true });
+}
+
 /** Hace latir la marca unos segundos sobre la mancha resaltada. */
 function startPulse(ms = 6000): void {
   pulseUntil = performance.now() + ms;
@@ -893,7 +983,10 @@ function startPulse(ms = 6000): void {
 /** Ficha de la persona, anclada a su mancha en el lienzo. */
 function showFicha(point: PlacedPoint): void {
   const en = enPantalla(point.x, point.y);
-  tooltip.show(point, en.x, en.y, fmtValue);
+  // La hoja del telefono se queda dentro de lo que no tapa ningun recuadro:
+  // debajo estan el buscador y la fila de iconos, y taparlos dejaria la ficha
+  // abierta sin nada que tocar para salir.
+  tooltip.show(point, en.x, en.y, fmtValue, zonaLibre());
 }
 
 function showFlash(text: string): void {
@@ -1114,12 +1207,116 @@ function describeRecord(r: DataRecord): string {
     .join(' · ');
 }
 
+/** Cuanto se acerca la lupa al llevar la vista a una mancha. */
+const ZOOM_FOCO = 3.2;
+
+/** El recuadro que esta abierto ahora mismo, si hay alguno. */
+function panelAbierto(): HTMLElement | null {
+  if (open === 'buscar') return searchPanel;
+  if (open === 'registrar') return addPanel;
+  if (open === 'lupa') return lupaPanel;
+  return null;
+}
+
+/**
+ * El trozo del lienzo que no tapa ningun recuadro.
+ *
+ * Es lo unico que hace falta saber para decidir donde dejar una mancha y
+ * donde abrir su ficha: los recuadros se abren siempre contra un borde —a lo
+ * ancho y desde abajo en el telefono, pegados a la derecha en una pantalla
+ * ancha— asi que lo libre sigue siendo un rectangulo. Medirlo es mas honesto
+ * que suponerlo: el recuadro mide distinto segun lo que tenga dentro.
+ */
+function zonaLibre(): { top: number; bottom: number; left: number; right: number } {
+  const caja = view.getBoundingClientRect();
+  const libre = { top: caja.top, bottom: caja.bottom, left: caja.left, right: caja.right };
+  const panel = panelAbierto();
+  if (!panel) return libre;
+  const r = panel.getBoundingClientRect();
+  if (r.width <= 0 || r.height <= 0) return libre;
+  // Si cruza el lienzo de lado a lado, lo que tapa es la franja de abajo; si
+  // no, es la columna de la derecha.
+  if (r.left <= caja.left + 1 && r.right >= caja.right - 1) {
+    libre.bottom = Math.max(libre.top, Math.min(libre.bottom, r.top));
+  } else {
+    libre.right = Math.max(libre.left, Math.min(libre.right, r.left));
+  }
+  return libre;
+}
+
+/**
+ * Donde cae la mancha enfocada, en fracciones de lo que quedo libre.
+ *
+ * En el medio, salvo a lo alto en el telefono: alli la ficha es una hoja que
+ * se ancla al borde de arriba de esa misma zona, asi que la mancha va en el
+ * tramo de abajo y entre las dos queda el hueco en el que se la mira.
+ */
+function fraccionFoco(): { x: number; y: number } {
+  return { x: 0.5, y: angosto() ? 0.74 : 0.5 };
+}
+
+/**
+ * Lleva el encuadre a una mancha y la deja donde se la pueda mirar.
+ *
+ * El reencuadre normal espera el fotograma siguiente (ver `reencuadrar`),
+ * pero aqui hace falta ya: la ficha se ancla a donde quedo la mancha en la
+ * pantalla, y medirlo antes de mover el encuadre la pondria donde estaba.
+ */
+function enfocar(point: PlacedPoint): void {
+  vista.zoom = Math.max(vista.zoom, Math.min(ZOOM_MAX, ZOOM_FOCO));
+  // El centro del encuadre se corre lo que haga falta para que la mancha
+  // caiga donde se la pueda mirar, y no debajo de lo que hay abierto sobre
+  // ella. El punto de destino se elige dentro de la zona libre y despues se
+  // pasa a fracciones del lienzo, que es en lo que piensa el encuadre.
+  const k = escalaViva();
+  const caja = view.getBoundingClientRect();
+  const libre = zonaLibre();
+  const f = fraccionFoco();
+  const destinoX = libre.left + (libre.right - libre.left) * f.x;
+  const destinoY = libre.top + (libre.bottom - libre.top) * f.y;
+  const fx = caja.width > 0 ? (destinoX - caja.left) / caja.width : 0.5;
+  const fy = caja.height > 0 ? (destinoY - caja.top) / caja.height : 0.5;
+  vista.cx = point.x + (0.5 - fx) * (view.width / k);
+  vista.cy = point.y + (0.5 - fy) * (view.height / k);
+  if (reencuadre) cancelAnimationFrame(reencuadre);
+  reencuadre = 0;
+  acomodarVista();
+  rasterizarTlacuilo();
+  encuadrarTrazado();
+  paint();
+  mostrarZoom();
+}
+
+/**
+ * Lo que pasa al elegir un resultado de la busqueda: la vista va a la mancha.
+ *
+ * Marcarla donde estaba no alcanzaba. En el cartel entero una mancha son tres
+ * pixeles entre mil ochocientos y la marca que late es un circulo de catorce:
+ * habia que saber de antemano donde mirar. Y en el telefono el recuadro de la
+ * busqueda ocupa tres cuartos de la pantalla, asi que la mancha encontrada
+ * caia justo detras de el; al cerrarlo para verla se borraba el resaltado.
+ *
+ * Ahora la lupa se acerca a ella. Y en el telefono el recuadro **no se
+ * cierra**: encoge. Cerrarlo dejaba ver la mancha pero se llevaba la lista,
+ * asi que probar con el siguiente nombre era volver a abrir el buscador cada
+ * vez; encogido pierde el encabezado y deja la consulta, el campo y los
+ * primeros resultados a un toque, que es como se recorre una lista de gente.
+ * Lo que mande en el encuadre no es el alto del recuadro sino lo que deja
+ * libre (ver `zonaLibre`), asi que encoger ya pone la mancha donde se la ve.
+ */
 function locateRecord(r: DataRecord): void {
   const point = placed.find((p) => p.record.id === r.id) ?? null;
   highlight = point;
-  paint();
-  if (point) { startPulse(4000); showFicha(point); }
-  else tooltip.hide();
+  if (!point) {
+    paint();
+    tooltip.hide();
+    return;
+  }
+  // Primero encoger y despues encuadrar: el sitio que queda se mide.
+  compactarBusqueda(true);
+  enfocar(point);
+  startPulse(6000);
+  showFicha(point);
 }
 
 // ---------------------------------------------------------------- el cursor
@@ -1173,28 +1370,102 @@ view.addEventListener('mouseleave', () => {
   tooltip.hide();
 });
 
-// En un telefono no hay puntero que seguir, pero si dedo: al tocar, la red se
-// aparta un momento del punto tocado y vuelve sola. Con la lupa abierta el
-// dedo hace otra cosa —mueve el cartel— y de eso se encarga `gestos`.
+/**
+ * Lo que abarca un dedo sobre el dibujo, en coordenadas de trabajo.
+ *
+ * El raton senala un pixel y el dedo tapa una moneda: medir el area sensible
+ * como la del raton era pedirle a quien toca que le acierte a una mancha de
+ * tres pixeles. Se mide en pixeles de pantalla y se traduce, asi que con la
+ * lupa cerca el area se encoge sobre el dibujo —el dedo sigue siendo el
+ * mismo— y de lejos abarca lo que haya debajo.
+ */
+const DEDO_PX = 22;
+
+function radioDedo(): number {
+  return Math.max(radioToque(), (DEDO_PX * upx) / escalaViva());
+}
+
+/** Cuanto se puede correr y cuanto puede durar un toque para seguir siendo uno. */
+const TOQUE_QUIETO = 12;
+const TOQUE_LARGO = 600;
+
+/**
+ * El dedo: al apoyarlo la red se aparta de ese punto, y al levantarlo sin
+ * haberlo corrido se abre la ficha de quien quedo debajo. Con la lupa abierta
+ * hace otra cosa —mueve el cartel— y de eso se encargan los gestos de abajo.
+ *
+ * Lo que ya no hace es seguir al dedo mientras se mueve. Sobre el mural, que
+ * ocupa la pantalla entera, mover el dedo es desplazar la pagina: repintar la
+ * red en cada fotograma del gesto era hacer el trabajo mas caro que hay justo
+ * cuando el hilo lo necesita para el scroll. En cuanto el toque se corre se
+ * suelta el punto, y la red vuelve al reposo mientras la pagina pasa.
+ */
+let toque: { x: number; y: number; t: number } | null = null;
+
 view.addEventListener('touchstart', (e) => {
   if (open === 'lupa') return;
   const t = e.touches[0];
-  if (!t) return;
+  if (!t || e.touches.length > 1) { toque = null; return; }
+  toque = { x: t.clientX, y: t.clientY, t: performance.now() };
   cursor = enLienzo(t.clientX, t.clientY);
   animar();
 }, { passive: true });
 
 view.addEventListener('touchmove', (e) => {
-  if (open === 'lupa') return;
+  if (open === 'lupa' || !toque) return;
   const t = e.touches[0];
   if (!t) return;
-  cursor = enLienzo(t.clientX, t.clientY);
+  if (Math.hypot(t.clientX - toque.x, t.clientY - toque.y) > TOQUE_QUIETO) {
+    toque = null;
+    cursor = null;
+  }
+}, { passive: true });
+
+/**
+ * Un toque quieto abre la ficha de quien quedo debajo.
+ *
+ * Es lo que el raton hacia con el `mousemove`, y lo que en un telefono no
+ * habia: la red se apartaba del dedo pero nunca decia de quien era la mancha,
+ * asi que la unica forma de leer a alguien era buscarlo por su nombre. Vale
+ * con el cartel entero y con la lupa puesta, que es desde donde se mira de
+ * cerca.
+ *
+ * Un toque que se corrio no cuenta —era un arrastre, de la pagina o del
+ * cartel— y uno largo tampoco. Sobre el papel vacio cierra la ficha: sin
+ * puntero no hay `mouseleave` que la cierre.
+ */
+function abrirFichaEnToque(e: TouchEvent): void {
+  const t = toque;
+  toque = null;
+  if (!t || !grid) return;
+  if (e.changedTouches.length !== 1 || e.touches.length > 0) return;
+  if (performance.now() - t.t > TOQUE_LARGO) return;
+  const punto = enLienzo(t.x, t.y);
+  const hit = grid.nearest(punto.x, punto.y, radioDedo());
+  if (hit) {
+    highlight = hit;
+    startPulse(5000);
+    showFicha(hit);
+  } else {
+    highlight = null;
+    tooltip.hide();
+    paint();
+  }
+}
+
+view.addEventListener('touchend', (e) => {
+  cursor = null;
+  animar();
+  if (open === 'lupa') { toque = null; return; }   // alli lo cierra la pinza
+  abrirFichaEnToque(e);
+}, { passive: true });
+
+view.addEventListener('touchcancel', () => {
+  toque = null;
+  cursor = null;
   animar();
 }, { passive: true });
 
-for (const fin of ['touchend', 'touchcancel'] as const) {
-  view.addEventListener(fin, () => { cursor = null; animar(); }, { passive: true });
-}
 window.addEventListener('scroll', () => tooltip.hide(), { passive: true });
 
 // ------------------------------------------------------- mover y acercar
@@ -1295,6 +1566,10 @@ view.addEventListener('touchstart', (e) => {
   if (open !== 'lupa') return;
   e.preventDefault();
   pinza = medirDedos(e.touches);
+  // Con la lupa puesta el dedo recorre el cartel, pero un toque quieto sigue
+  // abriendo la ficha: es ahi, de cerca, donde una mancha se puede señalar.
+  const t = e.touches.length === 1 ? e.touches[0] : null;
+  toque = t ? { x: t.clientX, y: t.clientY, t: performance.now() } : null;
   tooltip.hide();
 }, { passive: false });
 
@@ -1303,6 +1578,7 @@ view.addEventListener('touchmove', (e) => {
   e.preventDefault();
   const ahora = medirDedos(e.touches);
   if (!ahora) return;
+  if (toque && Math.hypot(ahora.x - toque.x, ahora.y - toque.y) > TOQUE_QUIETO) toque = null;
   const k = porPixel();
   // Con dos dedos manda la separacion; con uno, el arrastre. El centro se
   // sigue en los dos casos, asi que la pinza tambien mueve el cartel.
@@ -1316,6 +1592,9 @@ view.addEventListener('touchmove', (e) => {
 for (const fin of ['touchend', 'touchcancel'] as const) {
   view.addEventListener(fin, (e) => {
     pinza = e.touches.length > 0 ? medirDedos(e.touches) : null;
+    if (open !== 'lupa') return;
+    if (fin === 'touchend') abrirFichaEnToque(e);
+    else toque = null;
   }, { passive: true });
 }
 
@@ -1342,6 +1621,7 @@ function initHeroReveal(img: ImageData): void {
   if (!hero || !('IntersectionObserver' in window)) return;
   const observer = new IntersectionObserver((entries) => {
     for (const e of entries) {
+      heroALaVista = e.isIntersecting;
       if (e.isIntersecting) heroReveal?.play();
       else heroReveal?.pause();
     }
@@ -1389,11 +1669,18 @@ function initLanding(): void {
   // su fondo solido al entrar en el resto de las secciones.
   const nav = document.getElementById('nav');
   if (nav && hero) {
+    // El alto del Hero queda medido: leerlo en cada evento de scroll obliga
+    // al navegador a recalcular la pagina en medio del gesto, y solo cambia
+    // cuando cambia la ventana.
+    let mitadHero = hero.offsetHeight * 0.5;
     const syncNav = () => {
-      nav.classList.toggle('glass-nav--hero', window.scrollY < hero.offsetHeight * 0.5);
+      nav.classList.toggle('glass-nav--hero', window.scrollY < mitadHero);
     };
     window.addEventListener('scroll', syncNav, { passive: true });
-    window.addEventListener('resize', syncNav);
+    window.addEventListener('resize', () => {
+      mitadHero = hero.offsetHeight * 0.5;
+      syncNav();
+    });
     syncNav();
   }
 
@@ -1452,6 +1739,9 @@ function initLanding(): void {
   }
 
   if (hero && (heroContent || heroBg) && !reduceMotion) {
+    // El CSS saca `filter` de la transicion en el mismo ancho (ver
+    // `.hero-exit-target` en `mural.css`).
+    const sinDesenfoque = angosto() || tactil;
     let ticking = false;
     const updateHeroExit = () => {
       ticking = false;
@@ -1460,7 +1750,12 @@ function initLanding(): void {
       if (heroContent) {
         heroContent.style.opacity = String(Math.max(0, 1 - t * 1.15));
         heroContent.style.transform = `translate3d(0, ${-t * 44}px, 0) scale(${1 - t * 0.06})`;
-        heroContent.style.filter = `blur(${t * 6}px)`;
+        // En el telefono se va el desenfoque. La placa del Hero ya desenfoca
+        // lo que tiene detras (`backdrop-filter`), asi que animar encima un
+        // `filter: blur` es desenfocar media pantalla dos veces en cada
+        // fotograma del scroll, y era lo que lo hacia ir a tirones. Lo que
+        // queda —opacidad y desplazamiento— lo compone la GPU sola.
+        if (!sinDesenfoque) heroContent.style.filter = `blur(${t * 6}px)`;
       }
       if (heroBg) {
         heroBg.style.opacity = String(Math.max(0.15, 1 - t * 0.7));
@@ -1484,21 +1779,50 @@ initLanding();
 
 // ---------------------------------------------------------------- arranque
 
+/**
+ * El titulo y la bajada de un recuadro, en su propia caja: asi el buscador
+ * puede esconderlos de una sola vez al encogerse (ver `compactarBusqueda`).
+ */
 function panelHeader(title: string, lead: string): HTMLElement[] {
   return [
-    el('h2', { text: title }),
-    el('p', { class: 'mb-3 text-sm leading-[1.45] text-muted', text: lead }),
+    el('div', { class: 'panel-cabecera' }, [
+      el('h2', { text: title }),
+      el('p', { class: 'mb-3 text-sm leading-[1.45] text-muted', text: lead }),
+    ]),
   ];
 }
 
+/**
+ * El aviso del lienzo mientras no hay mural: lo que se lee antes de que el
+ * cartel llegue, y lo que queda escrito si no llega.
+ *
+ * Va fuera del flujo a proposito. El lienzo centra a sus hijos en fila, y
+ * mientras no hay dibujo el `<canvas>` todavia mide lo que mide uno vacio
+ * —300x150— y cuenta como hermano: en fila, el aviso salia corrido media
+ * anchura de ese lienzo invisible. Posicionado, el flex lo centra solo, en
+ * la misma caja en la que despues entra el cartel (igual que `tl-aviso`).
+ */
+const avisoLienzo = el('p', {
+  class: 'absolute text-sm text-muted',
+  text: 'Cargando el mural…',
+});
+
 async function start(): Promise<void> {
   tools.classList.add('hidden');
-  const loading = el('p', { class: 'text-sm text-muted', text: 'Cargando el mural…' });
-  mural.append(loading);
+  mural.append(avisoLienzo);
 
   // El dibujo, sus horneados y los registros: todo eso lo trae `./cartel`,
   // que es tambien de donde los toma el timelapse (ver `./timelapse`).
-  const cargado = await cargarMural(RENDER);
+  const cargado = await cargarMural(RENDER, {
+    // El Hero se pone a trazar en cuanto hay ilustracion. Lo que falta
+    // —el analisis del dibujo, el banco de registros, la consulta a
+    // Supabase, la red y el render— sigue corriendo detras, y al terminar
+    // `render` le cambia la fuente por el mural ya pintado.
+    alTenerDibujo: (d) => {
+      heroFuente = d.canvas;
+      initHeroReveal(d.imageData);
+    },
+  });
   const d = cargado.cartel.drawing;
   drawing = d;
   zones = cargado.cartel.zones;
@@ -1516,7 +1840,7 @@ async function start(): Promise<void> {
 
   alta = registroForm({ ramp, add: addPerson, onDone: verMancha });
   addPanel.append(
-    ...panelHeader('Súmate al mural', 'Cinco pantallas cortas y tu mancha de acuarela queda en el mural.'),
+    ...panelHeader('Súmate al mural', 'Seis pantallas cortas y tu mancha de acuarela queda en el mural.'),
     alta.root,
     // `count` no viste: es el gancho con el que `refreshCount` lo encuentra.
     el('p', { class: 'count mt-3 text-right text-xs text-muted' }),
@@ -1533,18 +1857,18 @@ async function start(): Promise<void> {
     ...panelHeader('Buscar una persona', 'Escribe un nombre y elige un resultado para ver dónde quedó su mancha.'),
     search.root
   );
+  // Escribir otra cosa es empezar de nuevo: la lista vuelve a su alto.
+  searchPanel.querySelector('input')?.addEventListener('input', () => compactarBusqueda(false));
 
-  loading.remove();
+  avisoLienzo.remove();
   tools.classList.remove('hidden');
   placeAll();
   render();
 
   observarVisibilidad();
+  pausarEnScroll();
   seguirTamano();
   animar();
-
-  // Con la escena ya pintada, el Hero se dibuja solo trazo a trazo.
-  initHeroReveal(d.imageData);
 
   // Actualizaciones en vivo desde Supabase Realtime: cuando alguien se suma
   // desde otro dispositivo, su mancha entra al mural sin recargar.
@@ -1608,5 +1932,8 @@ function seguirTamano(): void {
 }
 
 start().catch((err) => {
-  mural.append(el('p', { class: 'text-sm text-muted', text: `No se pudo cargar el mural: ${err}` }));
+  // El mismo aviso, con lo que paso: si se queda el de «cargando» al lado,
+  // ahora que los dos van posicionados se encimarian en el medio del lienzo.
+  avisoLienzo.textContent = `No se pudo cargar el mural: ${err}`;
+  mural.append(avisoLienzo);
 });

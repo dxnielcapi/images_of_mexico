@@ -127,11 +127,12 @@ const LUGARES = [
  * Frases de mas, una tanda por punto de la escala.
  *
  * `SENTIRES` trae cuatro por punto y esas se usan tambien —se importan—,
- * pero cuatro son las que entran como sugerencia en el alta, no las que
- * alcanzan para mil doscientas personas: los testimonios van escritos
- * dentro del trazo (ver `@core/render/testimonios`) y con treinta y seis
- * frases para todo el mural la espiral se leeria en eco. Estas no se le
- * muestran a nadie en el formulario; son el habla del banco simulado.
+ * pero treinta y seis frases no alcanzan para mil doscientas personas: los
+ * testimonios van escritos dentro del trazo (ver `@core/render/testimonios`)
+ * y el mural se leeria en eco. Desde que el alta dejo de sugerir frases
+ * —ahora el ultimo paso es una caja en blanco—, ni estas ni las de `SENTIRES`
+ * se le muestran a nadie: las dos tandas juntas son el habla del banco
+ * simulado y nada mas.
  *
  * Las claves son los nombres de la escala tal como los define `SENTIRES`: si
  * una deja de coincidir, el script avisa y se detiene.
@@ -206,20 +207,27 @@ const MAS_FRASES = {
 // ------------------------------------------------- lo que hay en el banco
 
 /**
- * Como estan repartidas las respuestas, leido del banco de antes para que lo
- * que se agrega no cambie lo que el mural dice. No son medidas de nada: son
- * la lectura del proyecto, y moverlas de aqui mueve la figura.
+ * Como estan repartidas las respuestas. No son medidas de nada: son la
+ * lectura del proyecto, y moverlas de aqui mueve la figura.
+ *
+ * Las dos preguntas que cambiaron estrenan reparto, porque la de antes no se
+ * puede traducir: `prefiere` ya no pregunta por el gusto sino por el acceso,
+ * y ahi la respuesta se da vuelta —lo que esta mas a la mano es el
+ * superprocesado, que es justamente de lo que habla el mural—, y la perdida
+ * reparte entre cuatro causas donde habia tres. El desinteres del pueblo
+ * sigue siendo la menos elegida, igual que antes.
  */
 const PESOS = {
   /** De 'muy bien' a 'nada bien', en el orden de `SENTIRES`. */
   escala: [31, 28, 40, 36, 24, 32, 32, 37, 35],
-  prefiere: { 'comida mexicana': 65, 'superprocesado': 35 },
+  prefiere: { superprocesado: 44, mexicana: 34, extranjero: 22 },
   merece_digna: { 'sí': 94, 'no': 6 },
   oportunidades_justas: { 'no': 82, 'sí': 18 },
   perdida_soberania: {
-    gobernantes: 50,
-    'cadenas grandes': 38,
-    'al pueblo ya no le interesa': 12,
+    politica: 34,
+    economia: 28,
+    industria: 26,
+    social: 12,
   },
   /**
    * La zona es la etiqueta heredada de una version anterior del dibujo: la
@@ -416,7 +424,7 @@ try {
     for (const q of PREGUNTAS) p[q.key] = porPeso(rng, PESOS[q.key]);
 
     // Lo que dice tiene que ser coherente con como dijo que se siente: las
-    // frases sugeridas del punto de la escala y las de mas, juntas.
+    // frases del punto de la escala y las de mas, juntas.
     p.mensaje = uno(rng, [...sentir.frases, ...MAS_FRASES[sentir.name]]);
     p.fecha = fechaEn(entero(rng, 0, VENTANA));
 
